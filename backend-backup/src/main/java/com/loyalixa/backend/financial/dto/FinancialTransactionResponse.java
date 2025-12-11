@@ -1,0 +1,20 @@
+package com.loyalixa.backend.financial.dto;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.UUID;
+public record FinancialTransactionResponse(
+    UUID id,
+    UUID accountId,
+    String transactionType,
+    BigDecimal amount,
+    BigDecimal balanceBefore,
+    BigDecimal balanceAfter,
+    String currency,
+    String description,
+    UUID referenceId,
+    String referenceType,
+    String status,
+    String discountReason,
+    String notes,
+    LocalDateTime createdAt
+) {}

@@ -1,0 +1,19 @@
+package com.loyalixa.backend.lxcoins.dto;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.UUID;
+public record LXCoinsTransactionResponse(
+    UUID id,
+    UUID accountId,
+    UUID userId,
+    String transactionType,
+    BigDecimal amount,
+    BigDecimal balanceBefore,
+    BigDecimal balanceAfter,
+    String description,
+    UUID referenceId,
+    String referenceType,
+    UUID processedById,
+    String processedByEmail,
+    LocalDateTime createdAt
+) {}

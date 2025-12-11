@@ -1,0 +1,40 @@
+package com.loyalixa.backend.shop.dto;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
+public record ProductPurchaseStatsResponse(
+    Long totalPurchases,
+    Long totalUniqueBuyers,
+    Long completedPurchases,
+    Long pendingPurchases,
+    Long cancelledPurchases,
+    Long refundedPurchases,
+    Long purchasesByMoney,
+    Long purchasesByCoins,
+    Long uniqueBuyersByMoney,
+    Long uniqueBuyersByCoins,
+    BigDecimal totalRevenueMoney,
+    BigDecimal totalRevenueCoins,
+    BigDecimal averagePurchaseValueMoney,
+    BigDecimal averagePurchaseValueCoins,
+    Long purchasesLast7Days,
+    Long purchasesLast30Days,
+    Long purchasesLast90Days,
+    LocalDateTime firstPurchaseDate,
+    LocalDateTime lastPurchaseDate,
+    BigDecimal totalCoinsSpent,
+    String currency,
+    List<RecentPurchaseInfo> recentPurchases
+) {
+    public record RecentPurchaseInfo(
+        UUID purchaseId,
+        UUID userId,
+        String userEmail,
+        String paymentMethod,
+        BigDecimal amountPaid,
+        BigDecimal coinsPaid,
+        String status,
+        LocalDateTime purchasedAt
+    ) {}
+}

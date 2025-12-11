@@ -1,0 +1,26 @@
+package com.loyalixa.backend.subscription.dto;
+import java.time.LocalDateTime;
+import java.util.UUID;
+public record UserSubscriptionResponse(
+    UUID id,
+    UUID userId,
+    String userEmail,
+    String userName,
+    UUID planId,
+    String planName,
+    String planCode,
+    String status,
+    LocalDateTime startDate,
+    LocalDateTime endDate,
+    LocalDateTime cancelledAt,
+    String cancellationReason,
+    Boolean autoRenew,
+    LocalDateTime lastRenewedAt,
+    Integer renewalCount,
+    String paymentReference,
+    String notes,
+    LocalDateTime createdAt,
+    LocalDateTime updatedAt,
+    Boolean isActive,
+    Boolean isExpired
+) {}

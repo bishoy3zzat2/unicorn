@@ -1,0 +1,36 @@
+package com.loyalixa.backend.financial.dto;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.UUID;
+public record FinancialAccountResponse(
+    UUID id,
+    UUID userId,
+    BigDecimal balance,
+    String paymentMethod,
+    String employmentType,
+    Boolean hasFixedSalary,
+    LocalDate employmentStartDate,
+    LocalDate employmentEndDate,
+    String workSchedule,
+    Integer hoursPerWeek,
+    String workInstructions,
+    BigDecimal monthlySalary,
+    String salaryCurrency,
+    Integer salaryPaymentDay,
+    BigDecimal monthlyBonus,
+    String currency,
+    String bankName,
+    String bankAccountNumber,
+    String bankIban,
+    String bankSwiftCode,
+    String walletType,
+    String walletNumber,
+    String cardType,
+    String cardNumber,
+    String cardHolderName,
+    String cardCountry,
+    String cardBankName,
+    String cardExpiryDate,
+    String status,
+    String notes
+) {}

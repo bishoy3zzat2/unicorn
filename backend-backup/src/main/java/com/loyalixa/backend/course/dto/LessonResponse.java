@@ -1,0 +1,37 @@
+package com.loyalixa.backend.course.dto;
+import java.time.LocalDateTime;
+import java.util.UUID;
+public record LessonResponse(
+    Long id,
+    String title,
+    Integer orderIndex,
+    String contentType,
+    Boolean isFreePreview,
+    String contentUrl,
+    String contentBody,
+    Integer durationInSeconds,
+    UUID quizId,
+    String quizTitle,  
+    String sessionDetails,  
+    String assessmentInfo,  
+    LocalDateTime expiryDate,
+    Long sectionId,
+    String sectionTitle,
+    UUID courseId,
+    String videoThumbnailUrl,
+    Boolean preventSkip,
+    Boolean downloadable,
+    Boolean allowSpeedControl,
+    Boolean requireFullscreenForProgress,
+    Integer completionPercentage,
+    Boolean requirePrerequisites,
+    String prerequisiteLessonIds,
+    String videoTranscript,
+    String subtitles,
+    Boolean allowAds,
+    Boolean showAdsForFreeOnly,
+    String adMode,
+    String adTagUrl,
+    String adBreaks,
+    Integer adSkipAfterSeconds
+) {}

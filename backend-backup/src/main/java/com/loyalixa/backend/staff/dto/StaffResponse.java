@@ -1,0 +1,25 @@
+package com.loyalixa.backend.staff.dto;
+import com.loyalixa.backend.financial.dto.FinancialAccountResponse;
+import com.loyalixa.backend.user.dto.UserAdminResponse;
+import java.math.BigDecimal;
+import java.util.List;
+public record StaffResponse(
+    UserAdminResponse user,
+    FinancialAccountResponse financialAccount,
+    List<com.loyalixa.backend.financial.dto.PaymentRequestResponse> pendingPaymentRequests,
+    List<com.loyalixa.backend.financial.dto.TaskPaymentResponse> allTasks,
+    List<com.loyalixa.backend.financial.dto.TaskPaymentResponse> pendingTasks,
+    List<com.loyalixa.backend.financial.dto.TaskPaymentResponse> completedTasks,
+    List<com.loyalixa.backend.financial.dto.TaskPaymentResponse> rejectedTasks,
+    Long totalTasksCount,
+    Long completedTasksCount,
+    Long pendingTasksCount,
+    Long rejectedTasksCount,
+    Long totalTransactionsCount,
+    BigDecimal totalDeposits,
+    BigDecimal totalWithdrawals,
+    BigDecimal totalDiscounts,
+    BigDecimal totalBonuses,
+    BigDecimal totalPenalties,
+    List<com.loyalixa.backend.financial.dto.FinancialTransactionResponse> recentTransactions
+) {}

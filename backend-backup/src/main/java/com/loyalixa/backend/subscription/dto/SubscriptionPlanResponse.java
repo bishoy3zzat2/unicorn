@@ -1,0 +1,42 @@
+package com.loyalixa.backend.subscription.dto;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+public record SubscriptionPlanResponse(
+    UUID id,
+    String name,
+    String code,
+    String description,
+    String planType,
+    Integer durationDays,
+    BigDecimal price,
+    String currency,
+    Boolean isActive,
+    Boolean isDefault,
+    Integer displayOrder,
+    List<String> allowedCourseTypes,
+    Integer maxCourseEnrollments,
+    Integer maxBundleEnrollments,
+    BigDecimal dailyCoins,
+    Map<String, BigDecimal> streakBonusCoins,
+    BigDecimal courseCompletionCoins,
+    BigDecimal courseEnrollmentCoins,
+    BigDecimal courseReviewCoins,
+    BigDecimal certificateCoins,
+    BigDecimal invitationCoins,
+    Integer maxDevices,
+    Boolean hasPremiumAccess,
+    Boolean hasDownloadAccess,
+    Boolean hasCertificateAccess,
+    Boolean hasPremiumSupport,
+    Boolean hasExclusiveContent,
+    Boolean hasLiveCourses,
+    Boolean hasQuizzesAccess,
+    Boolean hasCommunityAccess,
+    Map<String, Object> additionalFeatures,
+    LocalDateTime createdAt,
+    LocalDateTime updatedAt,
+    Long activeSubscriptionsCount
+) {}

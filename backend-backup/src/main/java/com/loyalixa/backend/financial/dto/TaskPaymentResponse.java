@@ -1,0 +1,31 @@
+package com.loyalixa.backend.financial.dto;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.UUID;
+public record TaskPaymentResponse(
+    UUID id,
+    UUID accountId,
+    UUID userId,
+    String userName,
+    String userEmail,
+    String taskTitle,
+    String taskDescription,
+    BigDecimal amount,
+    String currency,
+    LocalDate taskDate,
+    LocalDate paymentMonth,
+    String status,
+    UUID approvedById,
+    String approvedByName,
+    LocalDateTime approvedAt,
+    String rejectionReason,
+    String notes,
+    String externalTaskId,
+    String completionStatus,
+    LocalDateTime completedAt,
+    String completionNotes,
+    String attachments,
+    LocalDateTime createdAt,
+    LocalDateTime updatedAt
+) {}

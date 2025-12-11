@@ -1,0 +1,19 @@
+package com.loyalixa.backend.user.dto;
+import java.time.LocalDateTime;
+import java.util.UUID;
+public record UserAdminResponse(
+    UUID id,
+    String username,
+    String email,
+    String roleName,
+    String status,
+    LocalDateTime createdAt,
+    LocalDateTime updatedAt,
+    LocalDateTime lastLoginAt,
+    LocalDateTime passwordChangedAt,
+    LocalDateTime deletedAt,
+    String deletionReason,
+    Boolean canAccessDashboard,
+    String currentPlanName,
+    String currentPlanCode
+) {}

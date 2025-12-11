@@ -1,0 +1,44 @@
+package com.loyalixa.backend.course.dto;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
+public record CourseCreateRequest(
+    String title,
+    String slug,  
+    String shortDescription,
+    String fullDescription,
+    BigDecimal price,
+    BigDecimal discountPrice,  
+    String discountType,  
+    BigDecimal discountValue,  
+    Boolean discountIsFixed,  
+    BigDecimal discountDecayRate,  
+    LocalDateTime discountExpiresAt,  
+    String currency,  
+    String accessType,  
+    Integer accessDurationValue,  
+    String accessDurationUnit,  
+    String level,
+    String durationText,
+    String coverImageUrl,
+    String learningFormat,
+    String language,  
+    Boolean hasFreeContent,
+    String subtitlesLanguages,  
+    String academicDegree,  
+    Boolean isRefundable,  
+    Boolean hasDownloadableContent,  
+    CertificateRequest certificate,  
+    List<UUID> providerIds,  
+    String organizationName,  
+    String providerLogoUrl,  
+    String visibility,  
+    List<UUID> allowedUserIds,  
+    List<String> skills,  
+    List<UUID> badgeIds,  
+    List<Long> categoryIds,  
+    List<UUID> instructorIds,  
+    List<String> tags,
+    List<PrerequisiteRequest> prerequisites  
+) {}

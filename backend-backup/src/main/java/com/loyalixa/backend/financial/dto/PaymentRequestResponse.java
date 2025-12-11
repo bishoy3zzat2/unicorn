@@ -1,0 +1,22 @@
+package com.loyalixa.backend.financial.dto;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.UUID;
+public record PaymentRequestResponse(
+    UUID id,
+    UUID accountId,
+    String requestType,
+    BigDecimal amount,
+    String currency,
+    String reason,
+    String status,
+    String rejectionReason,
+    UUID reviewedById,
+    String reviewedByName,
+    LocalDateTime reviewedAt,
+    LocalDateTime completedAt,
+    String paymentMethod,
+    String paymentDetails,
+    LocalDateTime createdAt,
+    LocalDateTime updatedAt
+) {}

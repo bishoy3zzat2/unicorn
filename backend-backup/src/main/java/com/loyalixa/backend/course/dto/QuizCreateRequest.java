@@ -1,0 +1,22 @@
+package com.loyalixa.backend.course.dto;
+import java.util.UUID;
+import java.util.List;
+public record QuizCreateRequest(
+    String title,
+    Integer durationMinutes,
+    Integer maxAttempts,
+    String gradingStrategy,
+    String gradingType,
+    Integer orderIndex,
+    Integer passScorePercentage,
+    Boolean allowLateSubmission,
+    Boolean requiresProctoring,
+    String quizType,
+    String requiredDeviceType,
+    String allowedBrowsers,
+    String instructions,  
+    Long lessonId,  
+    UUID bundleId,  
+    List<UUID> badgeIds,  
+    List<QuestionRequest> questions  
+) {}

@@ -1,0 +1,43 @@
+package com.loyalixa.backend.shop.dto;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
+public record ProductResponse(
+    UUID id,
+    String name,
+    String slug,
+    String description,
+    String shortDescription,
+    BigDecimal price,
+    BigDecimal priceInCoins,
+    String currency,
+    String paymentMethod,
+    String status,
+    Integer stockQuantity,
+    Boolean isFeatured,
+    String category,
+    UUID createdById,
+    String createdByEmail,
+    UUID updatedById,
+    String updatedByEmail,
+    List<MediaResponse> media,
+    Double averageRating,
+    Long reviewCount,
+    Long purchaseCount,
+    LocalDateTime createdAt,
+    LocalDateTime updatedAt
+) {
+    public record MediaResponse(
+        UUID id,
+        String mediaType,
+        String mediaUrl,
+        String thumbnailUrl,
+        Integer orderIndex,
+        String altText,
+        Boolean autoplay,
+        Boolean muted,
+        Boolean loop,
+        Boolean controls
+    ) {}
+}

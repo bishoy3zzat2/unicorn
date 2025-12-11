@@ -1,0 +1,33 @@
+package com.loyalixa.backend.course.dto;
+import jakarta.validation.constraints.Size;
+import java.time.LocalDateTime;
+import java.util.UUID;
+public record LessonUpdateRequest(
+    String title,
+    Integer orderIndex,
+    String contentType,  
+    Boolean isFreePreview,
+    String contentUrl,
+    String contentBody,
+    Integer durationInSeconds,
+    UUID quizId,
+    String sessionDetails,  
+    String assessmentInfo,  
+    LocalDateTime expiryDate,
+    String videoThumbnailUrl,  
+    Boolean preventSkip,  
+    Boolean downloadable,  
+    Boolean allowSpeedControl,  
+    Boolean requireFullscreenForProgress,  
+    Integer completionPercentage,  
+    Boolean requirePrerequisites,  
+    String prerequisiteLessonIds,  
+    String videoTranscript,  
+    String subtitles,  
+    Boolean allowAds,
+    Boolean showAdsForFreeOnly,
+    String adMode,  
+    String adTagUrl,
+    String adBreaks,  
+    Integer adSkipAfterSeconds
+) {}

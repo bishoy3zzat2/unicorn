@@ -1,0 +1,24 @@
+package com.loyalixa.backend.financial.dto;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.UUID;
+public record SalaryPaymentResponse(
+    UUID id,
+    UUID accountId,
+    LocalDate paymentMonth,
+    BigDecimal baseSalary,
+    BigDecimal bonus,
+    BigDecimal deductions,
+    BigDecimal totalAmount,
+    String currency,
+    String status,
+    LocalDateTime paidAt,
+    UUID approvedById,
+    String approvedByName,
+    LocalDateTime approvedAt,
+    String deductionDetails,
+    String notes,
+    LocalDateTime createdAt,
+    LocalDateTime updatedAt
+) {}
