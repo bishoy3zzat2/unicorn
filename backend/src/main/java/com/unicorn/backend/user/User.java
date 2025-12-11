@@ -1,5 +1,7 @@
 package com.unicorn.backend.user;
 
+import com.unicorn.backend.investor.InvestorProfile;
+import com.unicorn.backend.startup.Startup;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -13,6 +15,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -70,6 +73,13 @@ public class User implements UserDetails {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
+    // Relationships
+    @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<Startup> startups;
+
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private InvestorProfile investorProfile;
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         if (this.role == null) {
@@ -112,6 +122,8 @@ public class User implements UserDetails {
     }
 
     public Boolean getCanAccessDashboard() {
-        return "ADMIN".equals(this.role);
+        return "ADMIN".equals(this.role) ||
+                "STARTUP_OWNER".equals(this.role) ||
+                "INVESTOR".equals(this.role);
     }
 }
