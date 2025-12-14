@@ -159,4 +159,72 @@ public class StartupService {
                 .map(StartupResponse::fromEntity)
                 .collect(Collectors.toList());
     }
+
+    /**
+     * Update startup status (Admin only).
+     * Allows admin to approve or reject startup applications.
+     *
+     * @param id     the startup ID
+     * @param status the new status
+     * @return the updated startup response
+     * @throws IllegalArgumentException if startup not found
+     */
+    @Transactional
+    public StartupResponse updateStartupStatus(UUID id, StartupStatus status) {
+        Startup startup = startupRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Startup not found"));
+
+        startup.setStatus(status);
+        Startup updatedStartup = startupRepository.save(startup);
+        return StartupResponse.fromEntity(updatedStartup);
+    }
+
+    /**
+     * Transfer startup ownership to a new user (Admin only).
+     *
+     * @param id       the startup ID
+     * @param newOwner the new owner user
+     * @return the updated startup response
+     * @throws IllegalArgumentException if startup not found
+     */
+    @Transactional
+    public StartupResponse transferOwnership(UUID id, User newOwner) {
+        Startup startup = startupRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Startup not found: " + id));
+
+        // TODO: Create audit log entry when audit service is implemented
+        // auditLogService.log("OWNERSHIP_TRANSFER", startup.getId(),
+        // startup.getOwner().getId(), newOwner.getId());
+
+        startup.setOwner(newOwner);
+        Startup updatedStartup = startupRepository.save(startup);
+        return StartupResponse.fromEntity(updatedStartup);
+    }
+
+    /**
+     * Get all startups with pagination (Admin only).
+     *
+     * @param pageable pagination parameters
+     * @return page of startup responses
+     */
+    @Transactional(readOnly = true)
+    public org.springframework.data.domain.Page<StartupResponse> getAllStartups(
+            org.springframework.data.domain.Pageable pageable) {
+        return startupRepository.findAll(pageable)
+                .map(StartupResponse::fromEntity);
+    }
+
+    /**
+     * Get a startup by ID.
+     *
+     * @param id the startup ID
+     * @return the startup response
+     * @throws IllegalArgumentException if startup not found
+     */
+    @Transactional(readOnly = true)
+    public StartupResponse getStartupById(UUID id) {
+        Startup startup = startupRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Startup not found: " + id));
+        return StartupResponse.fromEntity(startup);
+    }
 }

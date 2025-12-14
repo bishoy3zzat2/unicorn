@@ -33,6 +33,15 @@ public class User implements UserDetails {
     @Column(nullable = false, unique = true)
     private String email;
 
+    @Column(name = "display_name", length = 100)
+    private String displayName;
+
+    @Column(name = "phone_number", length = 20)
+    private String phoneNumber;
+
+    @Column(length = 100)
+    private String country;
+
     @Column
     private String passwordHash;
 

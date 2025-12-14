@@ -44,6 +44,24 @@ public class InvestorProfile {
     @Column
     private String linkedInUrl;
 
+    // Verification fields
+    @Column(name = "is_verified")
+    @Builder.Default
+    private Boolean isVerified = false;
+
+    @Column(name = "verification_requested")
+    @Builder.Default
+    private Boolean verificationRequested = false;
+
+    @Column(name = "verification_requested_at")
+    private LocalDateTime verificationRequestedAt;
+
+    @Column(name = "verified_at")
+    private LocalDateTime verifiedAt;
+
+    @Column(name = "verification_notes", length = 1000)
+    private String verificationNotes;
+
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;

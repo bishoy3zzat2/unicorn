@@ -39,4 +39,15 @@ public interface StartupRepository extends JpaRepository<Startup, UUID> {
      * @return Optional containing the startup if found
      */
     Optional<Startup> findByIdAndOwner(UUID id, User owner);
+
+    /**
+     * Count startups by status.
+     */
+    long countByStatus(StartupStatus status);
+
+    /**
+     * Get total funding raised by all startups.
+     */
+    @org.springframework.data.jpa.repository.Query("SELECT COALESCE(SUM(s.raisedAmount), 0) FROM Startup s WHERE s.status = 'APPROVED'")
+    java.math.BigDecimal getTotalFundingRaised();
 }

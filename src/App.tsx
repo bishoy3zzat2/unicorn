@@ -8,6 +8,7 @@ import { UserManagement } from './pages/UserManagement'
 import { Financials } from './pages/Financials'
 import { Settings } from './pages/Settings'
 import { Security } from './pages/Security'
+import { InvestorVerificationPage } from './pages/InvestorVerification'
 import Login from './pages/Login'
 import { ProtectedRoute } from './components/ProtectedRoute'
 
@@ -32,8 +33,9 @@ function App() {
                         <Route element={<ProtectedRoute />}>
                             <Route element={<Layout />}>
                                 <Route path="/" element={<Overview />} />
-                                <Route path="/requests" element={<StartupRequests />} />
+                                <Route path="/startups" element={<StartupRequests />} />
                                 <Route path="/users" element={<UserManagement />} />
+                                <Route path="/verification" element={<InvestorVerificationPage />} />
                                 <Route path="/financials" element={<Financials />} />
                                 <Route path="/security" element={<Security />} />
                                 <Route path="/settings" element={<Settings />} />

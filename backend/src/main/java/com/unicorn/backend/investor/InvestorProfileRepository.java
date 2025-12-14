@@ -28,4 +28,19 @@ public interface InvestorProfileRepository extends JpaRepository<InvestorProfile
      * @return true if profile exists, false otherwise
      */
     boolean existsByUser(User user);
+
+    /**
+     * Count investors with isVerified = false.
+     */
+    long countByIsVerifiedFalse();
+
+    /**
+     * Find investors who requested verification but are not yet verified.
+     */
+    java.util.List<InvestorProfile> findByVerificationRequestedTrueAndIsVerifiedFalseOrderByVerificationRequestedAtAsc();
+
+    /**
+     * Find all verified investors.
+     */
+    java.util.List<InvestorProfile> findByIsVerifiedTrue();
 }

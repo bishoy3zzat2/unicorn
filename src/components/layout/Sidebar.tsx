@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
-import { LayoutDashboard, Users, Briefcase, DollarSign, Settings, Menu, X, LogOut, Shield } from 'lucide-react'
+import { LayoutDashboard, Users, DollarSign, Settings, Menu, X, LogOut, Shield, Rocket, UserCheck } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
@@ -7,7 +7,8 @@ import { useAuth } from '../../contexts/AuthContext'
 const menuItems = [
     { name: 'Dashboard', path: '/', icon: LayoutDashboard },
     { name: 'User Management', path: '/users', icon: Users },
-    { name: 'Startup Requests', path: '/requests', icon: Briefcase },
+    { name: 'Startups', path: '/startups', icon: Rocket },
+    { name: 'Investor Verification', path: '/verification', icon: UserCheck },
     { name: 'Financials', path: '/financials', icon: DollarSign },
     { name: 'Security', path: '/security', icon: Shield },
     { name: 'Settings', path: '/settings', icon: Settings },
