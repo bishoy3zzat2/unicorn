@@ -15,4 +15,8 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     @org.springframework.data.jpa.repository.Query("SELECT u FROM User u WHERE lower(u.email) LIKE lower(concat('%', :query, '%'))")
     org.springframework.data.domain.Page<User> searchUsers(String query,
             org.springframework.data.domain.Pageable pageable);
+
+    long countByStatus(String status);
+
+    long countByRole(String role);
 }

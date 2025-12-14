@@ -165,7 +165,7 @@ public class UserDetailResponse {
         // Add subscription info
         if (currentSubscription != null) {
             builder.currentSubscription(SubscriptionInfo.builder()
-                    .plan(currentSubscription.getPlan().name())
+                    .plan(currentSubscription.getPlanType().name())
                     .status(currentSubscription.getStatus().name())
                     .amount(currentSubscription.getAmount())
                     .startDate(currentSubscription.getStartDate())

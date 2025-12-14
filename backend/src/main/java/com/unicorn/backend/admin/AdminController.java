@@ -47,6 +47,29 @@ public class AdminController {
     }
 
     /**
+     * Get user statistics for admin dashboard.
+     * 
+     * GET /api/v1/admin/users/stats
+     */
+    @GetMapping("/users/stats")
+    public ResponseEntity<java.util.Map<String, Object>> getUserStats() {
+        java.util.Map<String, Object> stats = new java.util.HashMap<>();
+
+        long total = userRepository.count();
+        long active = userRepository.countByStatus("ACTIVE");
+        // Note: These would need proper counting - for now using simplified counts
+        long investors = userRepository.countByRole("INVESTOR");
+        long startups = userRepository.countByRole("STARTUP_OWNER");
+
+        stats.put("total", total);
+        stats.put("investors", investors);
+        stats.put("startups", startups);
+        stats.put("active", active);
+
+        return ResponseEntity.ok(stats);
+    }
+
+    /**
      * Get all startups by status (for admin review).
      *
      * @param status the status to filter by
