@@ -20,30 +20,9 @@ public record UserResponse(
                 String displayName,
                 String phoneNumber,
                 String country,
+                String avatarUrl,
                 String suspendReason,
                 boolean hasInvestorProfile,
-                boolean hasStartups) {
-
-        public static UserResponse fromEntity(User user) {
-                return new UserResponse(
-                                user.getId(),
-                                user.getEmail(),
-                                user.getRole(),
-                                user.getStatus(),
-                                user.getAuthProvider(),
-                                user.getCreatedAt(),
-                                user.getLastLoginAt(),
-                                user.getSuspendedAt(),
-                                user.getSuspendedUntil(),
-                                user.getSuspensionType(),
-                                user.getUsername(),
-                                user.getFirstName(),
-                                user.getLastName(),
-                                user.getDisplayName(),
-                                user.getPhoneNumber(),
-                                user.getCountry(),
-                                user.getSuspendReason(),
-                                user.getInvestorProfile() != null,
-                                user.getStartups() != null && !user.getStartups().isEmpty());
-        }
+                boolean hasStartups,
+                boolean hasActiveSession) {
 }

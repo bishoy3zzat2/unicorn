@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table'
 import { Startup } from '../../types'
 import { formatDate } from '../../lib/utils'
-import { StartupReviewModal } from '../admin/StartupReviewModal'
+import { StartupDetailsModal } from '../admin/StartupDetailsModal'
 import { useAuth } from '../../contexts/AuthContext'
 import { toast } from 'sonner'
 
@@ -14,10 +14,10 @@ export function StartupsTable() {
     const [isModalOpen, setIsModalOpen] = useState(false)
     const { token } = useAuth()
 
-    const fetchPendingStartups = async () => {
+    const fetchAllStartups = async () => {
         setLoading(true)
         try {
-            const response = await fetch('/api/v1/admin/startups?status=PENDING', {
+            const response = await fetch('/api/v1/admin/startups/all?page=0&size=100', {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                 },
@@ -28,7 +28,7 @@ export function StartupsTable() {
             }
 
             const data = await response.json()
-            setStartups(data)
+            setStartups(data.content || data)
         } catch (error: any) {
             toast.error(error.message || 'Failed to load startups')
         } finally {
@@ -37,7 +37,7 @@ export function StartupsTable() {
     }
 
     useEffect(() => {
-        fetchPendingStartups()
+        fetchAllStartups()
     }, [])
 
     const handleRowClick = (startup: Startup) => {
@@ -50,9 +50,9 @@ export function StartupsTable() {
         setSelectedStartup(null)
     }
 
-    const handleStatusUpdated = () => {
-        // Refresh the list after approve/reject
-        fetchPendingStartups()
+    const handleActionComplete = () => {
+        // Refresh the list after moderation action
+        fetchAllStartups()
     }
 
     const getStatusBadgeClass = (status: string) => {
@@ -82,7 +82,7 @@ export function StartupsTable() {
                 <CardContent className="flex items-center justify-center py-16">
                     <div className="text-center">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-                        <p className="text-muted-foreground">Loading pending startups...</p>
+                        <p className="text-muted-foreground">Loading startups...</p>
                     </div>
                 </CardContent>
             </Card>
@@ -93,15 +93,15 @@ export function StartupsTable() {
         <>
             <Card>
                 <CardHeader>
-                    <CardTitle>Pending Startup Requests</CardTitle>
+                    <CardTitle>All Startups</CardTitle>
                     <CardDescription>
-                        {startups.length} startup{startups.length !== 1 ? 's' : ''} awaiting approval
+                        {startups.length} startup{startups.length !== 1 ? 's' : ''} registered
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     {startups.length === 0 ? (
                         <div className="text-center py-8 text-muted-foreground">
-                            No pending startup requests
+                            No startups found
                         </div>
                     ) : (
                         <Table>
@@ -142,12 +142,12 @@ export function StartupsTable() {
                 </CardContent>
             </Card>
 
-            {/* Review Modal */}
-            <StartupReviewModal
+            {/* Details Modal */}
+            <StartupDetailsModal
                 startup={selectedStartup}
                 isOpen={isModalOpen}
                 onClose={handleModalClose}
-                onStatusUpdated={handleStatusUpdated}
+                onActionComplete={handleActionComplete}
             />
         </>
     )

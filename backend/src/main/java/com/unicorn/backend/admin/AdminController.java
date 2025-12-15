@@ -4,6 +4,7 @@ import com.unicorn.backend.startup.*;
 import com.unicorn.backend.user.User;
 import com.unicorn.backend.user.UserRepository;
 import com.unicorn.backend.user.UserResponse;
+import com.unicorn.backend.user.UserResponseService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -25,14 +26,17 @@ public class AdminController {
     private final StartupService startupService;
     private final com.unicorn.backend.security.RefreshTokenRepository refreshTokenRepository;
     private final StartupRepository startupRepository;
+    private final UserResponseService userResponseService;
 
     public AdminController(UserRepository userRepository, StartupService startupService,
             com.unicorn.backend.security.RefreshTokenRepository refreshTokenRepository,
-            StartupRepository startupRepository) {
+            StartupRepository startupRepository,
+            UserResponseService userResponseService) {
         this.userRepository = userRepository;
         this.startupService = startupService;
         this.refreshTokenRepository = refreshTokenRepository;
         this.startupRepository = startupRepository;
+        this.userResponseService = userResponseService;
     }
 
     /**
@@ -140,7 +144,7 @@ public class AdminController {
                 usersPage = userRepository.findAll(pageable);
             }
 
-            Page<UserResponse> responsePage = usersPage.map(UserResponse::fromEntity);
+            Page<UserResponse> responsePage = usersPage.map(userResponseService::fromEntity);
 
             return ResponseEntity.ok(responsePage);
         } catch (Exception e) {
@@ -219,21 +223,19 @@ public class AdminController {
     }
 
     /**
-     * Update startup status (approve or reject).
+     * Delete a startup (Admin only).
+     * Performs cascading delete from database.
      *
-     * @param id      the startup ID
-     * @param request the status update request
-     * @return the updated startup
+     * @param id the startup ID
+     * @return ResponseEntity with 204 No Content
      */
-    @PutMapping("/startups/{id}/status")
-    public ResponseEntity<StartupResponse> updateStartupStatus(
-            @PathVariable UUID id,
-            @RequestBody UpdateStartupStatusRequest request) {
-        StartupResponse updated = startupService.updateStartupStatus(id, request.getStatus());
-        // Note: rejectionReason is in the request but not currently stored in the
-        // entity
-        // Future enhancement: add rejectionReason field to Startup entity
-        return ResponseEntity.ok(updated);
+    @DeleteMapping("/startups/{id}")
+    public ResponseEntity<Void> deleteStartup(@PathVariable UUID id) {
+        Startup startup = startupRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Startup not found: " + id));
+
+        startupRepository.delete(startup);
+        return ResponseEntity.noContent().build();
     }
 
     /**

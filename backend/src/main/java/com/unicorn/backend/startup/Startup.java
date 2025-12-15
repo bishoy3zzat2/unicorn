@@ -66,7 +66,7 @@ public class Startup {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     @Builder.Default
-    private StartupStatus status = StartupStatus.PENDING;
+    private StartupStatus status = StartupStatus.APPROVED;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id", nullable = false)

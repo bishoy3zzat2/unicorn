@@ -41,7 +41,7 @@ public class StartupService {
                 .logoUrl(request.logoUrl())
                 .pitchDeckUrl(request.pitchDeckUrl())
                 .financialDocumentsUrl(request.financialDocumentsUrl())
-                .status(StartupStatus.PENDING)
+                // Status defaults to APPROVED via @Builder.Default
                 .owner(owner)
                 .build();
 

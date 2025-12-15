@@ -33,6 +33,7 @@ D:\Unicorn project\backend\src\main\java\com\unicorn\backend\admin\WarnUserReque
 D:\Unicorn project\backend\src\main\java\com\unicorn\backend\startup\CreateStartupRequest.java
 D:\Unicorn project\backend\src\main\java\com\unicorn\backend\admin\SuspendUserRequest.java
 D:\Unicorn project\backend\src\main\java\com\unicorn\backend\investor\InvestorProfileRepository.java
+D:\Unicorn project\backend\src\main\java\com\unicorn\backend\user\AvatarService.java
 D:\Unicorn project\backend\src\main\java\com\unicorn\backend\subscription\SubscriptionPlan.java
 D:\Unicorn project\backend\src\main\java\com\unicorn\backend\auth\RegisterRequest.java
 D:\Unicorn project\backend\src\main\java\com\unicorn\backend\appconfig\AppConfig.java
@@ -60,6 +61,7 @@ D:\Unicorn project\backend\src\main\java\com\unicorn\backend\admin\UserFilterReq
 D:\Unicorn project\backend\src\main\java\com\unicorn\backend\appconfig\ConfigCreateRequest.java
 D:\Unicorn project\backend\src\main\java\com\unicorn\backend\admin\AdminController.java
 D:\Unicorn project\backend\src\main\java\com\unicorn\backend\admin\InvestorVerificationController.java
+D:\Unicorn project\backend\src\main\java\com\unicorn\backend\user\UserResponseService.java
 D:\Unicorn project\backend\src\main\java\com\unicorn\backend\admin\TransferOwnershipRequest.java
 D:\Unicorn project\backend\src\main\java\com\unicorn\backend\startup\UpdateStartupRequest.java
 D:\Unicorn project\backend\src\main\java\com\unicorn\backend\user\UserRepository.java

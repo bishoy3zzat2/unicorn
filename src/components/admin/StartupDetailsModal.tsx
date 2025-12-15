@@ -1,96 +1,58 @@
 import { useState } from 'react';
 import { Startup, StartupStatus } from '../../types';
 import { Button } from '../ui/button';
-import { ExternalLink, CheckCircle, XCircle, DollarSign } from 'lucide-react';
+import { ExternalLink, Trash2, DollarSign } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../../contexts/AuthContext';
 
-interface StartupReviewModalProps {
+interface StartupDetailsModalProps {
     startup: Startup | null;
     isOpen: boolean;
     onClose: () => void;
-    onStatusUpdated: () => void;
+    onActionComplete: () => void;
 }
 
-export function StartupReviewModal({ startup, isOpen, onClose, onStatusUpdated }: StartupReviewModalProps) {
-    const [isApproving, setIsApproving] = useState(false);
-    const [isRejecting, setIsRejecting] = useState(false);
-    const [showRejectInput, setShowRejectInput] = useState(false);
-    const [rejectionReason, setRejectionReason] = useState('');
+export function StartupDetailsModal({ startup, isOpen, onClose, onActionComplete }: StartupDetailsModalProps) {
+    const [isDeleting, setIsDeleting] = useState(false);
     const { token } = useAuth();
 
     if (!isOpen || !startup) return null;
 
-    const handleApprove = async () => {
-        setIsApproving(true);
-        try {
-            const response = await fetch(`/api/v1/admin/startups/${startup.id}/status`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
-                },
-                body: JSON.stringify({ status: 'APPROVED' }),
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to approve startup');
-            }
-
-            toast.success('Startup approved successfully!');
-            onStatusUpdated();
-            onClose();
-        } catch (error: any) {
-            toast.error(error.message || 'Failed to approve startup');
-        } finally {
-            setIsApproving(false);
-        }
-    };
-
-    const handleReject = async () => {
-        if (!rejectionReason.trim()) {
-            toast.error('Please provide a rejection reason');
+    const handleDelete = async () => {
+        if (!confirm(`Are you sure you want to permanently delete "${startup.name}"? This action cannot be undone and will remove all related data.`)) {
             return;
         }
 
-        setIsRejecting(true);
+        setIsDeleting(true);
         try {
-            const response = await fetch(`/api/v1/admin/startups/${startup.id}/status`, {
-                method: 'PUT',
+            const response = await fetch(`/api/v1/admin/startups/${startup.id}`, {
+                method: 'DELETE',
                 headers: {
-                    'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`,
                 },
-                body: JSON.stringify({
-                    status: 'REJECTED',
-                    rejectionReason: rejectionReason.trim(),
-                }),
             });
 
             if (!response.ok) {
-                throw new Error('Failed to reject startup');
+                throw new Error('Failed to delete startup');
             }
 
-            toast.success('Startup rejected');
-            onStatusUpdated();
+            toast.success('Startup deleted permanently');
+            onActionComplete();
             onClose();
-            setRejectionReason('');
-            setShowRejectInput(false);
         } catch (error: any) {
-            toast.error(error.message || 'Failed to reject startup');
+            toast.error(error.message || 'Failed to delete startup');
         } finally {
-            setIsRejecting(false);
+            setIsDeleting(false);
         }
     };
 
     const getStatusBadgeClass = (status: StartupStatus) => {
         switch (status) {
             case 'APPROVED':
+            case 'ACTIVE':
                 return 'bg-green-950/50 text-green-400 border-green-900';
-            case 'PENDING':
-                return 'bg-yellow-950/50 text-yellow-400 border-yellow-900';
-            case 'REJECTED':
-                return 'bg-red-950/50 text-red-400 border-red-900';
+            default:
+                return 'bg-slate-800 text-slate-400 border-slate-700';
         }
     };
 
@@ -191,7 +153,7 @@ export function StartupReviewModal({ startup, isOpen, onClose, onStatusUpdated }
                             </div>
                         )}
                         <div>
-                            <p className="text-sm text-slate-400">Submitted</p>
+                            <p className="text-sm text-slate-400">Created</p>
                             <p className="font-medium">{new Date(startup.createdAt).toLocaleDateString()}</p>
                         </div>
                     </div>
@@ -239,71 +201,22 @@ export function StartupReviewModal({ startup, isOpen, onClose, onStatusUpdated }
                             </Button>
                         </div>
                     )}
-
-                    {/* Rejection Input */}
-                    {showRejectInput && (
-                        <div className="bg-red-950/20 border border-red-900 rounded-lg p-4">
-                            <label className="block text-sm font-medium mb-2">
-                                Rejection Reason <span className="text-red-500">*</span>
-                            </label>
-                            <textarea
-                                value={rejectionReason}
-                                onChange={(e) => setRejectionReason(e.target.value)}
-                                placeholder="Explain why this startup is being rejected..."
-                                rows={3}
-                                className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"
-                            />
-                        </div>
-                    )}
                 </div>
 
                 {/* Actions Footer */}
                 <div className="sticky bottom-0 bg-slate-900 border-t border-slate-800 p-6">
-                    {startup.status === 'PENDING' && (
-                        <div className="flex gap-3">
-                            {!showRejectInput ? (
-                                <>
-                                    <Button
-                                        onClick={handleApprove}
-                                        disabled={isApproving}
-                                        className="flex-1 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400"
-                                    >
-                                        <CheckCircle className="h-4 w-4 mr-2" />
-                                        {isApproving ? 'Approving...' : 'Approve'}
-                                    </Button>
-                                    <Button
-                                        onClick={() => setShowRejectInput(true)}
-                                        variant="destructive"
-                                        className="flex-1"
-                                    >
-                                        <XCircle className="h-4 w-4 mr-2" />
-                                        Reject
-                                    </Button>
-                                </>
-                            ) : (
-                                <>
-                                    <Button
-                                        onClick={() => {
-                                            setShowRejectInput(false);
-                                            setRejectionReason('');
-                                        }}
-                                        variant="outline"
-                                        className="flex-1"
-                                    >
-                                        Cancel
-                                    </Button>
-                                    <Button
-                                        onClick={handleReject}
-                                        disabled={isRejecting || !rejectionReason.trim()}
-                                        variant="destructive"
-                                        className="flex-1"
-                                    >
-                                        {isRejecting ? 'Rejecting...' : 'Confirm Rejection'}
-                                    </Button>
-                                </>
-                            )}
-                        </div>
-                    )}
+                    <Button
+                        onClick={handleDelete}
+                        disabled={isDeleting}
+                        variant="destructive"
+                        className="w-full"
+                    >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        {isDeleting ? 'Deleting...' : 'Delete Startup Permanently'}
+                    </Button>
+                    <p className="text-xs text-slate-400 text-center mt-2">
+                        This will permanently remove the startup and all related data
+                    </p>
                 </div>
             </div>
         </>

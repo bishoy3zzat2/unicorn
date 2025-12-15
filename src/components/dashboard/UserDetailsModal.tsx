@@ -27,7 +27,6 @@ interface UserDetailsModalProps {
 
 interface UserDetails {
     id: string
-    id: string
     email: string
     username?: string
     firstName?: string
@@ -35,6 +34,7 @@ interface UserDetails {
     displayName?: string
     phoneNumber?: string
     country?: string
+    avatarUrl?: string
     role: string
     status: string
     authProvider: string
@@ -52,6 +52,7 @@ interface UserDetails {
     startupCount: number
     hasInvestorProfile: boolean
     isInvestorVerified: boolean
+    hasActiveSession?: boolean
     currentSubscription?: {
         plan: string
         status: string
@@ -179,23 +180,31 @@ export function UserDetailsModal({ userId, open, onOpenChange, onAction }: UserD
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
                 <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2">
-                        <User className="h-5 w-5" />
-                        User Details
-                    </DialogTitle>
+                    <DialogTitle>User Details</DialogTitle>
                 </DialogHeader>
 
                 {loading ? (
                     <div className="flex items-center justify-center py-12">
                         <Loader2 className="h-8 w-8 animate-spin text-primary" />
                     </div>
-                ) : userDetails ? (
+                ) : !userDetails ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                        User not found
+                    </div>
+                ) : (
                     <div className="flex flex-col flex-1 overflow-hidden">
                         {/* Header with basic info */}
                         <div className="flex items-start justify-between p-4 bg-muted/30 rounded-lg mb-4">
                             <div className="flex items-center gap-4">
-                                <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
-                                    <User className="h-8 w-8 text-primary" />
+                                {/* Avatar with status indicator */}
+                                <div className="relative">
+                                    <img
+                                        src={userDetails.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${userDetails.email}`}
+                                        alt={userDetails.displayName || userDetails.email}
+                                        className="h-16 w-16 rounded-full border-2 border-primary/20"
+                                    />
+                                    <div className={`absolute -bottom-0.5 -right-0.5 h-5 w-5 rounded-full border-2 border-background ${userDetails.hasActiveSession ? 'bg-green-500' : 'bg-gray-500'
+                                        }`} />
                                 </div>
                                 <div>
                                     <h3 className="text-lg font-bold">
@@ -439,10 +448,6 @@ export function UserDetailsModal({ userId, open, onOpenChange, onAction }: UserD
                                 <SecurityTab userId={userId} />
                             )}
                         </div>
-                    </div>
-                ) : (
-                    <div className="text-center py-8 text-muted-foreground">
-                        Failed to load user details
                     </div>
                 )}
             </DialogContent>

@@ -6,8 +6,8 @@
 // Startup development stages
 export type StartupStage = 'IDEA' | 'MVP' | 'GROWTH' | 'SCALING';
 
-// Startup approval status
-export type StartupStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+// Startup status
+export type StartupStatus = 'ACTIVE' | 'APPROVED';
 
 // Startup interface (matches backend StartupResponse DTO)
 export interface Startup {

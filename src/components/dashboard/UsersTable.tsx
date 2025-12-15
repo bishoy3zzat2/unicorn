@@ -38,22 +38,22 @@ import { RadioGroup, RadioGroupItem } from '../../components/ui/radio-group'
 interface UserData {
     id: string
     email: string
+    username: string
+    firstName: string | null
+    lastName: string | null
+    displayName: string | null
     role: string
     status: string
-    authProvider?: string
+    authProvider: string
+    phoneNumber: string | null
+    country: string | null
+    avatarUrl: string | null
     createdAt: string
     lastLoginAt?: string | null
     suspendedAt?: string | null
     suspendedUntil?: string | null
     suspensionType?: string | null
-    // New fields
-    username?: string
-    firstName?: string
-    lastName?: string
-    displayName?: string
-    phoneNumber?: string
-    country?: string
-    suspendReason?: string
+    suspendReason?: string | null
     hasInvestorProfile?: boolean
     hasStartups?: boolean
 }

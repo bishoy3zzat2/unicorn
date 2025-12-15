@@ -4,6 +4,7 @@ import com.unicorn.backend.jwt.JwtService;
 import com.unicorn.backend.jwt.TokenBlacklistService;
 import com.unicorn.backend.security.RefreshToken;
 import com.unicorn.backend.security.RefreshTokenService;
+import com.unicorn.backend.user.AvatarService;
 import com.unicorn.backend.user.User;
 import com.unicorn.backend.user.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
@@ -21,15 +22,18 @@ public class AuthenticationService {
         private final JwtService jwtService;
         private final RefreshTokenService refreshTokenService;
         private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+        private final AvatarService avatarService;
 
         public AuthenticationService(AuthenticationManager authenticationManager, UserRepository userRepository,
                         JwtService jwtService, RefreshTokenService refreshTokenService,
-                        org.springframework.security.crypto.password.PasswordEncoder passwordEncoder) {
+                        org.springframework.security.crypto.password.PasswordEncoder passwordEncoder,
+                        AvatarService avatarService) {
                 this.authenticationManager = authenticationManager;
                 this.userRepository = userRepository;
                 this.jwtService = jwtService;
                 this.refreshTokenService = refreshTokenService;
                 this.passwordEncoder = passwordEncoder;
+                this.avatarService = avatarService;
         }
 
         public LoginResponse register(RegisterRequest request, HttpServletRequest httpRequest) {
@@ -98,7 +102,11 @@ public class AuthenticationService {
                 }
                 user.setUsername(finalUsername);
 
-                userRepository.save(user);
+                User savedUser = userRepository.save(user);
+
+                // Set default avatar
+                savedUser.setAvatarUrl(avatarService.getRandomAvatar(savedUser.getId()));
+                savedUser = userRepository.save(savedUser);
 
                 // Auto-login after register
                 String jwtToken = jwtService.generateAccessToken(user);

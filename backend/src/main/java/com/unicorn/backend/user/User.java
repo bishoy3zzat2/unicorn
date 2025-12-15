@@ -48,10 +48,13 @@ public class User implements UserDetails {
     @Column(name = "last_name", length = 50)
     private String lastName;
 
-    @Column(length = 50)
+    @Column(unique = true, length = 30)
     private String username;
 
-    @Column
+    @Column(name = "avatar_url", length = 500)
+    private String avatarUrl;
+
+    @Column(nullable = false)
     private String passwordHash;
 
     public void setPasswordHash(String passwordHash) {

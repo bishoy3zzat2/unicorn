@@ -120,11 +120,10 @@ export function StartupRequests() {
     function getStatusBadge(status: string) {
         const styles: Record<string, string> = {
             APPROVED: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-            PENDING: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
-            REJECTED: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+            ACTIVE: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
         }
         return (
-            <span className={`px-2 py-1 rounded-full text-xs font-medium ${styles[status] || styles.PENDING}`}>
+            <span className={`px-2 py-1 rounded-full text-xs font-medium ${styles[status] || 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400'}`}>
                 {status}
             </span>
         )

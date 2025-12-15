@@ -39,6 +39,7 @@ com\unicorn\backend\admin\UserSpecification.class
 com\unicorn\backend\security\RefreshTokenService.class
 com\unicorn\backend\auth\RegisterRequest.class
 com\unicorn\backend\jwt\JwtService.class
+com\unicorn\backend\user\AvatarService.class
 com\unicorn\backend\admin\SuspendUserRequest.class
 com\unicorn\backend\exception\TokenRefreshException.class
 com\unicorn\backend\admin\SessionResponse.class
