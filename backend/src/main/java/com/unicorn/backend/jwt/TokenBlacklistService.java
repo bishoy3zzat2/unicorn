@@ -72,4 +72,8 @@ public class TokenBlacklistService {
             return false;
         }
     }
+
+    public long getBlacklistedTokenCount() {
+        return tokenBlacklist.size();
+    }
 }

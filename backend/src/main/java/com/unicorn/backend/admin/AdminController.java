@@ -13,6 +13,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 
+import com.unicorn.backend.jwt.TokenBlacklistService;
+
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -30,13 +32,15 @@ public class AdminController {
 
     private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
     private final com.unicorn.backend.user.AvatarService avatarService;
+    private final TokenBlacklistService tokenBlacklistService;
 
     public AdminController(UserRepository userRepository, StartupService startupService,
             com.unicorn.backend.security.RefreshTokenRepository refreshTokenRepository,
             StartupRepository startupRepository,
             UserResponseService userResponseService,
             org.springframework.security.crypto.password.PasswordEncoder passwordEncoder,
-            com.unicorn.backend.user.AvatarService avatarService) {
+            com.unicorn.backend.user.AvatarService avatarService,
+            TokenBlacklistService tokenBlacklistService) {
         this.userRepository = userRepository;
         this.startupService = startupService;
         this.refreshTokenRepository = refreshTokenRepository;
@@ -44,6 +48,7 @@ public class AdminController {
         this.userResponseService = userResponseService;
         this.passwordEncoder = passwordEncoder;
         this.avatarService = avatarService;
+        this.tokenBlacklistService = tokenBlacklistService;
     }
 
     @PostMapping("/users")
@@ -376,6 +381,71 @@ public class AdminController {
         stats.put("active", active + activeAlt);
         stats.put("pending", pending);
         stats.put("rejected", rejected);
+
+        return ResponseEntity.ok(stats);
+    }
+
+    /**
+     * Get security statistics.
+     */
+    @GetMapping("/security/stats")
+    public ResponseEntity<SecurityStats> getSecurityStats() {
+        long totalTokens = refreshTokenRepository.count();
+        long activeSessions = refreshTokenRepository.countByExpiryDateAfter(java.time.Instant.now());
+        long expiredTokens = refreshTokenRepository.countByExpiryDateBefore(java.time.Instant.now());
+        long onlineUsers = refreshTokenRepository.countDistinctUserByExpiryDateAfter(java.time.Instant.now());
+
+        // Device Stats (Simple aggregation)
+        List<com.unicorn.backend.security.RefreshToken> activeList = refreshTokenRepository
+                .findAllByExpiryDateAfter(java.time.Instant.now());
+
+        java.util.Map<String, Long> deviceStats = new java.util.HashMap<>();
+        java.util.Map<String, Long> activityTrend = new java.util.HashMap<>();
+
+        java.time.ZoneId zoneId = java.time.ZoneId.systemDefault();
+
+        activeList.forEach(t -> {
+            // Device aggregation
+            String agent = t.getUserAgent();
+            String device = "Unknown";
+            if (agent != null) {
+                if (agent.contains("Chrome"))
+                    device = "Chrome";
+                else if (agent.contains("Firefox"))
+                    device = "Firefox";
+                else if (agent.contains("Safari") && !agent.contains("Chrome"))
+                    device = "Safari";
+                else if (agent.contains("Edge"))
+                    device = "Edge";
+                else if (agent.contains("Android"))
+                    device = "Android";
+                else if (agent.contains("iPhone") || agent.contains("iPad"))
+                    device = "iOS";
+                else
+                    device = "Other";
+            }
+            deviceStats.merge(device, 1L, Long::sum);
+
+            // Trend aggregation (Last 7 days)
+            java.time.LocalDate date = java.time.LocalDate.ofInstant(t.getCreatedAt(), zoneId);
+            if (date.isAfter(java.time.LocalDate.now().minusDays(8))) {
+                activityTrend.merge(date.toString(), 1L, Long::sum);
+            }
+        });
+
+        // Ensure at least empty entries for last 7 days exist for better charts
+        for (int i = 0; i < 7; i++) {
+            String d = java.time.LocalDate.now().minusDays(i).toString();
+            activityTrend.putIfAbsent(d, 0L);
+        }
+
+        SecurityStats stats = new SecurityStats(
+                totalTokens,
+                activeSessions,
+                expiredTokens,
+                onlineUsers,
+                deviceStats,
+                activityTrend);
 
         return ResponseEntity.ok(stats);
     }

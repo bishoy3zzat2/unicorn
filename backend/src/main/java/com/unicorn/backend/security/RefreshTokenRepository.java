@@ -22,6 +22,12 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long
     long countDistinctUserByExpiryDateAfter(
             @org.springframework.data.repository.query.Param("date") java.time.Instant date);
 
+    long countByExpiryDateAfter(java.time.Instant date);
+
+    long countByExpiryDateBefore(java.time.Instant date);
+
+    List<RefreshToken> findAllByExpiryDateAfter(java.time.Instant date);
+
     @Modifying
     void deleteByToken(String token);
 

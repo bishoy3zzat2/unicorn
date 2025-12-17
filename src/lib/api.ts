@@ -381,3 +381,21 @@ export async function syncExchangeRates(): Promise<Record<string, string>> {
     });
     return handleResponse<Record<string, string>>(response);
 }
+
+// ==================== Security API ====================
+
+export interface SecurityStats {
+    totalTokens: number;
+    activeSessions: number;
+    expiredTokens: number;
+    onlineUsers: number;
+    deviceStats: Record<string, number>;
+    activityTrend: Record<string, number>;
+}
+
+export async function fetchSecurityStats(): Promise<SecurityStats> {
+    const response = await fetch(`${API_BASE_URL}/admin/security/stats`, {
+        headers: createHeaders(),
+    });
+    return handleResponse<SecurityStats>(response);
+}

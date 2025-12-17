@@ -12,7 +12,7 @@ import {
     Loader2, User, Mail, Phone, MapPin, Calendar, Shield,
     Building2, TrendingUp, CreditCard, Clock, AlertTriangle,
     Ban, CheckCircle, XCircle, DollarSign, Briefcase,
-    Monitor, Globe, AlertCircle
+    Monitor, Globe, AlertCircle, Eye
 } from 'lucide-react'
 import { formatDate } from '../../lib/utils'
 import api from '../../lib/axios'
@@ -179,16 +179,32 @@ export function UserDetailsModal({ userId, open, onOpenChange, onAction }: UserD
     const getStatusBadge = (status: string) => {
         const styles: Record<string, string> = {
             ACTIVE: 'bg-green-500/10 text-green-500 border-green-500/30',
+            APPROVED: 'bg-green-500/10 text-green-500 border-green-500/30',
             SUSPENDED: 'bg-orange-500/10 text-orange-500 border-orange-500/30',
             BANNED: 'bg-red-500/10 text-red-500 border-red-500/30',
+            REJECTED: 'bg-red-500/10 text-red-500 border-red-500/30',
             DELETED: 'bg-gray-500/10 text-gray-500 border-gray-500/30',
             PENDING: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/30',
             PENDING_VERIFICATION: 'bg-blue-500/10 text-blue-500 border-blue-500/30',
         }
         return (
-            <span className={`px-3 py-1 rounded-full text-xs font-medium border flex items-center gap-1.5 ${styles[status] || styles.PENDING}`}>
-                <span className={`h-2 w-2 rounded-full ${status === 'ACTIVE' ? 'bg-green-500' : status === 'PENDING_VERIFICATION' ? 'bg-blue-500 animate-pulse' : 'bg-current'}`}></span>
-                {status.replace('_', ' ')}
+            <span className={`px-2 py-1 rounded-full text-xs font-semibold border ${styles[status] || styles.PENDING}`}>
+                {status}
+            </span>
+        )
+    }
+
+    const getRoleBadge = (role: string) => {
+        const styles: Record<string, string> = {
+            ADMIN: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/30',
+            INVESTOR: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30',
+            STARTUP_OWNER: 'bg-purple-500/10 text-purple-600 border-purple-500/30',
+            USER: 'bg-blue-500/10 text-blue-600 border-blue-500/30',
+            SUPER_ADMIN: 'bg-purple-600/10 text-purple-700 border-purple-600/30', // Special style for Super Admin
+        }
+        return (
+            <span className={`px-2 py-1 rounded-full text-xs font-medium border ${styles[role] || styles.USER}`}>
+                {role.replace('_', ' ')}
             </span>
         )
     }
@@ -250,7 +266,7 @@ export function UserDetailsModal({ userId, open, onOpenChange, onAction }: UserD
                                     </h3>
                                     <p className="text-sm text-muted-foreground">{userDetails.email}</p>
                                     <div className="flex items-center gap-2 mt-1">
-                                        <Badge variant="outline">{userDetails.role}</Badge>
+                                        {getRoleBadge(userDetails.role)}
                                         {getStatusBadge(userDetails.status)}
                                         {/* Plan for Non-Investors/Non-Admins, Verification for Investors */}
                                         {userDetails.role === 'INVESTOR' ? (
@@ -547,29 +563,57 @@ export function UserDetailsModal({ userId, open, onOpenChange, onAction }: UserD
                                     ) : (
                                         userDetails.startups && userDetails.startups.length > 0 ? (
                                             userDetails.startups.map(startup => (
-                                                <div key={startup.id} className="p-4 rounded-lg border bg-card">
+                                                <div
+                                                    key={startup.id}
+                                                    className="group relative p-4 rounded-xl border bg-card hover:shadow-md transition-all duration-200 hover:border-primary/20"
+                                                >
                                                     <div className="flex items-start justify-between">
-                                                        <div>
+                                                        <div className="space-y-1">
                                                             <h4
-                                                                className="font-semibold flex items-center gap-2 cursor-pointer hover:text-primary transition-colors hover:underline"
+                                                                className="font-bold text-base flex items-center gap-2 cursor-pointer group-hover:text-primary transition-colors"
                                                                 onClick={() => handleViewStartup(startup.id)}
                                                             >
-                                                                <Building2 className="h-4 w-4 text-purple-500" />
+                                                                <div className="h-8 w-8 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                                                                    <Building2 className="h-4 w-4 text-purple-600" />
+                                                                </div>
                                                                 {startup.name}
                                                             </h4>
-                                                            <p className="text-sm text-muted-foreground">{startup.industry}</p>
+                                                            <div className="flex items-center gap-2 text-sm text-muted-foreground pl-10">
+                                                                <Badge variant="secondary" className="text-xs font-normal">
+                                                                    {startup.industry || 'Unknown Industry'}
+                                                                </Badge>
+                                                                <span>•</span>
+                                                                <span>{startup.stage}</span>
+                                                            </div>
                                                         </div>
                                                         <div className="flex flex-col items-end gap-2">
-                                                            <Badge variant="outline">{startup.status}</Badge>
-                                                            <Button variant="ghost" size="sm" onClick={() => handleViewStartup(startup.id)} className="h-6 w-6 p-0">
-                                                                <Monitor className="h-4 w-4" />
+                                                            <div className="flex items-center gap-2">
+                                                                {getStatusBadge(startup.status || 'PENDING')}
+                                                            </div>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                onClick={() => handleViewStartup(startup.id)}
+                                                                className="h-8 w-8 p-0 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-full"
+                                                                title="View Details"
+                                                            >
+                                                                <Eye className="h-4 w-4" />
                                                             </Button>
                                                         </div>
                                                     </div>
-                                                    <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
-                                                        <span>Stage: {startup.stage}</span>
-                                                        <span>Raised: ${startup.raisedAmount?.toLocaleString() || 0}</span>
-                                                        {startup.createdAt && <span>Created: {formatDate(startup.createdAt)}</span>}
+                                                    <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground pl-10 border-t pt-3">
+                                                        <div className="flex items-center gap-4">
+                                                            <span className="flex items-center gap-1.5">
+                                                                <DollarSign className="h-3 w-3" />
+                                                                Raised: <span className="font-medium text-foreground">${startup.raisedAmount?.toLocaleString() || 0}</span>
+                                                            </span>
+                                                            {startup.createdAt && (
+                                                                <span className="flex items-center gap-1.5">
+                                                                    <Clock className="h-3 w-3" />
+                                                                    Created: {formatDate(startup.createdAt)}
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             ))

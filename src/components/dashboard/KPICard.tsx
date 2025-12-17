@@ -1,18 +1,21 @@
 import { Card, CardContent } from '../../components/ui/card'
-import { LucideIcon } from 'lucide-react'
+import { LucideIcon, Info } from 'lucide-react'
 import { cn } from '../../lib/utils'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../components/ui/tooltip'
 
 interface KPICardProps {
     title: string
     value: string
     icon: LucideIcon
-    trend?: number
+    trend?: number | string
     iconColor?: string
-    details?: React.ReactNode // Slot for extra details
+    details?: React.ReactNode
+    tooltip?: string
 }
 
-export function KPICard({ title, value, icon: Icon, trend, iconColor = "text-primary", details }: KPICardProps) {
-    const isPositive = trend ? trend > 0 : false
+export function KPICard({ title, value, icon: Icon, trend, iconColor = "text-primary", details, tooltip }: KPICardProps) {
+    const isNumberTrend = typeof trend === 'number';
+    const isPositive = isNumberTrend ? (trend as number) > 0 : false
 
     const getBackgroundClass = (colorClass: string) => {
         if (colorClass.includes('blue')) return 'bg-blue-500/10'
@@ -32,7 +35,21 @@ export function KPICard({ title, value, icon: Icon, trend, iconColor = "text-pri
             <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-4">
                     <div className="flex-1">
-                        <p className="text-sm font-medium text-muted-foreground mb-1">{title}</p>
+                        <div className="flex items-center gap-1.5 mb-1">
+                            <p className="text-sm font-medium text-muted-foreground">{title}</p>
+                            {tooltip && (
+                                <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger>
+                                            <Info className="h-3.5 w-3.5 text-muted-foreground/70 hover:text-primary cursor-help" />
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p className="max-w-[200px] text-xs">{tooltip}</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+                            )}
+                        </div>
                         <h3 className="text-3xl font-bold">{value}</h3>
                     </div>
                     <div className={cn(
@@ -49,15 +66,21 @@ export function KPICard({ title, value, icon: Icon, trend, iconColor = "text-pri
                     <div className="pt-2 border-t mt-2">
                         {trend !== undefined && (
                             <div className="flex items-center gap-1 mb-1">
-                                <span
-                                    className={cn(
-                                        "text-sm font-semibold",
-                                        isPositive ? "text-emerald-500" : "text-red-500"
-                                    )}
-                                >
-                                    {isPositive ? "↑" : "↓"} {Math.abs(trend)}%
-                                </span>
-                                <span className="text-xs text-muted-foreground">vs last month</span>
+                                {isNumberTrend ? (
+                                    <>
+                                        <span
+                                            className={cn(
+                                                "text-sm font-semibold",
+                                                isPositive ? "text-emerald-500" : "text-red-500"
+                                            )}
+                                        >
+                                            {isPositive ? "↑" : "↓"} {Math.abs(trend as number)}%
+                                        </span>
+                                        <span className="text-xs text-muted-foreground">vs last month</span>
+                                    </>
+                                ) : (
+                                    <span className="text-xs text-muted-foreground">{trend}</span>
+                                )}
                             </div>
                         )}
                         {details}
