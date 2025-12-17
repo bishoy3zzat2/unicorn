@@ -69,6 +69,7 @@ import { RadioGroup, RadioGroupItem } from "../components/ui/radio-group"
 
 import { StartupsFilters, StartupFilterState } from '../components/dashboard/StartupsFilters'
 import { CreateStartupDialog } from '../components/dashboard/CreateStartupDialog'
+import { StartupDetailsDialog } from '../components/dashboard/StartupDetailsDialog'
 import {
     fetchAllStartups,
     fetchStartupStats,
@@ -630,202 +631,16 @@ export function StartupRequests() {
             </Card>
 
             {/* View Startup Dialog */}
-            <Dialog open={viewDialog.open} onOpenChange={(open) => setViewDialog(prev => ({ ...prev, open }))}>
-                <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-0">
-                    <div className="relative h-48 w-full bg-muted">
-                        {viewDialog.startup?.coverUrl ? (
-                            <img
-                                src={viewDialog.startup.coverUrl}
-                                alt="Cover"
-                                className="w-full h-full object-cover"
-                            />
-                        ) : (
-                            <div className="w-full h-full bg-gradient-to-r from-primary/10 to-primary/5" />
-                        )}
-                        <div className="absolute -bottom-10 left-8">
-                            {viewDialog.startup?.logoUrl ? (
-                                <img
-                                    src={viewDialog.startup.logoUrl}
-                                    alt="Logo"
-                                    className="h-24 w-24 rounded-xl object-cover border-4 border-background shadow-lg bg-white"
-                                />
-                            ) : (
-                                <div className="h-24 w-24 rounded-xl bg-background border-4 border-background shadow-lg flex items-center justify-center">
-                                    <div className="h-full w-full bg-primary/10 rounded-lg flex items-center justify-center">
-                                        <Building2 className="h-10 w-10 text-primary" />
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
 
-                    <div className="px-8 pt-12 pb-8">
-                        <div className="flex justify-between items-start mb-6">
-                            <div>
-                                <DialogTitle className="text-2xl font-bold flex items-center gap-2">
-                                    {viewDialog.startup?.name}
-                                    {viewDialog.startup?.status && getStatusBadge(viewDialog.startup.status)}
-                                </DialogTitle>
-                                <DialogDescription className="text-base mt-1">
-                                    {viewDialog.startup?.tagline}
-                                </DialogDescription>
-                            </div>
-                            <div className="flex gap-2">
-                                <div className="flex items-center gap-1 mr-2 border-r pr-2">
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-100"
-                                        onClick={() => window.open(viewDialog.startup?.facebookUrl, '_blank')}
-                                        disabled={!viewDialog.startup?.facebookUrl}
-                                        title={viewDialog.startup?.facebookUrl ? "Facebook" : "Facebook (Not Provided)"}
-                                    >
-                                        <Facebook className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8 text-pink-600 hover:text-pink-700 hover:bg-pink-100"
-                                        onClick={() => window.open(viewDialog.startup?.instagramUrl, '_blank')}
-                                        disabled={!viewDialog.startup?.instagramUrl}
-                                        title={viewDialog.startup?.instagramUrl ? "Instagram" : "Instagram (Not Provided)"}
-                                    >
-                                        <Instagram className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8 text-sky-500 hover:text-sky-600 hover:bg-sky-100"
-                                        onClick={() => window.open(viewDialog.startup?.twitterUrl, '_blank')}
-                                        disabled={!viewDialog.startup?.twitterUrl}
-                                        title={viewDialog.startup?.twitterUrl ? "X (Twitter)" : "X (Twitter) (Not Provided)"}
-                                    >
-                                        <Twitter className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                                {viewDialog.startup?.websiteUrl && (
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => window.open(viewDialog.startup?.websiteUrl, '_blank')}
-                                    >
-                                        <Globe className="h-4 w-4 mr-2" />
-                                        Website
-                                    </Button>
-                                )}
-                                <Button
-                                    size="sm"
-                                    onClick={() => {
-                                        if (viewDialog.startup) {
-                                            setTransferDialog({ open: true, startup: viewDialog.startup });
-                                            setViewDialog(prev => ({ ...prev, open: false }));
-                                        }
-                                    }}
-                                >
-                                    <UserCog className="h-4 w-4 mr-2" />
-                                    Transfer
-                                </Button>
-                            </div>
-                        </div>
-
-                        {viewDialog.startup && (
-                            <div className="space-y-6">
-                                {/* Metrics Grid */}
-                                <div className="grid grid-cols-3 gap-4">
-                                    <div className="p-4 rounded-lg bg-muted/50 border">
-                                        <p className="text-xs font-medium text-muted-foreground uppercase">Funding Goal</p>
-                                        <p className="text-xl font-bold mt-1">{formatCurrency(viewDialog.startup.fundingGoal || 0)}</p>
-                                    </div>
-                                    <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-                                        <p className="text-xs font-medium text-emerald-600 uppercase">Raised</p>
-                                        <p className="text-xl font-bold text-emerald-700 mt-1">{formatCurrency(viewDialog.startup.raisedAmount)}</p>
-                                    </div>
-                                    <div className="p-4 rounded-lg bg-muted/50 border">
-                                        <p className="text-xs font-medium text-muted-foreground uppercase">Stage</p>
-                                        <div className="mt-1">{getStageBadge(viewDialog.startup.stage)}</div>
-                                    </div>
-                                </div>
-
-                                {/* Info Grid */}
-                                <div className="grid grid-cols-2 gap-x-8 gap-y-4 text-sm">
-                                    <div className="flex justify-between py-2 border-b">
-                                        <span className="text-muted-foreground">Industry</span>
-                                        <span className="font-medium">{viewDialog.startup.industry}</span>
-                                    </div>
-                                    <div className="flex justify-between py-2 border-b">
-                                        <div>
-                                            <p className="text-muted-foreground">Owner</p>
-                                            <div className="flex items-center gap-2 mt-1">
-                                                <p className="font-medium text-primary">{viewDialog.startup.ownerEmail}</p>
-                                                {viewDialog.startup.ownerRole && (
-                                                    <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
-                                                        {viewDialog.startup.ownerRole.replace(/_/g, " ")}
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="flex justify-between py-2 border-b">
-                                        <span className="text-muted-foreground">Created</span>
-                                        <span>{formatDate(viewDialog.startup.createdAt)}</span>
-                                    </div>
-                                </div>
-
-                                {/* Description */}
-                                <div>
-                                    <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
-                                        <FileText className="h-4 w-4" />
-                                        About Request
-                                    </h4>
-                                    <div className="p-4 rounded-lg bg-muted/30 text-sm leading-relaxed whitespace-pre-wrap">
-                                        {viewDialog.startup.fullDescription}
-                                    </div>
-                                </div>
-
-                                {/* Documents Grid */}
-                                <div className="grid grid-cols-2 gap-4 pt-2">
-                                    <Button
-                                        variant="secondary"
-                                        className="w-full justify-start"
-                                        onClick={() => window.open(viewDialog.startup?.pitchDeckUrl, '_blank')}
-                                        disabled={!viewDialog.startup?.pitchDeckUrl}
-                                    >
-                                        <FileText className="h-4 w-4 mr-2 text-blue-500" />
-                                        View Pitch Deck
-                                    </Button>
-                                    <Button
-                                        variant="secondary"
-                                        className="w-full justify-start"
-                                        onClick={() => window.open(viewDialog.startup?.financialDocumentsUrl, '_blank')}
-                                        disabled={!viewDialog.startup?.financialDocumentsUrl}
-                                    >
-                                        <FileSpreadsheet className="h-4 w-4 mr-2 text-emerald-500" />
-                                        Financial Documents
-                                    </Button>
-                                    <Button
-                                        variant="secondary"
-                                        className="w-full justify-start"
-                                        onClick={() => window.open(viewDialog.startup?.businessPlanUrl, '_blank')}
-                                        disabled={!viewDialog.startup?.businessPlanUrl}
-                                    >
-                                        <FileText className="h-4 w-4 mr-2 text-amber-500" />
-                                        Business Plan
-                                    </Button>
-                                    <Button
-                                        variant="secondary"
-                                        className="w-full justify-start"
-                                        onClick={() => window.open(viewDialog.startup?.businessModelUrl, '_blank')}
-                                        disabled={!viewDialog.startup?.businessModelUrl}
-                                    >
-                                        <FilePieChart className="h-4 w-4 mr-2 text-purple-500" />
-                                        Business Model
-                                    </Button>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </DialogContent>
-            </Dialog>
+            <StartupDetailsDialog
+                open={viewDialog.open}
+                onOpenChange={(open) => setViewDialog(prev => ({ ...prev, open }))}
+                startup={viewDialog.startup}
+                onTransfer={(startup) => {
+                    setTransferDialog({ open: true, startup });
+                    setViewDialog(prev => ({ ...prev, open: false }));
+                }}
+            />
 
             {/* Transfer Ownership Dialog */}
             <Dialog open={transferDialog.open} onOpenChange={(open: boolean) => {

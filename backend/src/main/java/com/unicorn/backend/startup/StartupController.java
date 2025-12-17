@@ -50,6 +50,18 @@ public class StartupController {
     }
 
     /**
+     * Get a startup by ID.
+     *
+     * @param id the startup ID
+     * @return the startup response
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<StartupResponse> getStartupById(@PathVariable UUID id) {
+        StartupResponse response = startupService.getStartupById(id);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
      * Update an existing startup.
      *
      * @param id      the startup ID

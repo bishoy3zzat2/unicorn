@@ -26,7 +26,7 @@ import {
 } from "../ui/select"
 import { createStartup, searchUsers } from "../../lib/api"
 import { StartupRole, StartupStage, User } from "../../types"
-import { User as UserIcon, Loader2 } from "lucide-react"
+import { User as UserIcon, Loader2, Upload, Building2, TrendingUp, DollarSign, Globe, FileText, Image, Briefcase, Link, Facebook, Instagram, Twitter, ShieldCheck } from "lucide-react"
 
 
 const INDUSTRY_OPTIONS = [
@@ -183,14 +183,20 @@ export function CreateStartupDialog({
                     {/* Basic Info */}
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label htmlFor="name">Name *</Label>
-                            <Input id="name" {...form.register("name")} />
+                            <Label htmlFor="name" className="flex items-center gap-2">
+                                <Building2 className="h-4 w-4 text-muted-foreground" />
+                                Startup Name *
+                            </Label>
+                            <Input id="name" {...form.register("name")} placeholder="Acme Inc." />
                             {form.formState.errors.name && (
                                 <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>
                             )}
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="industry">Industry *</Label>
+                            <Label htmlFor="industry" className="flex items-center gap-2">
+                                <Briefcase className="h-4 w-4 text-muted-foreground" />
+                                Industry *
+                            </Label>
                             <Select
                                 onValueChange={(value) => form.setValue("industry", value)}
                                 defaultValue={form.getValues("industry")}
@@ -213,23 +219,28 @@ export function CreateStartupDialog({
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="tagline">Tagline</Label>
-                        <Input id="tagline" {...form.register("tagline")} placeholder="Short catchy phrase" />
+                        <Label htmlFor="tagline" className="flex items-center gap-2">
+                            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                            Tagline
+                        </Label>
+                        <Input id="tagline" {...form.register("tagline")} placeholder="Innovating the future..." />
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="description">Full Description</Label>
-                        <Textarea id="description" {...form.register("fullDescription")} className="min-h-[100px]" />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="description">Full Description</Label>
-                        <Textarea id="description" {...form.register("fullDescription")} className="min-h-[100px]" />
+                        <Label htmlFor="description" className="flex items-center gap-2">
+                            <FileText className="h-4 w-4 text-muted-foreground" />
+                            Full Description
+                        </Label>
+                        <Textarea id="description" {...form.register("fullDescription")} className="min-h-[100px]" placeholder="Tell us about your unicorn..." />
                     </div>
 
                     {/* Owner & Role */}
                     <div className="grid grid-cols-2 gap-4 border p-4 rounded-lg bg-muted/20">
                         <div className="space-y-2 relative">
-                            <Label>Startup Owner (Optional)</Label>
+                            <Label className="flex items-center gap-2">
+                                <UserIcon className="h-4 w-4 text-muted-foreground" />
+                                Startup Owner (Optional)
+                            </Label>
                             {selectedOwner ? (
                                 <div className="flex items-center justify-between p-2 border rounded-md bg-background">
                                     <div className="flex items-center gap-2 overflow-hidden">
@@ -273,7 +284,10 @@ export function CreateStartupDialog({
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="role">Owner Role *</Label>
+                            <Label htmlFor="role" className="flex items-center gap-2">
+                                <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+                                Owner Role *
+                            </Label>
                             <Select
                                 onValueChange={(value) => form.setValue("ownerRole", value)}
                                 defaultValue={form.getValues("ownerRole")}
@@ -300,7 +314,10 @@ export function CreateStartupDialog({
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label htmlFor="stage">Stage *</Label>
+                            <Label htmlFor="stage" className="flex items-center gap-2">
+                                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                                Stage *
+                            </Label>
                             <Select
                                 onValueChange={(value) => form.setValue("stage", value)}
                                 defaultValue={form.getValues("stage")}
@@ -319,8 +336,11 @@ export function CreateStartupDialog({
                             </Select>
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="fundingGoal">Funding Goal ($) *</Label>
-                            <Input id="fundingGoal" type="number" {...form.register("fundingGoal")} />
+                            <Label htmlFor="fundingGoal" className="flex items-center gap-2">
+                                <DollarSign className="h-4 w-4 text-muted-foreground" />
+                                Funding Goal ($) *
+                            </Label>
+                            <Input id="fundingGoal" type="number" {...form.register("fundingGoal")} placeholder="1000000" />
                             {form.formState.errors.fundingGoal && (
                                 <p className="text-sm text-destructive">{form.formState.errors.fundingGoal.message}</p>
                             )}
@@ -329,61 +349,105 @@ export function CreateStartupDialog({
 
                     {/* Media & Links */}
                     <div className="space-y-4 pt-4 border-t">
-                        <h3 className="text-sm font-medium text-muted-foreground">Media & Links</h3>
+                        <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                            <Image className="h-4 w-4" /> Media & Links
+                        </h3>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label htmlFor="website">Website URL</Label>
-                                <Input id="website" {...form.register("websiteUrl")} />
+                                <Label htmlFor="website" className="flex items-center gap-2">
+                                    <Globe className="h-4 w-4 text-muted-foreground" /> Website URL
+                                </Label>
+                                <Input id="website" {...form.register("websiteUrl")} placeholder="https://Example.com" />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="logo">Logo URL</Label>
-                                <Input id="logo" {...form.register("logoUrl")} />
+                                <div className="flex gap-2">
+                                    <Input id="logo" {...form.register("logoUrl")} placeholder="https://..." />
+                                    <Button type="button" variant="outline" size="icon" title="Upload Logo (Coming Soon)">
+                                        <Upload className="h-4 w-4" />
+                                    </Button>
+                                </div>
                             </div>
                             <div className="space-y-2 col-span-2">
                                 <Label htmlFor="cover">Cover Image URL</Label>
-                                <Input id="cover" {...form.register("coverUrl")} />
+                                <div className="flex gap-2">
+                                    <Input id="cover" {...form.register("coverUrl")} placeholder="https://..." />
+                                    <Button type="button" variant="outline" size="icon" title="Upload Cover (Coming Soon)">
+                                        <Upload className="h-4 w-4" />
+                                    </Button>
+                                </div>
                             </div>
                         </div>
                     </div>
 
                     {/* Social Media */}
                     <div className="space-y-4 pt-4 border-t">
-                        <h3 className="text-sm font-medium text-muted-foreground">Social Media</h3>
+                        <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                            <Link className="h-4 w-4" /> Social Media
+                        </h3>
                         <div className="grid grid-cols-3 gap-4">
                             <div className="space-y-2">
-                                <Label htmlFor="facebook">Facebook URL</Label>
-                                <Input id="facebook" {...form.register("facebookUrl")} />
+                                <Label htmlFor="facebook" className="flex items-center gap-2">
+                                    <Facebook className="h-4 w-4 text-muted-foreground" /> Facebook
+                                </Label>
+                                <Input id="facebook" {...form.register("facebookUrl")} placeholder="https://facebook.com/..." />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="instagram">Instagram URL</Label>
-                                <Input id="instagram" {...form.register("instagramUrl")} />
+                                <Label htmlFor="instagram" className="flex items-center gap-2">
+                                    <Instagram className="h-4 w-4 text-muted-foreground" /> Instagram
+                                </Label>
+                                <Input id="instagram" {...form.register("instagramUrl")} placeholder="https://instagram.com/..." />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="twitter">X (Twitter) URL</Label>
-                                <Input id="twitter" {...form.register("twitterUrl")} />
+                                <Label htmlFor="twitter" className="flex items-center gap-2">
+                                    <Twitter className="h-4 w-4 text-muted-foreground" /> X (Twitter)
+                                </Label>
+                                <Input id="twitter" {...form.register("twitterUrl")} placeholder="https://x.com/..." />
                             </div>
                         </div>
                     </div>
 
                     {/* Documents */}
                     <div className="space-y-4 pt-4 border-t">
-                        <h3 className="text-sm font-medium text-muted-foreground">Documents</h3>
+                        <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                            <FileText className="h-4 w-4" /> Documents
+                        </h3>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="pitchDeck">Pitch Deck URL</Label>
-                                <Input id="pitchDeck" {...form.register("pitchDeckUrl")} />
+                                <div className="flex gap-2">
+                                    <Input id="pitchDeck" {...form.register("pitchDeckUrl")} placeholder="https://..." />
+                                    <Button type="button" variant="outline" size="icon" title="Upload Pitch Deck (Coming Soon)">
+                                        <Upload className="h-4 w-4" />
+                                    </Button>
+                                </div>
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="financials">Financial Documents URL</Label>
-                                <Input id="financials" {...form.register("financialDocumentsUrl")} />
+                                <div className="flex gap-2">
+                                    <Input id="financials" {...form.register("financialDocumentsUrl")} placeholder="https://..." />
+                                    <Button type="button" variant="outline" size="icon" title="Upload Financials (Coming Soon)">
+                                        <Upload className="h-4 w-4" />
+                                    </Button>
+                                </div>
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="businessPlan">Business Plan URL</Label>
-                                <Input id="businessPlan" {...form.register("businessPlanUrl")} />
+                                <div className="flex gap-2">
+                                    <Input id="businessPlan" {...form.register("businessPlanUrl")} placeholder="https://..." />
+                                    <Button type="button" variant="outline" size="icon" title="Upload Business Plan (Coming Soon)">
+                                        <Upload className="h-4 w-4" />
+                                    </Button>
+                                </div>
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="businessModel">Business Model URL</Label>
-                                <Input id="businessModel" {...form.register("businessModelUrl")} />
+                                <div className="flex gap-2">
+                                    <Input id="businessModel" {...form.register("businessModelUrl")} placeholder="https://..." />
+                                    <Button type="button" variant="outline" size="icon" title="Upload Business Model (Coming Soon)">
+                                        <Upload className="h-4 w-4" />
+                                    </Button>
+                                </div>
                             </div>
                         </div>
                     </div>

@@ -18,6 +18,9 @@ import { formatDate } from '../../lib/utils'
 import api from '../../lib/axios'
 import { toast } from 'sonner'
 import { useAuth } from '../../contexts/AuthContext'
+import { getStartupById } from '../../lib/api'
+import { StartupDetailsDialog } from './StartupDetailsDialog'
+import { Startup } from '../../types'
 
 interface UserDetailsModalProps {
     userId: string | null
@@ -107,6 +110,8 @@ export function UserDetailsModal({ userId, open, onOpenChange, onAction }: UserD
     const [loading, setLoading] = useState(false)
     const [userDetails, setUserDetails] = useState<UserDetails | null>(null)
     const [activeTab, setActiveTab] = useState<'info' | 'startups' | 'transactions' | 'history' | 'security'>('info')
+    const [selectedStartup, setSelectedStartup] = useState<Startup | null>(null)
+    const [isStartupDetailsOpen, setIsStartupDetailsOpen] = useState(false)
 
     const { user: currentUser } = useAuth()
     const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN'
@@ -155,6 +160,17 @@ export function UserDetailsModal({ userId, open, onOpenChange, onAction }: UserD
         } catch (error) {
             console.error('Failed to unsuspend user:', error)
             toast.error('Failed to unsuspend user')
+        }
+    }
+
+    const handleViewStartup = async (startupId: string) => {
+        try {
+            const startup = await getStartupById(startupId)
+            setSelectedStartup(startup)
+            setIsStartupDetailsOpen(true)
+        } catch (error) {
+            console.error('Failed to fetch startup details:', error)
+            toast.error('Failed to load startup details')
         }
     }
 
@@ -534,13 +550,21 @@ export function UserDetailsModal({ userId, open, onOpenChange, onAction }: UserD
                                                 <div key={startup.id} className="p-4 rounded-lg border bg-card">
                                                     <div className="flex items-start justify-between">
                                                         <div>
-                                                            <h4 className="font-semibold flex items-center gap-2">
+                                                            <h4
+                                                                className="font-semibold flex items-center gap-2 cursor-pointer hover:text-primary transition-colors hover:underline"
+                                                                onClick={() => handleViewStartup(startup.id)}
+                                                            >
                                                                 <Building2 className="h-4 w-4 text-purple-500" />
                                                                 {startup.name}
                                                             </h4>
                                                             <p className="text-sm text-muted-foreground">{startup.industry}</p>
                                                         </div>
-                                                        <Badge variant="outline">{startup.status}</Badge>
+                                                        <div className="flex flex-col items-end gap-2">
+                                                            <Badge variant="outline">{startup.status}</Badge>
+                                                            <Button variant="ghost" size="sm" onClick={() => handleViewStartup(startup.id)} className="h-6 w-6 p-0">
+                                                                <Monitor className="h-4 w-4" />
+                                                            </Button>
+                                                        </div>
                                                     </div>
                                                     <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
                                                         <span>Stage: {startup.stage}</span>
@@ -635,6 +659,11 @@ export function UserDetailsModal({ userId, open, onOpenChange, onAction }: UserD
                     </div>
                 )}
             </DialogContent>
+            <StartupDetailsDialog
+                open={isStartupDetailsOpen}
+                onOpenChange={setIsStartupDetailsOpen}
+                startup={selectedStartup}
+            />
         </Dialog>
     )
 }

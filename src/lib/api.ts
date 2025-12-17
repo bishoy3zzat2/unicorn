@@ -340,6 +340,13 @@ export async function createStartup(data: Partial<Startup>): Promise<Startup> {
     return handleResponse<Startup>(response);
 }
 
+export async function getStartupById(id: string): Promise<Startup> {
+    const response = await fetch(`${API_BASE_URL}/startups/${id}`, {
+        headers: createHeaders(),
+    });
+    return handleResponse<Startup>(response);
+}
+
 // ==================== User API ====================
 
 // User interface imported from types
