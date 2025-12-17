@@ -331,6 +331,15 @@ export async function fetchStartupStats(): Promise<StartupStats> {
     return handleResponse<StartupStats>(response);
 }
 
+export async function createStartup(data: Partial<Startup>): Promise<Startup> {
+    const response = await fetch(`${API_BASE_URL}/startups`, {
+        method: 'POST',
+        headers: createHeaders(),
+        body: JSON.stringify(data),
+    });
+    return handleResponse<Startup>(response);
+}
+
 // ==================== User API ====================
 
 // User interface imported from types

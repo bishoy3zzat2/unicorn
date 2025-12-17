@@ -68,6 +68,7 @@ import { Label } from "../components/ui/label"
 import { RadioGroup, RadioGroupItem } from "../components/ui/radio-group"
 
 import { StartupsFilters, StartupFilterState } from '../components/dashboard/StartupsFilters'
+import { CreateStartupDialog } from '../components/dashboard/CreateStartupDialog'
 import {
     fetchAllStartups,
     fetchStartupStats,
@@ -113,6 +114,7 @@ export function StartupRequests() {
         open: false,
         startup: null
     })
+    const [createDialogOpen, setCreateDialogOpen] = useState(false)
 
     const [userSearchQuery, setUserSearchQuery] = useState('')
     const [searchResults, setSearchResults] = useState<User[]>([])
@@ -442,7 +444,8 @@ export function StartupRequests() {
                                     Export
                                 </Button>
                             </div>
-                            <Button size="sm" onClick={() => toast.info('Create Startup feature coming soon')} className="w-full sm:w-auto">
+
+                            <Button size="sm" onClick={() => setCreateDialogOpen(true)} className="w-full sm:w-auto">
                                 <UserPlus className="h-4 w-4 mr-2" />
                                 Create Startup
                             </Button>
@@ -750,8 +753,17 @@ export function StartupRequests() {
                                         <span className="font-medium">{viewDialog.startup.industry}</span>
                                     </div>
                                     <div className="flex justify-between py-2 border-b">
-                                        <span className="text-muted-foreground">Owner</span>
-                                        <span className="font-medium text-primary">{viewDialog.startup.ownerEmail}</span>
+                                        <div>
+                                            <p className="text-muted-foreground">Owner</p>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <p className="font-medium text-primary">{viewDialog.startup.ownerEmail}</p>
+                                                {viewDialog.startup.ownerRole && (
+                                                    <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
+                                                        {viewDialog.startup.ownerRole.replace(/_/g, " ")}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
                                     </div>
                                     <div className="flex justify-between py-2 border-b">
                                         <span className="text-muted-foreground">Created</span>
@@ -984,6 +996,17 @@ export function StartupRequests() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+
+            <CreateStartupDialog
+                open={createDialogOpen}
+                onOpenChange={setCreateDialogOpen}
+                onSuccess={() => {
+                    loadData()
+                    // Re-fetch stats to update potential counts
+                    fetchStartupStats().then(setStats)
+                }}
+            />
         </div >
     )
 }

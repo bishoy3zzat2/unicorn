@@ -36,8 +36,9 @@ public class StartupResponse {
     private String businessModelUrl;
     private String financialDocumentsUrl;
     private StartupStatus status;
-    private UUID ownerId;
+    private String ownerId;
     private String ownerEmail;
+    private StartupRole ownerRole;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -68,8 +69,9 @@ public class StartupResponse {
                 .businessModelUrl(startup.getBusinessModelUrl())
                 .financialDocumentsUrl(startup.getFinancialDocumentsUrl())
                 .status(startup.getStatus())
-                .ownerId(startup.getOwner().getId())
+                .ownerId(startup.getOwner().getId().toString())
                 .ownerEmail(startup.getOwner().getEmail())
+                .ownerRole(startup.getOwnerRole())
                 .createdAt(startup.getCreatedAt())
                 .updatedAt(startup.getUpdatedAt())
                 .build();

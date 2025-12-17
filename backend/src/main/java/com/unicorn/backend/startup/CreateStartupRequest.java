@@ -2,8 +2,10 @@ package com.unicorn.backend.startup;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 /**
  * Request DTO for creating a new startup.
@@ -15,11 +17,11 @@ public record CreateStartupRequest(
 
         String fullDescription,
 
-        String industry,
+        @NotNull(message = "Industry is required") String industry,
 
         @NotNull(message = "Stage is required") Stage stage,
 
-        BigDecimal fundingGoal,
+        @NotNull(message = "Funding goal is required") @Positive(message = "Funding goal must be positive") BigDecimal fundingGoal,
 
         String websiteUrl,
 
@@ -39,5 +41,9 @@ public record CreateStartupRequest(
 
         String businessModelUrl,
 
-        String financialDocumentsUrl) {
+        String financialDocumentsUrl,
+
+        UUID ownerId, // Optional: Only used by admins to assign ownership
+
+        @NotNull(message = "Owner role is required") StartupRole ownerRole) {
 }

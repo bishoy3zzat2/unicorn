@@ -4,10 +4,12 @@
  */
 
 // Startup development stages
-export type StartupStage = 'IDEA' | 'MVP' | 'GROWTH' | 'SCALING';
+export type StartupStage = 'IDEA' | 'MVP' | 'SEED' | 'SERIES_A' | 'SERIES_B' | 'GROWTH';
 
 // Startup status
 export type StartupStatus = 'ACTIVE' | 'APPROVED';
+
+export type StartupRole = 'FOUNDER' | 'CO_FOUNDER' | 'CEO' | 'CTO' | 'COO' | 'CFO' | 'CMO' | 'CHIEF_PRODUCT_OFFICER' | 'OTHER';
 
 // Startup interface (matches backend StartupResponse DTO)
 export interface Startup {
@@ -15,25 +17,26 @@ export interface Startup {
     name: string;
     tagline?: string;
     fullDescription?: string;
-    industry?: string;
+    industry: string;
     stage: StartupStage;
-    fundingGoal?: number;
+    fundingGoal: number;
     raisedAmount: number;
     websiteUrl?: string;
     logoUrl?: string;
     coverUrl?: string;
+    pitchDeckUrl?: string;
+    financialDocumentsUrl?: string;
+    businessPlanUrl?: string;
+    businessModelUrl?: string;
     facebookUrl?: string;
     instagramUrl?: string;
     twitterUrl?: string;
-    pitchDeckUrl?: string;
-    businessPlanUrl?: string;
-    businessModelUrl?: string;
-    financialDocumentsUrl?: string;
     status: StartupStatus;
     ownerId: string;
     ownerEmail: string;
+    ownerRole?: StartupRole;
     createdAt: string;
-    updatedAt?: string;
+    updatedAt: string;
 }
 
 // Request to update startup status (admin)
