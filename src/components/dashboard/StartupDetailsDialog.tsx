@@ -14,8 +14,9 @@ import {
 import { formatDate, cn } from "../../lib/utils"
 import { Startup } from "../../types"
 import { useAuth } from "../../contexts/AuthContext"
-import { LogOut, Trash2, MoreVertical, UserPlus } from "lucide-react"
+import { LogOut, Trash2, MoreVertical, UserPlus, Eye } from "lucide-react"
 import { AddMemberDialog } from "./AddMemberDialog"
+import { UserDetailsModal } from "./UserDetailsModal"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -72,6 +73,7 @@ export function StartupDetailsDialog({
     })
 
     const [isAddMemberOpen, setIsAddMemberOpen] = useState(false)
+    const [viewMemberId, setViewMemberId] = useState<string | null>(null)
 
     // Check membership status
     const currentMember = startup?.members?.find(m => m.userId === user?.id)
@@ -474,44 +476,59 @@ export function StartupDetailsDialog({
                                                             </p>
                                                         </div>
 
-                                                        {isAdminOrOwner && member.userId !== user?.id && (
-                                                            <DropdownMenu>
-                                                                <DropdownMenuTrigger asChild>
-                                                                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground -mt-1 -mr-2">
-                                                                        <MoreVertical className="h-4 w-4" />
-                                                                    </Button>
-                                                                </DropdownMenuTrigger>
-                                                                <DropdownMenuContent align="end" className="w-48">
-                                                                    <DropdownMenuLabel>Member Actions</DropdownMenuLabel>
-                                                                    <DropdownMenuSeparator />
-                                                                    {member.isActive && (
-                                                                        <>
-                                                                            <DropdownMenuItem
-                                                                                onClick={() => handleTransferOwnership(member.userId, member.userName)}
-                                                                                className="text-blue-600 focus:text-blue-700 focus:bg-blue-50"
-                                                                            >
-                                                                                <UserCog className="mr-2 h-3.5 w-3.5" />
-                                                                                Transfer Ownership
-                                                                            </DropdownMenuItem>
-                                                                            <DropdownMenuItem
-                                                                                onClick={() => handleRemoveMember(member.userId, member.userName)}
-                                                                                className="text-amber-600 focus:text-amber-700 focus:bg-amber-50"
-                                                                            >
-                                                                                <LogOut className="mr-2 h-3.5 w-3.5" />
-                                                                                Mark as Left
-                                                                            </DropdownMenuItem>
-                                                                        </>
-                                                                    )}
-                                                                    <DropdownMenuItem
-                                                                        onClick={() => handleUnsignMember(member.userId, member.userName)}
-                                                                        className="text-red-600 focus:text-red-700 focus:bg-red-50"
-                                                                    >
-                                                                        <Trash2 className="mr-2 h-3.5 w-3.5" />
-                                                                        Delete from History
-                                                                    </DropdownMenuItem>
-                                                                </DropdownMenuContent>
-                                                            </DropdownMenu>
-                                                        )}
+                                                        {/* Actions */}
+                                                        <div className="flex items-center gap-1 -mt-1 -mr-2">
+                                                            {(user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN') && (
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="h-7 w-7 text-muted-foreground hover:text-primary"
+                                                                    onClick={() => setViewMemberId(member.userId)}
+                                                                    title="View User Details"
+                                                                >
+                                                                    <Eye className="h-4 w-4" />
+                                                                </Button>
+                                                            )}
+
+                                                            {isAdminOrOwner && member.userId !== user?.id && (
+                                                                <DropdownMenu>
+                                                                    <DropdownMenuTrigger asChild>
+                                                                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground">
+                                                                            <MoreVertical className="h-4 w-4" />
+                                                                        </Button>
+                                                                    </DropdownMenuTrigger>
+                                                                    <DropdownMenuContent align="end" className="w-48">
+                                                                        <DropdownMenuLabel>Member Actions</DropdownMenuLabel>
+                                                                        <DropdownMenuSeparator />
+                                                                        {member.isActive && (
+                                                                            <>
+                                                                                <DropdownMenuItem
+                                                                                    onClick={() => handleTransferOwnership(member.userId, member.userName)}
+                                                                                    className="text-blue-600 focus:text-blue-700 focus:bg-blue-50"
+                                                                                >
+                                                                                    <UserCog className="mr-2 h-3.5 w-3.5" />
+                                                                                    Transfer Ownership
+                                                                                </DropdownMenuItem>
+                                                                                <DropdownMenuItem
+                                                                                    onClick={() => handleRemoveMember(member.userId, member.userName)}
+                                                                                    className="text-amber-600 focus:text-amber-700 focus:bg-amber-50"
+                                                                                >
+                                                                                    <LogOut className="mr-2 h-3.5 w-3.5" />
+                                                                                    Mark as Left
+                                                                                </DropdownMenuItem>
+                                                                            </>
+                                                                        )}
+                                                                        <DropdownMenuItem
+                                                                            onClick={() => handleUnsignMember(member.userId, member.userName)}
+                                                                            className="text-red-600 focus:text-red-700 focus:bg-red-50"
+                                                                        >
+                                                                            <Trash2 className="mr-2 h-3.5 w-3.5" />
+                                                                            Delete from History
+                                                                        </DropdownMenuItem>
+                                                                    </DropdownMenuContent>
+                                                                </DropdownMenu>
+                                                            )}
+                                                        </div>
                                                     </div>
 
                                                     <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -636,6 +653,12 @@ export function StartupDetailsDialog({
                     onSuccess={() => {
                         onActionComplete?.()
                     }}
+                />
+
+                <UserDetailsModal
+                    open={!!viewMemberId}
+                    onOpenChange={(open) => !open && setViewMemberId(null)}
+                    userId={viewMemberId}
                 />
             </DialogContent>
         </Dialog >
