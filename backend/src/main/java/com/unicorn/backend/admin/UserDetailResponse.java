@@ -222,47 +222,56 @@ public class UserDetailResponse {
                                         .build());
                 }
 
-                // Add startups (both owned and joined)
-                java.util.List<StartupSummary> allStartups = new java.util.ArrayList<>();
+                // Add startups (both owned and joined) - Deduplicated
+                java.util.Map<UUID, StartupSummary> startupMap = new java.util.HashMap<>();
 
                 // 1. Add owned startups
                 if (user.getStartups() != null) {
-                        allStartups.addAll(user.getStartups().stream()
-                                        .map(s -> StartupSummary.builder()
-                                                        .id(s.getId())
-                                                        .name(s.getName())
-                                                        .industry(s.getIndustry())
-                                                        .stage(s.getStage() != null ? s.getStage().name() : null)
-                                                        .role("OWNER")
-                                                        .status(s.getStatus() != null ? s.getStatus().name() : null)
-                                                        .raisedAmount(s.getRaisedAmount())
-                                                        .createdAt(s.getCreatedAt())
-                                                        .build())
-                                        .toList());
+                        user.getStartups().forEach(s -> {
+                                startupMap.put(s.getId(), StartupSummary.builder()
+                                                .id(s.getId())
+                                                .name(s.getName())
+                                                .industry(s.getIndustry())
+                                                .stage(s.getStage() != null ? s.getStage().name() : null)
+                                                .role("OWNER")
+                                                .status(s.getStatus() != null ? s.getStatus().name() : null)
+                                                .raisedAmount(s.getRaisedAmount())
+                                                .createdAt(s.getCreatedAt())
+                                                .build());
+                        });
                 }
 
                 // 2. Add joined startups (memberships)
                 if (user.getMemberships() != null) {
-                        allStartups.addAll(user.getMemberships().stream()
-                                        .map(m -> StartupSummary.builder()
-                                                        .id(m.getStartup().getId())
+                        user.getMemberships().forEach(m -> {
+                                UUID startupId = m.getStartup().getId();
+                                if (startupMap.containsKey(startupId)) {
+                                        // Merge roles if exists
+                                        StartupSummary existing = startupMap.get(startupId);
+                                        if (!existing.getRole().contains(m.getRole())) {
+                                                existing.setRole(existing.getRole() + ", " + m.getRole());
+                                        }
+                                } else {
+                                        startupMap.put(startupId, StartupSummary.builder()
+                                                        .id(startupId)
                                                         .name(m.getStartup().getName())
                                                         .industry(m.getStartup().getIndustry())
                                                         .stage(m.getStartup().getStage() != null
                                                                         ? m.getStartup().getStage().name()
                                                                         : null)
-                                                        .role(m.getRole()) // Use the member's role
+                                                        .role(m.getRole())
                                                         .status(m.getStartup().getStatus() != null
                                                                         ? m.getStartup().getStatus().name()
                                                                         : null)
                                                         .raisedAmount(m.getStartup().getRaisedAmount())
                                                         .createdAt(m.getStartup().getCreatedAt())
-                                                        .build())
-                                        .toList());
+                                                        .build());
+                                }
+                        });
                 }
 
-                if (!allStartups.isEmpty()) {
-                        builder.startups(allStartups);
+                if (!startupMap.isEmpty()) {
+                        builder.startups(new java.util.ArrayList<>(startupMap.values()));
                 }
 
                 // Add recent transactions

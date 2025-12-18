@@ -553,7 +553,7 @@ export function UserDetailsModal({ userId, open, onOpenChange, onAction }: UserD
 
                             {/* Startups/Deals Tab */}
                             {activeTab === 'startups' && (
-                                <div className="space-y-3">
+                                <div className="space-y-4">
                                     {userDetails.role === 'INVESTOR' ? (
                                         <div className="text-center py-12 text-muted-foreground bg-muted/20 rounded-lg border border-dashed">
                                             <TrendingUp className="h-12 w-12 mx-auto mb-2 opacity-50 text-emerald-500" />
@@ -563,75 +563,74 @@ export function UserDetailsModal({ userId, open, onOpenChange, onAction }: UserD
                                         </div>
                                     ) : (
                                         userDetails.startups && userDetails.startups.length > 0 ? (
-                                            userDetails.startups.map(startup => (
-                                                <div
-                                                    key={startup.id}
-                                                    className="group relative p-4 rounded-xl border bg-card hover:shadow-md transition-all duration-200 hover:border-primary/20"
-                                                >
-                                                    <div className="flex items-start justify-between">
-                                                        <div className="space-y-1">
-                                                            <h4
-                                                                className="font-bold text-base flex items-center gap-2 cursor-pointer group-hover:text-primary transition-colors"
-                                                                onClick={() => handleViewStartup(startup.id)}
-                                                            >
-                                                                <div className="h-8 w-8 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                                                                    <Building2 className="h-4 w-4 text-purple-600" />
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                {userDetails.startups.map(startup => (
+                                                    <div
+                                                        key={startup.id}
+                                                        className="group relative flex flex-col justify-between p-4 rounded-xl border bg-card hover:shadow-md transition-all duration-200 hover:border-primary/20 cursor-pointer"
+                                                        onClick={() => handleViewStartup(startup.id)}
+                                                    >
+                                                        <div className="flex items-start justify-between mb-3">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-purple-500/10 to-blue-500/10 flex items-center justify-center border border-purple-500/10 group-hover:border-purple-500/20 transition-colors">
+                                                                    <Building2 className="h-5 w-5 text-purple-600" />
                                                                 </div>
-                                                                {startup.name}
-                                                            </h4>
-                                                            <div className="flex items-center gap-2 text-sm text-muted-foreground pl-10">
-                                                                <Badge variant="secondary" className="text-xs font-normal">
-                                                                    {startup.industry || 'Unknown Industry'}
+                                                                <div>
+                                                                    <h4 className="font-bold text-base leading-tight group-hover:text-primary transition-colors line-clamp-1" title={startup.name}>
+                                                                        {startup.name}
+                                                                    </h4>
+                                                                    <p className="text-xs text-muted-foreground">{startup.industry || 'Tech'}</p>
+                                                                </div>
+                                                            </div>
+                                                            {getStatusBadge(startup.status || 'PENDING')}
+                                                        </div>
+
+                                                        <div className="space-y-3">
+                                                            <div className="flex flex-wrap gap-2 text-xs">
+                                                                <Badge variant="secondary" className="font-normal bg-secondary/50">
+                                                                    {startup.stage || 'Idea'}
                                                                 </Badge>
-                                                                <span>•</span>
-                                                                <span>{startup.stage}</span>
                                                                 {startup.role && (
-                                                                    <>
-                                                                        <span>•</span>
-                                                                        <Badge variant="outline" className="text-xs font-normal border-primary/20 text-primary">
-                                                                            {startup.role}
-                                                                        </Badge>
-                                                                    </>
+                                                                    <Badge variant="outline" className="font-medium bg-primary/5 text-primary border-primary/20">
+                                                                        {startup.role.replace('_', ' ')}
+                                                                    </Badge>
                                                                 )}
                                                             </div>
-                                                        </div>
-                                                        <div className="flex flex-col items-end gap-2">
-                                                            <div className="flex items-center gap-2">
-                                                                {getStatusBadge(startup.status || 'PENDING')}
+
+                                                            <div className="pt-3 border-t grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                                                                <div className="flex flex-col">
+                                                                    <span className="text-[10px] uppercase tracking-wider opacity-70">Raised</span>
+                                                                    <span className="font-semibold text-foreground flex items-center gap-1">
+                                                                        <DollarSign className="h-3 w-3" />
+                                                                        {startup.raisedAmount?.toLocaleString() || 0}
+                                                                    </span>
+                                                                </div>
+                                                                <div className="flex flex-col items-end">
+                                                                    <span className="text-[10px] uppercase tracking-wider opacity-70">Created</span>
+                                                                    <span className="font-medium text-foreground">
+                                                                        {startup.createdAt ? new Date(startup.createdAt).toLocaleDateString() : '-'}
+                                                                    </span>
+                                                                </div>
                                                             </div>
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                onClick={() => handleViewStartup(startup.id)}
-                                                                className="h-8 w-8 p-0 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-full"
-                                                                title="View Details"
-                                                            >
-                                                                <Eye className="h-4 w-4" />
-                                                            </Button>
+                                                        </div>
+
+                                                        {/* Hover Action */}
+                                                        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <div className="bg-background/80 backdrop-blur-sm rounded-full p-1.5 shadow-sm border">
+                                                                <Eye className="h-3.5 w-3.5 text-primary" />
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                    <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground pl-10 border-t pt-3">
-                                                        <div className="flex items-center gap-4">
-                                                            <span className="flex items-center gap-1.5">
-                                                                <DollarSign className="h-3 w-3" />
-                                                                Raised: <span className="font-medium text-foreground">${startup.raisedAmount?.toLocaleString() || 0}</span>
-                                                            </span>
-                                                            {startup.createdAt && (
-                                                                <span className="flex items-center gap-1.5">
-                                                                    <Clock className="h-3 w-3" />
-                                                                    Created: {formatDate(startup.createdAt)}
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ))
-                                        ) : (
-                                            <div className="text-center py-8 text-muted-foreground">
-                                                <Briefcase className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                                                <p>No startups associated</p>
+                                                ))}
                                             </div>
-                                        ))}
+                                        ) : (
+                                            <div className="text-center py-12 text-muted-foreground bg-muted/10 rounded-lg border border-dashed">
+                                                <Briefcase className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                                                <p className="font-medium">No startups associated</p>
+                                                <p className="text-xs opacity-70 mt-1">This user is not an owner or member of any startup.</p>
+                                            </div>
+                                        )
+                                    )}
                                 </div>
                             )}
 
