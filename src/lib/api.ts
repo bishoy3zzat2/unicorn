@@ -258,6 +258,14 @@ export async function fetchStartupModerationLogs(startupId: string): Promise<Sta
     return request(api.get(`/admin/startups/${startupId}/audit-logs`));
 }
 
+export async function deleteStartupModerationLog(logId: string): Promise<void> {
+    return request(api.delete(`/admin/audit-logs/${logId}`));
+}
+
+export async function deleteUserModerationLog(logId: string): Promise<void> {
+    return request(api.delete(`/admin/users/moderation-logs/${logId}`));
+}
+
 // ==================== User API ====================
 
 // User interface imported from types

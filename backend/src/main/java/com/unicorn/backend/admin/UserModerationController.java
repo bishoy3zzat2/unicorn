@@ -196,4 +196,15 @@ public class UserModerationController {
                                 "message", "User status updated to " + status,
                                 "logId", log.getId().toString()));
         }
+
+        /**
+         * Delete a user moderation log.
+         * 
+         * DELETE /api/v1/admin/users/moderation-logs/{id}
+         */
+        @DeleteMapping("/moderation-logs/{id}")
+        public ResponseEntity<Void> deleteUserModerationLog(@PathVariable UUID id) {
+                moderationService.deleteModerationLog(id);
+                return ResponseEntity.ok().build();
+        }
 }

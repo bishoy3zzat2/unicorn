@@ -35,6 +35,17 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getLoginResponse());
     }
 
+    @ExceptionHandler(com.unicorn.backend.exception.UserNotVerifiedException.class)
+    public ResponseEntity<Map<String, String>> handleUserNotVerifiedException(
+            com.unicorn.backend.exception.UserNotVerifiedException e) {
+        Map<String, String> response = new HashMap<>();
+        response.put("error", "EMAIL_NOT_VERIFIED");
+        response.put("errorCode", "EMAIL_NOT_VERIFIED");
+        response.put("message", "Please verify your email address before logging in");
+        response.put("email", e.getEmail());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleGenericException(Exception e) {
         // Log the error to console so we can debug it

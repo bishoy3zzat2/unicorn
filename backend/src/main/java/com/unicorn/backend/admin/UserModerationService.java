@@ -440,4 +440,12 @@ public class UserModerationService {
 
                 return moderationLogRepository.save(log);
         }
+
+        /**
+         * Delete a moderation log entry.
+         */
+        @Transactional
+        public void deleteModerationLog(UUID logId) {
+                moderationLogRepository.deleteById(logId);
+        }
 }

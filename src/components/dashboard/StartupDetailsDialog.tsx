@@ -38,7 +38,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "../ui/alert-dialog"
-import { fetchStartupModerationLogs, StartupModerationLog } from "../../lib/api"
+import { fetchStartupModerationLogs, deleteStartupModerationLog, StartupModerationLog } from "../../lib/api"
 import { Loader2, History } from "lucide-react"
 
 interface StartupDetailsDialogProps {
@@ -162,6 +162,26 @@ export function StartupDetailsDialog({
                     onActionComplete?.()
                 } catch (error) {
                     toast.error("Failed to remove member")
+                    console.error(error)
+                }
+            }
+        })
+    }
+
+    const handleDeleteLog = async (logId: string) => {
+        if (!startup) return
+        setConfirmDialog({
+            open: true,
+            title: "Delete Audit Log",
+            description: "Are you sure you want to delete this log entry? This action cannot be undone.",
+            variant: "destructive",
+            action: async () => {
+                try {
+                    await deleteStartupModerationLog(logId)
+                    toast.success("Log entry deleted successfully")
+                    loadLogs() // Reload logs
+                } catch (error) {
+                    toast.error("Failed to delete log entry")
                     console.error(error)
                 }
             }
@@ -692,8 +712,18 @@ export function StartupDetailsDialog({
                                     </div>
                                     <div className="divide-y">
                                         {auditLogs.map((log) => (
-                                            <div key={log.id} className="p-4 text-sm flex flex-col gap-2 hover:bg-muted/20">
-                                                <div className="flex items-center justify-between">
+                                            <div key={log.id} className="p-4 text-sm flex flex-col gap-2 hover:bg-muted/20 relative group">
+                                                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                        onClick={() => handleDeleteLog(log.id)}
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
+                                                <div className="flex items-center justify-between pr-8">
                                                     <div className="flex items-center gap-2">
                                                         <span className={cn(
                                                             "px-2 py-0.5 rounded-full text-xs font-bold border",

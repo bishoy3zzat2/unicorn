@@ -230,6 +230,11 @@ public class AuthenticationService {
                                         new UsernamePasswordAuthenticationToken(user.getEmail(), request.password()));
                 } catch (org.springframework.security.authentication.LockedException
                                 | org.springframework.security.authentication.DisabledException e) {
+                        // Check if user is pending verification first
+                        if ("PENDING_VERIFICATION".equals(user.getStatus())) {
+                                throw new com.unicorn.backend.exception.UserNotVerifiedException(user.getEmail());
+                        }
+
                         // Check if user is actually suspended/banned/disabled and return rich response
                         if ("SUSPENDED".equals(user.getStatus()) || "BANNED".equals(user.getStatus())) {
                                 LoginResponse.SuspensionBanInfo info = new LoginResponse.SuspensionBanInfo(
@@ -253,13 +258,6 @@ public class AuthenticationService {
                                 throw new com.unicorn.backend.exception.UserSuspendedException(response);
                         }
                         throw e; // Rethrow if it's some other lock reason or we want default behavior for others
-                }
-
-                if (!user.isEnabled()) {
-                        if ("PENDING_VERIFICATION".equals(user.getStatus())) {
-                                throw new org.springframework.security.authentication.DisabledException(
-                                                "Account not verified");
-                        }
                 }
 
                 user.setLastLoginAt(LocalDateTime.now());

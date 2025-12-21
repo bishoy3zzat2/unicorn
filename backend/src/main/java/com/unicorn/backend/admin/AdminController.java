@@ -582,4 +582,13 @@ public class AdminController {
             @PathVariable UUID id) {
         return ResponseEntity.ok(startupModerationLogRepository.findByStartupIdOrderByCreatedAtDesc(id));
     }
+
+    /**
+     * Delete a startup moderation log.
+     */
+    @DeleteMapping("/audit-logs/{id}")
+    public ResponseEntity<Void> deleteStartupModerationLog(@PathVariable UUID id) {
+        startupModerationLogRepository.deleteById(id);
+        return ResponseEntity.ok().build();
+    }
 }

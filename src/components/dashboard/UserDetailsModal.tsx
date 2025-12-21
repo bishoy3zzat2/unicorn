@@ -12,15 +12,25 @@ import {
     Loader2, User, Mail, Phone, MapPin, Calendar, Shield,
     Building2, TrendingUp, CreditCard, Clock, AlertTriangle,
     Ban, CheckCircle, XCircle, DollarSign, Briefcase,
-    Monitor, Globe, AlertCircle, Eye
+    Monitor, Globe, AlertCircle, Eye, Trash2
 } from 'lucide-react'
 import { formatDate } from '../../lib/utils'
 import api from '../../lib/axios'
 import { toast } from 'sonner'
 import { useAuth } from '../../contexts/AuthContext'
-import { getStartupById } from '../../lib/api'
+import { getStartupById, deleteUserModerationLog } from '../../lib/api'
 import { StartupDetailsDialog } from './StartupDetailsDialog'
 import { Startup } from '../../types'
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '../ui/alert-dialog'
 
 interface UserDetailsModalProps {
     userId: string | null
@@ -113,6 +123,8 @@ export function UserDetailsModal({ userId, open, onOpenChange, onAction }: UserD
     const [activeTab, setActiveTab] = useState<'info' | 'startups' | 'transactions' | 'history' | 'security'>('info')
     const [selectedStartup, setSelectedStartup] = useState<Startup | null>(null)
     const [isStartupDetailsOpen, setIsStartupDetailsOpen] = useState(false)
+    const [deleteLogId, setDeleteLogId] = useState<string | null>(null)
+    const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
     const { user: currentUser } = useAuth()
     const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN'
@@ -175,6 +187,25 @@ export function UserDetailsModal({ userId, open, onOpenChange, onAction }: UserD
         }
     }
 
+    const handleDeleteLog = (logId: string) => {
+        setDeleteLogId(logId)
+        setShowDeleteDialog(true)
+    }
+
+    const confirmDeleteLog = async () => {
+        if (!deleteLogId) return
+        try {
+            await deleteUserModerationLog(deleteLogId)
+            toast.success('Log entry deleted successfully')
+            fetchUserDetails() // Reload user details to refresh logs
+        } catch (error) {
+            console.error('Failed to delete log:', error)
+            toast.error('Failed to delete log entry')
+        } finally {
+            setShowDeleteDialog(false)
+            setDeleteLogId(null)
+        }
+    }
 
 
     const getStatusBadge = (status: string) => {
@@ -675,8 +706,18 @@ export function UserDetailsModal({ userId, open, onOpenChange, onAction }: UserD
                                 <div className="space-y-3">
                                     {userDetails.moderationHistory && userDetails.moderationHistory.length > 0 ? (
                                         userDetails.moderationHistory.map(log => (
-                                            <div key={log.id} className="p-4 rounded-lg border bg-card">
-                                                <div className="flex items-start justify-between">
+                                            <div key={log.id} className="p-4 rounded-lg border bg-card relative group">
+                                                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                        onClick={() => handleDeleteLog(log.id)}
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
+                                                <div className="flex items-start justify-between pr-8">
                                                     <div>
                                                         <h4 className="font-semibold flex items-center gap-2">
                                                             <ActionIcon type={log.actionType} />
@@ -716,6 +757,26 @@ export function UserDetailsModal({ userId, open, onOpenChange, onAction }: UserD
                 onOpenChange={setIsStartupDetailsOpen}
                 startup={selectedStartup}
             />
+
+            <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Log Entry</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to delete this log entry? This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={confirmDeleteLog}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                            Delete
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </Dialog>
     )
 }
