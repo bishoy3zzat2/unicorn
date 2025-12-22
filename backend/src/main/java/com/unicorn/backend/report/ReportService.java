@@ -286,7 +286,6 @@ public class ReportService {
             System.out.println("Mock: Notifying User " + report.getReporterId() + " via " + channels);
             // TODO: Call NotificationService
         }
-
         if (Boolean.TRUE.equals(request.notifyReportedEntity())) {
             List<NotificationChannel> channels = request.reportedEntityNotificationChannels() != null
                     ? request.reportedEntityNotificationChannels()
