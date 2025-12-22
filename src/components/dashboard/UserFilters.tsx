@@ -125,25 +125,32 @@ export function UserFilters({ filters, onFiltersChange, onApply, onClear }: User
     return (
         <Card className="mb-4">
             <CardHeader
-                className="py-3 px-4 cursor-pointer hover:bg-muted/50 transition-colors"
+                className="py-3 px-4 cursor-pointer hover:bg-muted/50 transition-colors border-b border-border/40"
                 onClick={() => setExpanded(!expanded)}
             >
                 <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <CardTitle className="text-sm font-semibold flex items-center gap-2 text-primary">
                         <Filter className="h-4 w-4" />
                         Advanced Filters
                         {activeFilterCount > 0 && (
-                            <span className="ml-2 px-2 py-0.5 text-xs bg-primary text-primary-foreground rounded-full">
-                                {activeFilterCount} active
+                            <span className="ml-2 px-2 py-0.5 text-[10px] font-bold bg-primary text-primary-foreground rounded-full shadow-sm">
+                                {activeFilterCount}
                             </span>
                         )}
                     </CardTitle>
-                    {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    <div className="flex items-center gap-2">
+                        {activeFilterCount > 0 && expanded && (
+                            <span className="text-xs text-muted-foreground mr-2 font-normal">
+                                Click to collapse
+                            </span>
+                        )}
+                        {expanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                    </div>
                 </div>
             </CardHeader>
 
             {expanded && (
-                <CardContent className="pt-0 pb-4 space-y-6">
+                <CardContent className="pt-6 pb-4 space-y-6">
                     {/* Text Filters Section */}
                     <div className="space-y-4">
                         <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">

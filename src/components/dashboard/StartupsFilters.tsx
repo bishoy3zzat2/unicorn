@@ -109,7 +109,7 @@ export function StartupsFilters({ filters, onFiltersChange, onApply, onClear }: 
     return (
         <Card className="mb-4">
             <CardHeader
-                className="py-3 px-4 cursor-pointer hover:bg-muted/50 transition-colors"
+                className="py-3 px-4 cursor-pointer hover:bg-muted/50 transition-colors border-b border-border/40"
                 onClick={() => setExpanded(!expanded)}
             >
                 <div className="flex items-center justify-between">
@@ -127,7 +127,7 @@ export function StartupsFilters({ filters, onFiltersChange, onApply, onClear }: 
             </CardHeader>
 
             {expanded && (
-                <CardContent className="pt-0 pb-4 space-y-6">
+                <CardContent className="pt-6 pb-4 space-y-6">
                     {/* Text Filters Section */}
                     <div className="space-y-4">
                         <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">

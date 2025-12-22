@@ -102,9 +102,9 @@ public class UserDetailResponse {
                 private BigDecimal investmentBudget;
                 private String preferredIndustries;
                 private String linkedInUrl;
-                private boolean isVerified;
+                private Boolean isVerified;
                 private LocalDateTime verifiedAt;
-                private boolean readyForPayment;
+                private Boolean readyForPayment;
                 private String preferredStage;
         }
 

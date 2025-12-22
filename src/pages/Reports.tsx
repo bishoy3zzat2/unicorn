@@ -29,16 +29,17 @@ import {
     XCircle,
     Flag,
     AlertCircle,
-    Calendar,
     ChevronsLeft,
     ChevronsRight,
     ChevronLeft,
-    ChevronRight
+    ChevronRight,
+    Gavel
 } from 'lucide-react'
 import { KPICard } from '../components/dashboard/KPICard'
 import { getAllReports, getReportStats, Report } from '../lib/api'
-import { formatDate, formatTimeAgo } from '../lib/utils'
+import { formatTimeAgo } from '../lib/utils'
 import { ReportDetailsDialog } from '../components/dashboard/ReportDetailsDialog'
+import { ReportResolutionDialog } from '../components/dashboard/ReportResolutionDialog'
 
 // Report reason labels
 const REPORT_REASON_LABELS: Record<string, string> = {
@@ -78,6 +79,10 @@ export function Reports() {
 
     // Selected report for details
     const [selectedReportId, setSelectedReportId] = useState<string | null>(null)
+
+    // Quick Resolve State
+    const [quickResolveReport, setQuickResolveReport] = useState<Report | null>(null)
+    const [resolveDialogOpen, setResolveDialogOpen] = useState(false)
 
     // Load stats
     useEffect(() => {
@@ -173,7 +178,7 @@ export function Reports() {
     })
 
     return (
-        <div className="flex-1 space-y-6 p-4 md:p-8 bg-background min-h-screen transition-colors duration-300">
+        <div className="flex-1 space-y-6 p-4 md:p-8 min-h-screen transition-colors duration-300">
             {/* Header Section */}
             <div className="flex flex-col gap-1">
                 <h1 className="text-3xl font-bold tracking-tight text-foreground">Reports Center</h1>
@@ -219,9 +224,9 @@ export function Reports() {
             {/* Main Content Area */}
             <div className="space-y-4">
                 {/* Advanced Toolbar */}
-                <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center bg-card p-4 rounded-xl shadow-sm border border-border">
+                <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800">
                     {/* Status Tabs (Custom Implementation) */}
-                    <div className="flex bg-muted p-1 rounded-lg overflow-x-auto max-w-full no-scrollbar">
+                    <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg overflow-x-auto max-w-full no-scrollbar">
                         {['ALL', 'PENDING', 'UNDER_REVIEW', 'RESOLVED', 'REJECTED'].map((status) => (
                             <button
                                 key={status}
@@ -232,8 +237,8 @@ export function Reports() {
                                 className={`
                                     px-4 py-1.5 rounded-md text-sm font-medium transition-all duration-200
                                     ${statusFilter === status
-                                        ? 'bg-background text-foreground shadow-sm'
-                                        : 'text-muted-foreground hover:text-foreground hover:bg-background/50'}
+                                        ? 'bg-white dark:bg-slate-700 text-foreground shadow-sm'
+                                        : 'text-slate-500 dark:text-slate-400 hover:text-foreground hover:bg-white/50 dark:hover:bg-slate-700/50'}
                                 `}
                             >
                                 {status === 'ALL' ? 'All' : status.replace('_', ' ')}
@@ -243,7 +248,7 @@ export function Reports() {
 
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
                         <Select value={entityTypeFilter} onValueChange={setEntityTypeFilter}>
-                            <SelectTrigger className="w-full sm:w-[160px] bg-background border-input">
+                            <SelectTrigger className="w-full sm:w-[160px] bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
                                 <SelectValue placeholder="Entity Type" />
                             </SelectTrigger>
                             <SelectContent>
@@ -259,7 +264,7 @@ export function Reports() {
                                 placeholder="Search by ID or reason..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="pl-9 bg-background border-input"
+                                className="pl-9 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
                             />
                         </div>
 
@@ -267,7 +272,7 @@ export function Reports() {
                             variant="outline"
                             size="icon"
                             onClick={handleRefresh}
-                            className={`shrink-0 ${loading ? 'animate-spin' : ''}`}
+                            className={`shrink-0 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 ${loading ? 'animate-spin' : ''}`}
                         >
                             <RefreshCcw className="h-4 w-4" />
                         </Button>
@@ -275,7 +280,7 @@ export function Reports() {
                 </div>
 
                 {/* Modern Table */}
-                <div className="bg-card rounded-xl shadow-sm border border-border overflow-hidden">
+                <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
                     {loading && reports.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
                             <Loader2 className="h-10 w-10 animate-spin mb-4" />
@@ -306,8 +311,8 @@ export function Reports() {
                         <>
                             <div className="overflow-x-auto">
                                 <Table>
-                                    <TableHeader className="bg-muted/50">
-                                        <TableRow className="hover:bg-muted/50 border-b-border">
+                                    <TableHeader className="bg-slate-50 dark:bg-slate-800/50">
+                                        <TableRow className="hover:bg-transparent border-b-border">
                                             <TableHead className="font-semibold text-muted-foreground pl-6">Entity</TableHead>
                                             <TableHead className="font-semibold text-muted-foreground">Reason</TableHead>
                                             <TableHead className="font-semibold text-muted-foreground">Status</TableHead>
@@ -319,7 +324,7 @@ export function Reports() {
                                         {filteredReports.map((report) => (
                                             <TableRow
                                                 key={report.id}
-                                                className="group cursor-pointer hover:bg-muted/30 transition-colors border-b-border"
+                                                className="group cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors border-b-border"
                                                 onClick={() => setSelectedReportId(report.id)}
                                             >
                                                 <TableCell className="pl-6 py-4">
@@ -366,6 +371,21 @@ export function Reports() {
                                                     >
                                                         <Eye className="h-4 w-4" />
                                                     </Button>
+                                                    {(report.status !== 'RESOLVED' && report.status !== 'REJECTED') && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-8 w-8 text-muted-foreground hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all"
+                                                            title="Quick Resolve"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation()
+                                                                setQuickResolveReport(report)
+                                                                setResolveDialogOpen(true)
+                                                            }}
+                                                        >
+                                                            <Gavel className="h-4 w-4" />
+                                                        </Button>
+                                                    )}
                                                 </TableCell>
                                             </TableRow>
                                         ))}
@@ -373,7 +393,7 @@ export function Reports() {
                                 </Table>
                             </div>
                             {/* Pagination Footer */}
-                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-4 py-4 border-t border-border bg-muted/20">
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-4 py-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
                                 <div className="text-sm text-muted-foreground">
                                     Showing {currentPage * pageSize + 1} to {Math.min((currentPage + 1) * pageSize, totalElements)} of {totalElements} entries
                                 </div>
@@ -402,7 +422,7 @@ export function Reports() {
                                     <div className="flex items-center space-x-2">
                                         <Button
                                             variant="outline"
-                                            className="hidden h-8 w-8 p-0 lg:flex"
+                                            className="hidden h-8 w-8 p-0 lg:flex bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
                                             onClick={() => setCurrentPage(0)}
                                             disabled={currentPage === 0}
                                         >
@@ -411,7 +431,7 @@ export function Reports() {
                                         </Button>
                                         <Button
                                             variant="outline"
-                                            className="h-8 w-8 p-0"
+                                            className="h-8 w-8 p-0 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
                                             onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
                                             disabled={currentPage === 0}
                                         >
@@ -420,7 +440,7 @@ export function Reports() {
                                         </Button>
                                         <Button
                                             variant="outline"
-                                            className="h-8 w-8 p-0"
+                                            className="h-8 w-8 p-0 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
                                             onClick={() => setCurrentPage(p => Math.min(totalPages - 1, p + 1))}
                                             disabled={currentPage >= totalPages - 1}
                                         >
@@ -429,7 +449,7 @@ export function Reports() {
                                         </Button>
                                         <Button
                                             variant="outline"
-                                            className="hidden h-8 w-8 p-0 lg:flex"
+                                            className="hidden h-8 w-8 p-0 lg:flex bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
                                             onClick={() => setCurrentPage(totalPages - 1)}
                                             disabled={currentPage >= totalPages - 1}
                                         >
@@ -453,6 +473,21 @@ export function Reports() {
                     onReportUpdated={handleRefresh}
                 />
             )}
+
+            {/* Quick Resolve Dialog */}
+            {quickResolveReport && (
+                <ReportResolutionDialog
+                    open={resolveDialogOpen}
+                    onOpenChange={setResolveDialogOpen}
+                    report={quickResolveReport}
+                    onSuccess={() => {
+                        setQuickResolveReport(null)
+                        handleRefresh()
+                        loadStats()
+                    }}
+                />
+            )}
+
         </div>
     )
 }

@@ -6,6 +6,8 @@ import com.unicorn.backend.security.RefreshTokenRepository;
 import com.unicorn.backend.subscription.Subscription;
 import com.unicorn.backend.subscription.SubscriptionRepository;
 import com.unicorn.backend.user.*;
+import com.unicorn.backend.investor.InvestorProfile;
+import com.unicorn.backend.investor.InvestorProfileRepository;
 import com.unicorn.backend.jwt.TokenBlacklistService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -29,6 +31,7 @@ public class UserModerationService {
         private final SubscriptionRepository subscriptionRepository;
         private final PaymentRepository paymentRepository;
         private final TokenBlacklistService tokenBlacklistService;
+        private final InvestorProfileRepository investorProfileRepository;
 
         /**
          * Get detailed user information for admin view.
@@ -37,6 +40,11 @@ public class UserModerationService {
         public UserDetailResponse getUserDetails(UUID userId) {
                 User user = userRepository.findById(userId)
                                 .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+
+                // Explicitly refresh investor profile to ensure latest status is visible
+                if ("INVESTOR".equals(user.getRole())) {
+                        investorProfileRepository.findByUser(user).ifPresent(user::setInvestorProfile);
+                }
 
                 List<UserModerationLog> moderationHistory = moderationLogRepository
                                 .findByUserIdOrderByCreatedAtDesc(userId);

@@ -36,7 +36,6 @@ import {
     Dialog,
     DialogContent,
     DialogDescription,
-    DialogFooter,
     DialogHeader,
     DialogTitle,
 } from "../components/ui/dialog"
@@ -53,7 +52,6 @@ import { Badge } from "../components/ui/badge"
 import {
     Card,
     CardContent,
-    CardDescription,
     CardHeader,
     CardTitle,
 } from "../components/ui/card"
@@ -65,14 +63,13 @@ import { RadioGroup, RadioGroupItem } from "../components/ui/radio-group"
 import { StartupsFilters, StartupFilterState } from '../components/dashboard/StartupsFilters'
 import { CreateStartupDialog } from '../components/dashboard/CreateStartupDialog'
 import { StartupDetailsDialog } from '../components/dashboard/StartupDetailsDialog'
+import { TransferStartupDialog } from '../components/dashboard/TransferStartupDialog'
 import {
     fetchAllStartups,
     fetchStartupStats,
-    searchUsers,
-    transferStartupOwnership,
     getStartupById
 } from '../lib/api'
-import { Startup, StartupStats, User } from '../types'
+import { Startup, StartupStats } from '../types'
 import { cn, formatDate, formatTimeAgo, formatNumber } from '../lib/utils'
 import { KPICard } from '../components/dashboard/KPICard'
 
@@ -133,14 +130,6 @@ export function StartupRequests() {
         startup: null
     })
     const [createDialogOpen, setCreateDialogOpen] = useState(false)
-
-    const [userSearchQuery, setUserSearchQuery] = useState('')
-    const [searchResults, setSearchResults] = useState<User[]>([])
-    const [selectedUser, setSelectedUser] = useState<User | null>(null)
-    const [searchingUsers, setSearchingUsers] = useState(false)
-    const [transferring, setTransferring] = useState(false)
-
-
 
     // Export State
     const [exportDialogOpen, setExportDialogOpen] = useState(false)
@@ -224,61 +213,6 @@ export function StartupRequests() {
         setAppliedFilters({})
         setPage(0)
         setQuickSearch('')
-    }
-
-    async function handleUserSearch(query: string) {
-        setUserSearchQuery(query)
-        if (query.length < 2) {
-            setSearchResults([])
-            return
-        }
-
-        try {
-            setSearchingUsers(true)
-            // Filter by USER role (excludes Admins & Investors)
-            const data = await searchUsers(query, 'STARTUP_OWNER')
-
-            // Exclude current owner
-            const currentOwnerId = transferDialog.startup?.ownerId
-            const filteredUsers = data.content.filter(u => u.id !== currentOwnerId)
-
-            setSearchResults(filteredUsers)
-        } catch (err) {
-            console.error('Failed to search users:', err)
-        } finally {
-            setSearchingUsers(false)
-        }
-    }
-
-    async function handleTransferOwnership() {
-        if (!transferDialog.startup || !selectedUser) return
-
-        try {
-            setTransferring(true)
-            await transferStartupOwnership(transferDialog.startup.id, selectedUser.id)
-
-            toast.success('Ownership transferred', {
-                description: `${transferDialog.startup.name} is now owned by ${selectedUser.email}`
-            })
-
-            // Refresh list
-            loadData()
-            closeTransferDialog()
-        } catch (err) {
-            console.error('Failed to transfer ownership:', err)
-            toast.error('Transfer failed', {
-                description: err instanceof Error ? err.message : 'Failed to transfer ownership'
-            })
-        } finally {
-            setTransferring(false)
-        }
-    }
-
-    function closeTransferDialog() {
-        setTransferDialog({ open: false, startup: null })
-        setUserSearchQuery('')
-        setSearchResults([])
-        setSelectedUser(null)
     }
 
     const handleActionComplete = () => {
@@ -463,41 +397,64 @@ export function StartupRequests() {
             )}
 
             {/* Startups Table */}
-            <Card>
-                <CardHeader>
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div>
-                            <CardTitle>All Startups</CardTitle>
-                            <CardDescription>
-                                {startups.length} startups found
-                            </CardDescription>
+            <Card className="overflow-hidden">
+                <CardHeader className="bg-white/50 dark:bg-slate-900/50 border-b border-border/50 pb-4">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                                <Building2 className="h-5 w-5 text-primary" />
+                            </div>
+                            <div>
+                                <CardTitle>All Startups</CardTitle>
+                                <div className="flex items-center gap-2">
+                                    {loading && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
+                                    <span className="text-xs text-muted-foreground font-medium">
+                                        {startups.length} {startups.length === 1 ? 'startup' : 'startups'} total
+                                    </span>
+                                </div>
+                            </div>
                         </div>
-                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
-                            <div className="relative w-full sm:w-64">
-                                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+
+                        <div className="flex flex-col sm:flex-row gap-2">
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                 <Input
-                                    placeholder="Search owner email..."
+                                    placeholder="Search by email..."
                                     value={quickSearch}
                                     onChange={(e) => setQuickSearch(e.target.value)}
-                                    className="pl-8"
+                                    className="pl-9 w-full sm:w-[250px] bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
                                 />
                             </div>
 
-                            <div className="flex items-center gap-2">
-                                <Button variant="outline" size="sm" onClick={loadData} className="flex-1 sm:flex-none">
-                                    <RefreshCcw className="h-4 w-4 mr-2" />
-                                    Refresh
+                            <div className="flex gap-2">
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={loadData}
+                                    disabled={loading}
+                                    className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:bg-slate-50"
+                                    title="Refresh List"
+                                >
+                                    <RefreshCcw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                                 </Button>
-                                <Button variant="outline" size="sm" onClick={() => setExportDialogOpen(true)} className="flex-1 sm:flex-none">
-                                    <Download className="h-4 w-4 mr-2" />
-                                    Export
+
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setExportDialogOpen(true)}
+                                    className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:bg-slate-50 gap-2"
+                                >
+                                    <Download className="h-4 w-4" />
+                                    <span className="hidden sm:inline">Export</span>
+                                </Button>
+
+                                <Button
+                                    onClick={() => setCreateDialogOpen(true)}
+                                    className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg shadow-indigo-500/20 gap-2"
+                                >
+                                    <UserPlus className="h-4 w-4" />
+                                    <span className="hidden sm:inline">New Startup</span>
                                 </Button>
                             </div>
-
-                            <Button size="sm" onClick={() => setCreateDialogOpen(true)} className="w-full sm:w-auto">
-                                <UserPlus className="h-4 w-4 mr-2" />
-                                Create Startup
-                            </Button>
                         </div>
                     </div>
                 </CardHeader>
@@ -508,7 +465,7 @@ export function StartupRequests() {
                             <p className="text-muted-foreground">No startups found</p>
                         </div>
                     ) : (
-                        <div className="rounded-md border">
+                        <div className="rounded-md border mt-4">
                             <Table>
                                 <TableHeader>
                                     <TableRow>
@@ -590,6 +547,24 @@ export function StartupRequests() {
                                             </TableCell>
                                             <TableCell className="text-right">
                                                 <div className="flex items-center justify-end gap-1">
+                                                    {startup.websiteUrl && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-8 w-8 hover:bg-muted"
+                                                            asChild
+                                                            title="Visit Website"
+                                                        >
+                                                            <a
+                                                                href={startup.websiteUrl}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                onClick={(e) => e.stopPropagation()}
+                                                            >
+                                                                <Globe className="h-4 w-4 text-indigo-500" />
+                                                            </a>
+                                                        </Button>
+                                                    )}
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
@@ -616,22 +591,13 @@ export function StartupRequests() {
                                                         </DropdownMenuTrigger>
                                                         <DropdownMenuContent align="end">
                                                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                                            <DropdownMenuItem onClick={() => setViewDialog({ open: true, startup })}>
-                                                                <Eye className="mr-2 h-4 w-4" />
-                                                                View Details
-                                                            </DropdownMenuItem>
-                                                            <DropdownMenuItem onClick={() => setTransferDialog({ open: true, startup })}>
+                                                            <DropdownMenuItem onClick={(e) => {
+                                                                e.stopPropagation()
+                                                                setTransferDialog({ open: true, startup })
+                                                            }}>
                                                                 <UserCog className="mr-2 h-4 w-4" />
                                                                 Transfer Ownership
                                                             </DropdownMenuItem>
-                                                            {startup.websiteUrl && (
-                                                                <DropdownMenuItem asChild>
-                                                                    <a href={startup.websiteUrl} target="_blank" rel="noopener noreferrer">
-                                                                        <Globe className="mr-2 h-4 w-4" />
-                                                                        Visit Website
-                                                                    </a>
-                                                                </DropdownMenuItem>
-                                                            )}
 
 
                                                             <DropdownMenuSeparator />
@@ -761,117 +727,59 @@ export function StartupRequests() {
             />
 
             {/* Transfer Ownership Dialog */}
-            <Dialog open={transferDialog.open} onOpenChange={(open: boolean) => {
-                if (!open) closeTransferDialog()
-            }}>
-                <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>Transfer Ownership</DialogTitle>
-                        <DialogDescription>
-                            Transfer {transferDialog.startup?.name} to a new owner.
-                        </DialogDescription>
-                    </DialogHeader>
-
-                    <div className="space-y-4 py-4">
-                        {/* Search Input */}
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input
-                                placeholder="Search user by email..."
-                                value={userSearchQuery}
-                                onChange={(e) => handleUserSearch(e.target.value)}
-                                className="pl-9"
-                            />
-                        </div>
-
-                        {/* Search Results */}
-                        {searchingUsers ? (
-                            <div className="flex items-center justify-center py-4">
-                                <Loader2 className="h-5 w-5 animate-spin" />
-                            </div>
-                        ) : searchResults.length > 0 ? (
-                            <div className="border rounded-lg divide-y max-h-48 overflow-y-auto">
-                                {searchResults.map((user) => (
-                                    <button
-                                        key={user.id}
-                                        onClick={() => setSelectedUser(user)}
-                                        className={`w-full text-left px-4 py-3 hover:bg-muted/50 transition-colors ${selectedUser?.id === user.id ? 'bg-primary/10' : ''
-                                            }`}
-                                    >
-                                        <p className="font-medium">{user.email}</p>
-                                        <p className="text-xs text-muted-foreground">
-                                            {user.role} • Joined {formatDate(user.createdAt)}
-                                        </p>
-                                    </button>
-                                ))}
-                            </div>
-                        ) : userSearchQuery.length >= 2 ? (
-                            <p className="text-sm text-muted-foreground text-center py-4">
-                                No users found
-                            </p>
-                        ) : null}
-
-                        {/* Selected User */}
-                        {selectedUser && (
-                            <div className="p-3 border rounded-lg bg-muted/50">
-                                <p className="text-sm font-medium">Selected new owner:</p>
-                                <p className="text-sm text-primary">{selectedUser.email}</p>
-                            </div>
-                        )}
-                    </div>
-
-                    <DialogFooter>
-                        <Button variant="outline" onClick={closeTransferDialog}>
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={handleTransferOwnership}
-                            disabled={!selectedUser || transferring}
-                        >
-                            {transferring ? (
-                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            ) : (
-                                <UserCog className="h-4 w-4 mr-2" />
-                            )}
-                            Transfer Ownership
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            <TransferStartupDialog
+                open={transferDialog.open}
+                onOpenChange={(open) => {
+                    if (!open) setTransferDialog({ open: false, startup: null })
+                }}
+                startup={transferDialog.startup}
+                onSuccess={loadData}
+            />
 
             {/* Export Dialog */}
             <Dialog open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
-                <DialogContent className="sm:max-w-[425px] md:max-w-[600px] max-h-[90vh] overflow-y-auto">
-                    <DialogHeader>
-                        <DialogTitle>Export Startups</DialogTitle>
-                        <DialogDescription>
-                            Choose the scope and columns to include in your CSV export.
-                        </DialogDescription>
-                    </DialogHeader>
+                <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-hidden flex flex-col p-0 gap-0 border-none shadow-2xl bg-white dark:bg-slate-950">
+                    {/* Gradient Header */}
+                    <div className="bg-gradient-to-r from-slate-800 via-emerald-900/50 to-teal-900/50 dark:from-slate-900 dark:via-emerald-950/80 dark:to-teal-950/80 p-6 shrink-0 border-b border-slate-700/50">
+                        <DialogHeader className="space-y-2">
+                            <DialogTitle className="flex items-center gap-3 text-2xl font-bold tracking-tight text-white">
+                                <div className="h-12 w-12 rounded-2xl bg-white/20 backdrop-blur-sm shadow-lg flex items-center justify-center">
+                                    <Download className="h-6 w-6 text-white" />
+                                </div>
+                                Export Startups
+                            </DialogTitle>
+                            <DialogDescription className="text-white/80">
+                                Choose the scope and columns to include in your CSV export.
+                            </DialogDescription>
+                        </DialogHeader>
+                    </div>
 
-                    <div className="space-y-6 py-4">
+                    <div className="overflow-y-auto flex-1 p-6 space-y-6">
                         {/* Scope Selection */}
-                        <div className="space-y-3">
-                            <h4 className="text-sm font-medium">Export Scope</h4>
+                        <div className="space-y-4 p-4 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/10 dark:to-indigo-900/10 border border-blue-100 dark:border-blue-800/30">
+                            <h4 className="text-sm font-bold uppercase tracking-wider text-blue-700 dark:text-blue-400 flex items-center gap-2">
+                                <Rocket className="h-4 w-4" />
+                                Export Scope
+                            </h4>
                             <RadioGroup
                                 value={exportScope}
                                 onValueChange={(v) => setExportScope(v as 'current' | 'all')}
                                 className="grid grid-cols-2 gap-4"
                             >
-                                <div className="flex items-center space-x-2 rounded-md border p-3 hover:bg-accent/50">
+                                <div className="flex items-center space-x-2 rounded-lg border border-blue-200 dark:border-blue-800/50 p-3 bg-white dark:bg-slate-900 hover:border-blue-400 dark:hover:border-blue-600 transition-colors cursor-pointer">
                                     <RadioGroupItem value="current" id="scope-current" />
                                     <Label htmlFor="scope-current" className="cursor-pointer">
                                         Current Page
-                                        <span className="block text-xs text-muted-foreground mt-1">
+                                        <span className="block text-xs text-slate-500 mt-1">
                                             Export only visible {startups.length} rows
                                         </span>
                                     </Label>
                                 </div>
-                                <div className="flex items-center space-x-2 rounded-md border p-3 hover:bg-accent/50">
+                                <div className="flex items-center space-x-2 rounded-lg border border-blue-200 dark:border-blue-800/50 p-3 bg-white dark:bg-slate-900 hover:border-blue-400 dark:hover:border-blue-600 transition-colors cursor-pointer">
                                     <RadioGroupItem value="all" id="scope-all" />
                                     <Label htmlFor="scope-all" className="cursor-pointer">
                                         All Matching
-                                        <span className="block text-xs text-muted-foreground mt-1">
+                                        <span className="block text-xs text-slate-500 mt-1">
                                             Fetch all matching rows via API
                                         </span>
                                     </Label>
@@ -880,21 +788,24 @@ export function StartupRequests() {
                         </div>
 
                         {/* Column Selection */}
-                        <div className="space-y-3">
+                        <div className="space-y-4 p-4 rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/10 dark:to-teal-900/10 border border-emerald-100 dark:border-emerald-800/30">
                             <div className="flex items-center justify-between">
-                                <h4 className="text-sm font-medium">Select Columns</h4>
+                                <h4 className="text-sm font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 flex items-center gap-2">
+                                    <CheckCircle2 className="h-4 w-4" />
+                                    Select Columns
+                                </h4>
                                 <div className="flex items-center space-x-2">
                                     <Checkbox
                                         id="select-all"
                                         checked={selectedColumns.length === EXPORTABLE_COLUMNS.length}
                                         onCheckedChange={handleSelectAllColumns}
                                     />
-                                    <Label htmlFor="select-all" className="text-xs cursor-pointer">
+                                    <Label htmlFor="select-all" className="text-xs cursor-pointer text-emerald-700 dark:text-emerald-400">
                                         Select All
                                     </Label>
                                 </div>
                             </div>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 border rounded-md p-3 max-h-[300px] overflow-y-auto">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 border border-emerald-200 dark:border-emerald-800/50 rounded-lg p-3 max-h-[250px] overflow-y-auto bg-white dark:bg-slate-900">
                                 {EXPORTABLE_COLUMNS.map((col) => (
                                     <div key={col.id} className="flex items-center space-x-2">
                                         <Checkbox
@@ -912,21 +823,27 @@ export function StartupRequests() {
                                     </div>
                                 ))}
                             </div>
-                            <p className="text-xs text-muted-foreground text-right">
+                            <p className="text-xs text-emerald-600 dark:text-emerald-400 text-right font-medium">
                                 {selectedColumns.length} columns selected
                             </p>
                         </div>
                     </div>
 
-                    <DialogFooter>
+                    {/* Footer */}
+                    <div className="flex items-center justify-end gap-3 p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
                         <Button variant="outline" onClick={() => setExportDialogOpen(false)}>
                             Cancel
                         </Button>
-                        <Button onClick={performExport} disabled={isExporting || selectedColumns.length === 0}>
+                        <Button
+                            onClick={performExport}
+                            disabled={isExporting || selectedColumns.length === 0}
+                            className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-lg shadow-emerald-500/25"
+                        >
                             {isExporting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            <Download className="mr-2 h-4 w-4" />
                             {isExporting ? 'Exporting...' : 'Export CSV'}
                         </Button>
-                    </DialogFooter>
+                    </div>
                 </DialogContent>
             </Dialog>
 

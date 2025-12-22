@@ -2,7 +2,11 @@ package com.unicorn.backend.admin;
 
 import com.unicorn.backend.investor.InvestorProfile;
 import com.unicorn.backend.investor.InvestorProfileRepository;
+import com.unicorn.backend.user.User;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -24,19 +28,30 @@ public class InvestorVerificationController {
         private final InvestorProfileRepository investorProfileRepository;
 
         /**
-         * Get list of investors pending verification.
+         * Get paginated list of investors pending verification.
          * 
-         * GET /api/v1/admin/investors/queue
+         * GET /api/v1/admin/investors/queue?page=0&size=20&query=...
          */
         @GetMapping("/queue")
-        public ResponseEntity<List<InvestorVerificationResponse>> getVerificationQueue() {
-                List<InvestorProfile> pendingInvestors = investorProfileRepository.findPendingVerificationQueue();
+        public ResponseEntity<Map<String, Object>> getVerificationQueue(
+                        @RequestParam(defaultValue = "0") int page,
+                        @RequestParam(defaultValue = "20") int size,
+                        @RequestParam(required = false) String query) {
 
-                List<InvestorVerificationResponse> response = pendingInvestors.stream()
+                Pageable pageable = PageRequest.of(page, size);
+                Page<InvestorProfile> pageResult = investorProfileRepository
+                                .findPendingVerificationQueuePaginated(query, pageable);
+
+                List<InvestorVerificationResponse> content = pageResult.getContent().stream()
                                 .map(this::toVerificationResponse)
                                 .toList();
 
-                return ResponseEntity.ok(response);
+                return ResponseEntity.ok(Map.of(
+                                "content", content,
+                                "totalElements", pageResult.getTotalElements(),
+                                "totalPages", pageResult.getTotalPages(),
+                                "currentPage", page,
+                                "pageSize", size));
         }
 
         /**
@@ -145,6 +160,7 @@ public class InvestorVerificationController {
                 profile.setVerifiedAt(LocalDateTime.now());
                 profile.setVerificationNotes("Verification completed on " + LocalDateTime.now());
                 investorProfileRepository.save(profile);
+                investorProfileRepository.flush();
 
                 return ResponseEntity.ok(Map.of(
                                 "message", "Investor verification completed.",
@@ -152,15 +168,25 @@ public class InvestorVerificationController {
         }
 
         private InvestorVerificationResponse toVerificationResponse(InvestorProfile profile) {
+                User user = profile.getUser();
+                String userName = null;
+                if (user.getFirstName() != null || user.getLastName() != null) {
+                        userName = ((user.getFirstName() != null ? user.getFirstName() : "") + " " +
+                                        (user.getLastName() != null ? user.getLastName() : "")).trim();
+                }
+
                 return InvestorVerificationResponse.builder()
                                 .id(profile.getId())
-                                .userId(profile.getUser().getId())
-                                .userEmail(profile.getUser().getEmail())
+                                .userId(user.getId())
+                                .userEmail(user.getEmail())
+                                .userName(userName)
+                                .userAvatar(user.getAvatarUrl())
                                 .bio(profile.getBio())
                                 .investmentBudget(profile.getInvestmentBudget())
                                 .preferredIndustries(profile.getPreferredIndustries())
                                 .linkedInUrl(profile.getLinkedInUrl())
                                 .verificationRequestedAt(profile.getVerificationRequestedAt())
+                                .readyForPayment(profile.getReadyForPayment())
                                 .build();
         }
 }

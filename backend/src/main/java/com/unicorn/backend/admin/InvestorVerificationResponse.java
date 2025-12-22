@@ -20,9 +20,12 @@ public class InvestorVerificationResponse {
     private UUID id;
     private UUID userId;
     private String userEmail;
+    private String userName;
+    private String userAvatar;
     private String bio;
     private BigDecimal investmentBudget;
     private String preferredIndustries;
     private String linkedInUrl;
     private LocalDateTime verificationRequestedAt;
+    private Boolean readyForPayment;
 }

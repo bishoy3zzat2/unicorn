@@ -17,10 +17,17 @@ import {
     SelectTrigger,
     SelectValue,
 } from "../ui/select"
-import { AlertTriangle, Loader2 } from "lucide-react"
+import {
+    AlertTriangle,
+    Loader2,
+    Megaphone,
+    RefreshCcw,
+    Trash2
+} from "lucide-react"
 import { toast } from "sonner"
 import { api } from "../../lib/api"
 import { Startup } from "../../types"
+import { cn } from "../../lib/utils"
 
 interface ActionDialogProps {
     open: boolean
@@ -63,18 +70,27 @@ export function WarnStartupDialog({ open, onOpenChange, startup, onSuccess }: Ac
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Issue Warning to {startup.name}</DialogTitle>
-                    <DialogDescription>
-                        Send a formal warning to the startup owner. This will be sent via email.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
+            <DialogContent className="max-w-xl p-0 gap-0 overflow-hidden bg-background">
+                {/* Header */}
+                <div className="bg-amber-50 dark:bg-amber-950/30 border-b border-amber-200 dark:border-amber-800/50 p-6">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl font-bold flex items-center gap-2.5 text-amber-700 dark:text-amber-500">
+                            <div className="p-2 bg-amber-100 dark:bg-amber-900/50 rounded-lg">
+                                <Megaphone className="h-5 w-5" />
+                            </div>
+                            Issue Warning
+                        </DialogTitle>
+                        <DialogDescription className="text-amber-600/80 dark:text-amber-400/80 ml-11">
+                            Send a formal warning to <span className="font-semibold text-foreground">{startup.name}</span>.
+                        </DialogDescription>
+                    </DialogHeader>
+                </div>
+
+                <div className="p-6 space-y-5">
                     <div className="space-y-2">
-                        <Label>Quick Templates</Label>
+                        <Label className="text-sm font-semibold">Quick Templates</Label>
                         <Select onValueChange={setMessage}>
-                            <SelectTrigger>
+                            <SelectTrigger className="bg-muted/30">
                                 <SelectValue placeholder="Select a template..." />
                             </SelectTrigger>
                             <SelectContent>
@@ -87,20 +103,24 @@ export function WarnStartupDialog({ open, onOpenChange, startup, onSuccess }: Ac
                         </Select>
                     </div>
                     <div className="space-y-2">
-                        <Label>Message</Label>
+                        <Label className="text-sm font-semibold">Custom Message</Label>
                         <Textarea
                             value={message}
                             onChange={(e) => setMessage(e.target.value)}
-                            placeholder="Type your warning message here..."
+                            placeholder="Type your formal warning details here..."
                             rows={4}
+                            className="bg-muted/30 resize-none focus-visible:ring-amber-500"
                         />
                     </div>
                 </div>
-                <DialogFooter>
-                    <Button variant="outline" onClick={() => onOpenChange(false)}>
-                        Cancel
-                    </Button>
-                    <Button onClick={handleSubmit} disabled={loading}>
+
+                <DialogFooter className="p-4 bg-muted/10 border-t border-border">
+                    <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
+                    <Button
+                        onClick={handleSubmit}
+                        disabled={loading}
+                        className="bg-amber-600 hover:bg-amber-700 text-white"
+                    >
                         {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Send Warning
                     </Button>
@@ -140,52 +160,73 @@ export function StartupStatusDialog({ open, onOpenChange, startup, onSuccess }: 
         }
     }
 
+    const getStatusColor = (st: string) => {
+        switch (st) {
+            case 'APPROVED': return 'text-green-600 bg-green-50 dark:bg-green-950/30'
+            case 'PENDING': return 'text-yellow-600 bg-yellow-50 dark:bg-yellow-950/30'
+            case 'SUSPENDED': return 'text-orange-600 bg-orange-50 dark:bg-orange-950/30'
+            case 'BANNED': return 'text-red-600 bg-red-50 dark:bg-red-950/30'
+            case 'REJECTED': return 'text-rose-600 bg-rose-50 dark:bg-rose-950/30'
+            default: return 'text-slate-600 bg-slate-50 dark:bg-slate-950/30'
+        }
+    }
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Change Status for {startup.name}</DialogTitle>
-                    <DialogDescription>
-                        Update the operational status of this startup.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
+            <DialogContent className="max-w-xl p-0 gap-0 overflow-hidden bg-background">
+                {/* Header */}
+                <div className="bg-slate-900/5 dark:bg-slate-900/50 border-b border-border p-6">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl font-bold flex items-center gap-2.5">
+                            <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg text-indigo-600 dark:text-indigo-400">
+                                <RefreshCcw className="h-5 w-5" />
+                            </div>
+                            Update Status
+                        </DialogTitle>
+                        <DialogDescription className="ml-11">
+                            Change operational status for <span className="font-semibold text-foreground">{startup.name}</span>.
+                        </DialogDescription>
+                    </DialogHeader>
+                </div>
+
+                <div className="p-6 space-y-6">
                     <div className="space-y-2">
-                        <Label>Status</Label>
+                        <Label className="text-sm font-semibold">New Status</Label>
                         <Select value={status} onValueChange={setStatus}>
-                            <SelectTrigger>
+                            <SelectTrigger className={cn("h-11", getStatusColor(status))}>
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="APPROVED">Approved</SelectItem>
-                                <SelectItem value="PENDING">Pending</SelectItem>
-                                <SelectItem value="SUSPENDED">Suspended</SelectItem>
-                                <SelectItem value="BANNED">Banned</SelectItem>
-                                <SelectItem value="REJECTED">Rejected</SelectItem>
-                                <SelectItem value="ARCHIVED">Archived</SelectItem>
+                                <SelectItem value="APPROVED" className="text-green-600 font-medium">Approved</SelectItem>
+                                <SelectItem value="PENDING" className="text-yellow-600 font-medium">Pending</SelectItem>
+                                <SelectItem value="SUSPENDED" className="text-orange-600 font-medium">Suspended</SelectItem>
+                                <SelectItem value="BANNED" className="text-red-600 font-medium">Banned</SelectItem>
+                                <SelectItem value="REJECTED" className="text-rose-600 font-medium">Rejected</SelectItem>
+                                <SelectItem value="ARCHIVED" className="text-slate-500 font-medium">Archived</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
 
                     {(status === 'SUSPENDED' || status === 'BANNED' || status === 'REJECTED') && (
-                        <div className="space-y-2">
-                            <Label>Reason (Required for negative actions)</Label>
+                        <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                            <Label className="text-sm font-semibold text-destructive">Reason for Action (Required)</Label>
                             <Textarea
                                 value={reason}
                                 onChange={(e) => setReason(e.target.value)}
-                                placeholder="Please provide a reason..."
+                                placeholder="Please provide a clear reason for this administrative action..."
                                 required
+                                className="min-h-[100px] border-destructive/20 focus-visible:ring-destructive/30"
                             />
                         </div>
                     )}
                 </div>
-                <DialogFooter>
-                    <Button variant="outline" onClick={() => onOpenChange(false)}>
-                        Cancel
-                    </Button>
+
+                <DialogFooter className="p-4 bg-muted/10 border-t border-border">
+                    <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
                     <Button
                         onClick={handleSubmit}
                         disabled={loading || ((status === 'SUSPENDED' || status === 'BANNED' || status === 'REJECTED') && !reason.trim())}
+                        className={status === 'APPROVED' ? "bg-green-600 hover:bg-green-700 text-white" : ""}
                     >
                         {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Update Status
@@ -219,39 +260,53 @@ export function DeleteStartupDialog({ open, onOpenChange, startup, onSuccess }: 
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle className="text-red-600 flex items-center gap-2">
-                        <AlertTriangle className="h-5 w-5" />
-                        Delete Startup Permanently
-                    </DialogTitle>
-                    <DialogDescription>
-                        This action cannot be undone. This will permanently delete
-                        <span className="font-bold text-foreground mx-1">{startup.name}</span>
-                        and remove all associated data, including team members and potential investments.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
+            <DialogContent className="max-w-md p-0 gap-0 overflow-hidden bg-background">
+                <div className="bg-red-50 dark:bg-red-950/30 border-b border-red-100 dark:border-red-900/30 p-6">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl font-bold flex items-center gap-2.5 text-red-600 dark:text-red-500">
+                            <div className="p-2 bg-red-100 dark:bg-red-900/50 rounded-lg">
+                                <Trash2 className="h-5 w-5" />
+                            </div>
+                            Delete Startup
+                        </DialogTitle>
+                        <DialogDescription className="text-red-600/80 dark:text-red-400/80 ml-11">
+                            Permanent deletion process initiated.
+                        </DialogDescription>
+                    </DialogHeader>
+                </div>
+
+                <div className="p-6 space-y-4">
+                    <div className="bg-red-50 dark:bg-red-950/10 border border-red-100 dark:border-red-900/20 rounded-lg p-4 text-sm text-red-800 dark:text-red-300">
+                        <p className="font-semibold flex items-center gap-2 mb-2">
+                            <AlertTriangle className="h-4 w-4" />
+                            Warning: Irreversible Action
+                        </p>
+                        <p>
+                            This will permanently delete <span className="font-bold">{startup.name}</span> and remove all associated data, including team members and investments.
+                        </p>
+                    </div>
+
                     <div className="space-y-2">
-                        <Label>Type the startup name to confirm</Label>
+                        <Label className="text-sm font-semibold">Type confirmation</Label>
                         <div className="relative">
                             <input
-                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                                 value={confirmName}
                                 onChange={(e) => setConfirmName(e.target.value)}
                                 placeholder={startup.name}
                             />
                         </div>
+                        <p className="text-xs text-muted-foreground">Type <strong>{startup.name}</strong> to confirm.</p>
                     </div>
                 </div>
-                <DialogFooter>
-                    <Button variant="outline" onClick={() => onOpenChange(false)}>
-                        Cancel
-                    </Button>
+
+                <DialogFooter className="p-4 bg-muted/10 border-t border-border">
+                    <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
                     <Button
                         variant="destructive"
                         onClick={handleDelete}
                         disabled={loading || confirmName !== startup.name}
+                        className="bg-red-600 hover:bg-red-700"
                     >
                         {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Delete Permanently

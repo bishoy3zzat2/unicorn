@@ -14,7 +14,7 @@ import {
     Ban, CheckCircle, XCircle, DollarSign, Briefcase,
     Monitor, Globe, AlertCircle, Eye, Trash2
 } from 'lucide-react'
-import { formatDate } from '../../lib/utils'
+import { formatDate, cn } from '../../lib/utils'
 import api from '../../lib/axios'
 import { toast } from 'sonner'
 import { useAuth } from '../../contexts/AuthContext'
@@ -256,18 +256,7 @@ export function UserDetailsModal({ userId, open, onOpenChange, onAction }: UserD
         )
     }
 
-    const getPlanBadge = (plan: string) => {
-        const styles: Record<string, string> = {
-            FREE: 'bg-gray-500/10 text-gray-500',
-            PRO: 'bg-blue-500/10 text-blue-500',
-            ELITE: 'bg-purple-500/10 text-purple-500',
-        }
-        return (
-            <span className={`px-2 py-1 rounded text-xs font-semibold ${styles[plan] || styles.FREE}`}>
-                {plan}
-            </span>
-        )
-    }
+
 
     const tabs: Array<{ id: 'info' | 'startups' | 'transactions' | 'history' | 'security'; label: string; icon: React.ElementType; count?: number }> = [
         { id: 'info', label: 'Info', icon: User },
@@ -287,196 +276,215 @@ export function UserDetailsModal({ userId, open, onOpenChange, onAction }: UserD
     return (
         <>
             <Dialog open={open} onOpenChange={onOpenChange}>
-                <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
-                    <DialogHeader className="flex-row items-center justify-between space-y-0 pb-4 pr-6">
-                        <DialogTitle>User Details</DialogTitle>
-                        {userDetails && (
-                            <div className="flex items-center gap-2">
-                                <Button
-                                    variant="outline"
-                                    size="icon"
-                                    className="h-8 w-8 text-blue-500 hover:text-blue-600 hover:bg-blue-500/10"
-                                    onClick={() => setStatusChangeDialogOpen(true)}
-                                    title="Change Status"
-                                    disabled={!canManageUser}
-                                >
-                                    <Shield className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    size="icon"
-                                    className="h-8 w-8 text-yellow-500 hover:text-yellow-600 hover:bg-yellow-500/10"
-                                    onClick={() => setWarnDialogOpen(true)}
-                                    title="Issue Warning"
-                                    disabled={!canManageUser}
-                                >
-                                    <AlertTriangle className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    size="icon"
-                                    className="h-8 w-8 text-orange-500 hover:text-orange-600 hover:bg-orange-500/10"
-                                    onClick={() => setSuspendDialogOpen(true)}
-                                    disabled={!canManageUser || isSuspended}
-                                    title={isSuspended ? 'Already Suspended' : 'Suspend User'}
-                                >
-                                    <Ban className="h-4 w-4" />
-                                </Button>
-                                {userDetails.status === 'DELETED' ? (
-                                    <Button
-                                        variant="outline"
-                                        size="icon"
-                                        className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-500/10"
-                                        onClick={() => setRestoreDialogOpen(true)}
-                                        title="Restore User"
-                                        disabled={!canManageUser}
-                                    >
-                                        <RotateCcw className="h-4 w-4" />
-                                    </Button>
-                                ) : (
-                                    <Button
-                                        variant="outline"
-                                        size="icon"
-                                        className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-500/10"
-                                        onClick={() => setDeleteDialogOpen(true)}
-                                        title="Delete User"
-                                        disabled={!canManageUser}
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                )}
+                <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-hidden flex flex-col p-0 gap-0 bg-white dark:bg-slate-950 border-none shadow-2xl [&>button]:hidden">
+                    {/* Gradient Header */}
+                    <div className="bg-gradient-to-r from-slate-800 via-blue-900/50 to-indigo-900/50 dark:from-slate-900 dark:via-blue-950/80 dark:to-indigo-950/80 p-6 shrink-0 border-b border-slate-700/50">
+                        <DialogHeader className="flex-row items-center justify-between space-y-0">
+                            <div>
+                                <DialogTitle className="text-xl text-white">User Details</DialogTitle>
+                                <p className="text-sm text-white/70 mt-1">
+                                    Manage user information, permissions, and security.
+                                </p>
                             </div>
-                        )}
-                    </DialogHeader>
+                            <div className="flex items-center gap-2">
+                                <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)} className="text-white/70 hover:text-white hover:bg-white/10">
+                                    <XCircle className="h-5 w-5" />
+                                </Button>
+                            </div>
+                        </DialogHeader>
+                    </div>
 
                     {loading ? (
                         <div className="flex items-center justify-center py-12">
                             <Loader2 className="h-8 w-8 animate-spin text-primary" />
                         </div>
                     ) : !userDetails ? (
-                        <div className="text-center py-8 text-muted-foreground">
+                        <div className="text-center py-12 text-muted-foreground">
                             User not found
                         </div>
                     ) : (
-                        <div className="flex flex-col flex-1 overflow-y-auto">
-                            {/* Header with basic info */}
-                            <div className="flex items-start justify-between p-4 bg-muted/30 rounded-lg mb-4">
-                                <div className="flex items-center gap-4">
-                                    {/* Avatar with status indicator */}
-                                    <div className="relative">
-                                        <img
-                                            src={userDetails.avatarUrl || "/avatars/avatar_1.png"}
-                                            alt={userDetails.email}
-                                            className="h-16 w-16 rounded-full border-2 border-primary/20"
-                                        />
-                                        <div className={`absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full border-2 border-background ring-1 ring-background ${userDetails.hasActiveSession ? 'bg-green-500' : 'bg-gray-300'
-                                            }`} title={userDetails.hasActiveSession ? "Online" : "Offline"} />
+                        <div className="flex flex-col flex-1 overflow-y-auto bg-white dark:bg-slate-950">
+                            {/* User Profile Hero Section */}
+                            <div className="p-6 pb-0">
+                                <div className="relative overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm">
+                                    <div className="absolute top-0 right-0 p-6 opacity-[0.03] pointer-events-none">
+                                        <User className="w-64 h-64" />
                                     </div>
-                                    <div>
-                                        <h3 className="text-lg font-bold">
-                                            {userDetails.firstName ? `${userDetails.firstName} ${userDetails.lastName}` : userDetails.email.split('@')[0]}
-                                        </h3>
-                                        <p className="text-sm text-muted-foreground">{userDetails.email}</p>
-                                        <div className="flex items-center gap-2 mt-0.5">
-                                            <code className="text-xs bg-muted px-2 py-0.5 rounded font-mono text-muted-foreground">
-                                                {userDetails.id}
-                                            </code>
-                                            <button
-                                                onClick={() => {
-                                                    navigator.clipboard.writeText(userDetails.id);
-                                                    toast.success('User ID copied to clipboard!');
-                                                }}
-                                                className="text-xs text-primary hover:text-primary/80 transition-colors"
-                                                title="Copy User ID"
-                                            >
-                                                📋
-                                            </button>
+
+                                    <div className="relative z-10 flex flex-col md:flex-row gap-6 items-start">
+                                        {/* Avatar & Status */}
+                                        <div className="relative shrink-0">
+                                            <div className="h-24 w-24 rounded-2xl overflow-hidden border-2 border-border shadow-sm bg-background">
+                                                <img
+                                                    src={userDetails.avatarUrl || "/avatars/avatar_1.png"}
+                                                    alt={userDetails.email}
+                                                    className="h-full w-full object-cover"
+                                                />
+                                            </div>
+                                            <div className={cn(
+                                                "absolute -bottom-2 -right-2 h-6 w-6 rounded-full border-4 border-background flex items-center justify-center shadow-sm",
+                                                userDetails.hasActiveSession ? "bg-emerald-500" : "bg-slate-300"
+                                            )} title={userDetails.hasActiveSession ? "Online" : "Offline"}>
+                                                {userDetails.hasActiveSession && <div className="h-2 w-2 rounded-full bg-white animate-pulse" />}
+                                            </div>
                                         </div>
-                                        <div className="flex items-center gap-2 mt-1">
-                                            {getRoleBadge(userDetails.role)}
-                                            {getStatusBadge(userDetails.status)}
-                                            {/* Plan for Non-Investors/Non-Admins, Verification for Investors */}
-                                            {userDetails.role === 'INVESTOR' ? (
-                                                userDetails.investorInfo?.isVerified ? (
-                                                    <Badge className="bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border-emerald-200">
-                                                        <CheckCircle className="h-3 w-3 mr-1" />
-                                                        Verified Investor
-                                                    </Badge>
-                                                ) : (
-                                                    <Badge variant="outline" className="text-muted-foreground border-dashed">
-                                                        Not Verified
-                                                    </Badge>
-                                                )
-                                            ) : userDetails.role === 'ADMIN' ? (
-                                                <Badge className="bg-purple-500/10 text-purple-600 hover:bg-purple-500/20 border-purple-200">
-                                                    <Shield className="h-3 w-3 mr-1" />
-                                                    Super Admin
-                                                </Badge>
-                                            ) : (
-                                                getPlanBadge(userDetails.currentSubscription?.plan || 'FREE')
-                                            )}
+
+                                        {/* Info & Actions */}
+                                        <div className="flex-1 min-w-0 space-y-4">
+                                            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                                                <div>
+                                                    <h3 className="text-2xl font-bold tracking-tight text-foreground">
+                                                        {userDetails.firstName ? `${userDetails.firstName} ${userDetails.lastName}` : userDetails.email.split('@')[0]}
+                                                    </h3>
+                                                    <div className="flex items-center gap-2 mt-1 text-muted-foreground">
+                                                        <Mail className="h-3.5 w-3.5" />
+                                                        <span className="text-sm">{userDetails.email}</span>
+                                                    </div>
+                                                    <div className="flex flex-wrap items-center gap-2 mt-3">
+                                                        {getRoleBadge(userDetails.role)}
+                                                        {getStatusBadge(userDetails.status)}
+                                                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-muted text-xs font-mono text-muted-foreground border">
+                                                            <span>ID:</span>
+                                                            <span className="select-all">{userDetails.id}</span>
+                                                            <button
+                                                                onClick={() => {
+                                                                    navigator.clipboard.writeText(userDetails.id);
+                                                                    toast.success('ID copied');
+                                                                }}
+                                                                className="ml-1 hover:text-foreground"
+                                                            >
+                                                                <Monitor className="h-3 w-3" />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Action Buttons Toolbar */}
+                                                {canManageUser && (
+                                                    <div className="flex items-center gap-1 bg-background p-1 rounded-lg border shadow-sm">
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                                                            onClick={() => setStatusChangeDialogOpen(true)}
+                                                            title="Change Status"
+                                                        >
+                                                            <Shield className="h-4 w-4" />
+                                                        </Button>
+                                                        <Separator orientation="vertical" className="h-4 mx-1" />
+
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="h-8 w-8 p-0 text-amber-500 hover:text-amber-600 hover:bg-amber-500/10"
+                                                            onClick={() => setWarnDialogOpen(true)}
+                                                            title="Issue Warning"
+                                                        >
+                                                            <AlertTriangle className="h-4 w-4" />
+                                                        </Button>
+
+                                                        {(userDetails.status === 'SUSPENDED' || userDetails.status === 'BANNED') ? (
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className="h-8 w-8 p-0 text-emerald-500 hover:text-emerald-600 hover:bg-emerald-500/10"
+                                                                onClick={handleUnsuspend}
+                                                                title="Unsuspend User"
+                                                            >
+                                                                <CheckCircle className="h-4 w-4" />
+                                                            </Button>
+                                                        ) : (
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className="h-8 w-8 p-0 text-orange-500 hover:text-orange-600 hover:bg-orange-500/10"
+                                                                onClick={() => setSuspendDialogOpen(true)}
+                                                                disabled={isSuspended}
+                                                                title="Suspend User"
+                                                            >
+                                                                <Ban className="h-4 w-4" />
+                                                            </Button>
+                                                        )}
+
+                                                        {userDetails.status === 'DELETED' ? (
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className="h-8 w-8 p-0 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-500/10"
+                                                                onClick={() => setRestoreDialogOpen(true)}
+                                                                title="Restore User"
+                                                            >
+                                                                <RotateCcw className="h-4 w-4" />
+                                                            </Button>
+                                                        ) : (
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-500/10"
+                                                                onClick={() => setDeleteDialogOpen(true)}
+                                                                title="Delete User"
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                                {(userDetails.status === 'SUSPENDED' || userDetails.status === 'BANNED') && canManageUser && (
-                                    <Button variant="outline" onClick={handleUnsuspend} size="sm">
-                                        <CheckCircle className="h-4 w-4 mr-2" />
-                                        Unsuspend
-                                    </Button>
-                                )}
                             </div>
 
                             {/* Tabs */}
-                            <div className="flex border-b mb-4 sticky top-0 bg-background z-10 pt-2">
-                                {tabs.filter(tab => {
-                                    // Filter out tabs based on role
-                                    if (userDetails.role === 'ADMIN' || userDetails.role === 'SUPER_ADMIN') {
-                                        return ['info', 'history', 'security'].includes(tab.id)
-                                    }
-                                    return true
-                                }).map(tab => {
-                                    // Rename Startups to Deals for Investors
-                                    if (tab.id === 'startups' && userDetails.role === 'INVESTOR') {
+                            <div className="sticky top-0 bg-white/95 dark:bg-slate-950/95 backdrop-blur-sm z-20 border-b border-slate-200 dark:border-slate-800 px-6 py-2">
+                                <div className="flex items-center justify-start md:justify-center overflow-x-auto no-scrollbar gap-2">
+                                    {tabs.filter(tab => {
+                                        if (userDetails.role === 'ADMIN' || userDetails.role === 'SUPER_ADMIN') {
+                                            return ['info', 'history', 'security'].includes(tab.id)
+                                        }
+                                        return true
+                                    }).map(tab => {
+                                        const isActive = activeTab === tab.id;
+                                        const isDeals = tab.id === 'startups' && userDetails.role === 'INVESTOR';
+
                                         return (
                                             <button
                                                 key={tab.id}
                                                 onClick={() => setActiveTab(tab.id)}
-                                                className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === tab.id
-                                                    ? 'border-primary text-primary'
-                                                    : 'border-transparent text-muted-foreground hover:text-foreground'
-                                                    }`}
+                                                className={cn(
+                                                    "flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-full transition-all whitespace-nowrap",
+                                                    isActive
+                                                        ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 ring-1 ring-blue-500/20 shadow-sm"
+                                                        : "text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-foreground"
+                                                )}
                                             >
-                                                <TrendingUp className="h-4 w-4" /> {/* Use TrendingUp icon for Deals */}
-                                                Deals
+                                                {isDeals ? (
+                                                    <TrendingUp className={cn("h-4 w-4", isActive ? "text-primary" : "text-muted-foreground")} />
+                                                ) : (
+                                                    <tab.icon className={cn("h-4 w-4", isActive ? "text-primary" : "text-muted-foreground")} />
+                                                )}
+
+                                                {isDeals ? "Deals" : tab.label}
+
+                                                {tab.count !== undefined && tab.count > 0 && (
+                                                    <span className={cn(
+                                                        "ml-1.5 px-1.5 py-0.5 text-[10px] rounded-full",
+                                                        isActive ? "bg-primary text-primary-foreground" : "bg-muted-foreground/20 text-muted-foreground"
+                                                    )}>
+                                                        {tab.count}
+                                                    </span>
+                                                )}
                                             </button>
                                         )
-                                    }
-                                    return (
-                                        <button
-                                            key={tab.id}
-                                            onClick={() => setActiveTab(tab.id)}
-                                            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === tab.id
-                                                ? 'border-primary text-primary'
-                                                : 'border-transparent text-muted-foreground hover:text-foreground'
-                                                }`}
-                                        >
-                                            <tab.icon className="h-4 w-4" />
-                                            {tab.label}
-                                            {tab.count !== undefined && tab.count > 0 && (
-                                                <span className="ml-1 px-1.5 py-0.5 text-xs bg-muted rounded-full">
-                                                    {tab.count}
-                                                </span>
-                                            )}
-                                        </button>
-                                    )
-                                })}
+                                    })}
+                                </div>
                             </div>
 
                             {/* Tab Content */}
-                            <div className="pb-4">
+                            <div className="pb-4 pt-4">
                                 {/* Info Tab */}
                                 {activeTab === 'info' && (
-                                    <div className="space-y-4">
+                                    <div className="space-y-4 px-8 pb-8">
                                         {/* Contact Info */}
                                         <div className="grid grid-cols-2 gap-4">
                                             <InfoRow icon={User} label="Username" value={userDetails.username || userDetails.email.split('@')[0]} />
@@ -495,11 +503,11 @@ export function UserDetailsModal({ userId, open, onOpenChange, onAction }: UserD
                                         {/* Additional Info (Bio & LinkedIn) moved here for universal visibility - HIDDEN FOR ADMIN/SUPER_ADMIN */}
                                         {(userDetails.role !== 'ADMIN' && userDetails.role !== 'SUPER_ADMIN') && (
                                             <div className="grid grid-cols-1 gap-4 mt-4">
-                                                <div className="flex items-center gap-3">
-                                                    <Globe className="h-4 w-4 text-muted-foreground" />
-                                                    <div>
-                                                        <p className="text-xs text-muted-foreground">LinkedIn</p>
-                                                        {userDetails.linkedInUrl ? (
+                                                <InfoRow
+                                                    icon={Globe}
+                                                    label="LinkedIn"
+                                                    value={
+                                                        userDetails.linkedInUrl ? (
                                                             <a
                                                                 href={userDetails.linkedInUrl.startsWith('http') ? userDetails.linkedInUrl : `https://www.linkedin.com/in/${userDetails.linkedInUrl.replace(/^\/+/, '')}`}
                                                                 target="_blank"
@@ -508,17 +516,17 @@ export function UserDetailsModal({ userId, open, onOpenChange, onAction }: UserD
                                                             >
                                                                 {userDetails.linkedInUrl.replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//, '').replace(/\/$/, '') || 'View Profile'}
                                                             </a>
-                                                        ) : (
-                                                            <p className="text-sm text-muted-foreground italic">Not provided</p>
-                                                        )}
-                                                    </div>
-                                                </div>
+                                                        ) : 'Not provided'
+                                                    }
+                                                />
 
-                                                <div className="flex items-start gap-3">
-                                                    <Briefcase className="h-4 w-4 text-muted-foreground mt-1" />
-                                                    <div>
-                                                        <p className="text-xs text-muted-foreground">Bio</p>
-                                                        <p className="text-sm text-foreground/80 whitespace-pre-wrap">
+                                                <div className="group p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:shadow-md transition-all duration-300 flex items-start gap-4">
+                                                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform text-primary my-1">
+                                                        <Briefcase className="h-5 w-5" />
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Bio</p>
+                                                        <p className="text-sm text-foreground/80 whitespace-pre-wrap leading-relaxed">
                                                             {userDetails.bio || <span className="text-muted-foreground italic">No bio provided</span>}
                                                         </p>
                                                     </div>
@@ -602,6 +610,29 @@ export function UserDetailsModal({ userId, open, onOpenChange, onAction }: UserD
                                                                         </Button>
                                                                     </div>
                                                                 )}
+
+                                                                {/* Manual Verification Override */}
+                                                                {!userDetails.investorInfo.isVerified && (
+                                                                    <Button
+                                                                        size="sm"
+                                                                        variant="ghost"
+                                                                        className="h-6 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50 mt-1"
+                                                                        onClick={async () => {
+                                                                            if (!confirm('Are you sure you want to MANUALLY mark this investor as VERIFIED? This bypasses the payment check.')) return;
+                                                                            try {
+                                                                                await api.post(`/admin/investors/${userDetails.investorInfo!.id}/complete-verification`);
+                                                                                toast.success('Investor manually marked as VERIFIED');
+                                                                                fetchUserDetails();
+                                                                            } catch (e) {
+                                                                                console.error(e);
+                                                                                toast.error('Failed to verify investor');
+                                                                            }
+                                                                        }}
+                                                                    >
+                                                                        <CheckCircle className="h-3 w-3 mr-1" />
+                                                                        Mark as Verified
+                                                                    </Button>
+                                                                )}
                                                             </div>
                                                             {userDetails.investorInfo.verifiedAt && (
                                                                 <p><strong>Verified Since:</strong> {formatDate(userDetails.investorInfo.verifiedAt)}</p>
@@ -623,55 +654,36 @@ export function UserDetailsModal({ userId, open, onOpenChange, onAction }: UserD
                                         )}
 
                                         {/* Stats */}
-                                        <div className="grid grid-cols-3 gap-4">
+                                        {/* Stats (Vibrant & Contrast) */}
+                                        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 px-6 mb-8 mt-6">
                                             {(userDetails.role !== 'ADMIN' && userDetails.role !== 'SUPER_ADMIN') && (
-                                                <StatCard
-                                                    icon={Building2}
-                                                    label={userDetails.role === 'INVESTOR' ? 'Deals (Mock)' : 'Startups'}
-                                                    value={userDetails.role === 'INVESTOR' ? 0 : userDetails.startupCount}
-                                                    color="purple"
-                                                />
+                                                <div className="flex flex-col items-center justify-center p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm hover:shadow-md transition-all group hover:-translate-y-1">
+                                                    <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/20 text-white flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300">
+                                                        {userDetails.role === 'INVESTOR' ? <TrendingUp className="h-6 w-6" /> : <Building2 className="h-6 w-6" />}
+                                                    </div>
+                                                    <span className="text-3xl font-bold text-foreground tracking-tight">{userDetails.role === 'INVESTOR' ? 0 : userDetails.startupCount}</span>
+                                                    <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-1">{userDetails.role === 'INVESTOR' ? 'Deals' : 'Startups'}</span>
+                                                </div>
                                             )}
-                                            {(userDetails.role === 'ADMIN' || userDetails.role === 'SUPER_ADMIN') ? (
-                                                // Admin specific stats (focus on History/Security)
-                                                <>
-                                                    <StatCard
-                                                        icon={Clock}
-                                                        label="Admin Actions"
-                                                        value={userDetails.moderationHistory?.length || 0}
-                                                        color="purple"
-                                                    />
-                                                    <StatCard
-                                                        icon={Shield}
-                                                        label="Active Sessions"
-                                                        value={userDetails.hasActiveSession ? 'Active' : 'Offline'}
-                                                        color="green"
-                                                    />
-                                                    <StatCard
-                                                        icon={AlertTriangle}
-                                                        label="Warnings Received"
-                                                        value={userDetails.warningCount}
-                                                        color="yellow"
-                                                    />
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <StatCard
-                                                        icon={AlertTriangle}
-                                                        label="Warnings"
-                                                        value={userDetails.warningCount}
-                                                        color="yellow"
-                                                    />
-                                                    {/* Hide Plan Stat for Investors */}
-                                                    {userDetails.role !== 'INVESTOR' && (
-                                                        <StatCard
-                                                            icon={DollarSign}
-                                                            label="Plan"
-                                                            value={userDetails.currentSubscription?.plan || 'FREE'}
-                                                            color="blue"
-                                                        />
-                                                    )}
-                                                </>
+
+                                            <div className="flex flex-col items-center justify-center p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm hover:shadow-md transition-all group hover:-translate-y-1">
+                                                <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 shadow-lg shadow-amber-500/20 text-white flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300">
+                                                    <AlertTriangle className="h-6 w-6" />
+                                                </div>
+                                                <span className={cn("text-3xl font-bold tracking-tight", (userDetails.moderationHistory?.length || 0) > 0 ? "text-amber-600" : "text-foreground")}>
+                                                    {userDetails.moderationHistory?.length || 0}
+                                                </span>
+                                                <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-1">Warnings</span>
+                                            </div>
+
+                                            {(userDetails.role !== 'ADMIN' && userDetails.role !== 'SUPER_ADMIN') && (
+                                                <div className="flex flex-col items-center justify-center p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm hover:shadow-md transition-all group hover:-translate-y-1">
+                                                    <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-lg shadow-emerald-500/20 text-white flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300">
+                                                        <CreditCard className="h-6 w-6" />
+                                                    </div>
+                                                    <span className="text-xl font-bold text-foreground tracking-tight">FREE</span>
+                                                    <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-1">Plan</span>
+                                                </div>
                                             )}
                                         </div>
                                     </div>
@@ -679,13 +691,19 @@ export function UserDetailsModal({ userId, open, onOpenChange, onAction }: UserD
 
                                 {/* Startups/Deals Tab */}
                                 {activeTab === 'startups' && (
-                                    <div className="space-y-4">
+                                    <div className="space-y-4 px-8 pb-8">
                                         {userDetails.role === 'INVESTOR' ? (
-                                            <div className="text-center py-12 text-muted-foreground bg-muted/20 rounded-lg border border-dashed">
-                                                <TrendingUp className="h-12 w-12 mx-auto mb-2 opacity-50 text-emerald-500" />
-                                                <h4 className="text-lg font-semibold text-foreground">Deals Tracking</h4>
-                                                <p className="text-sm">Investment deals history will be available here soon.</p>
-                                                <Badge variant="outline" className="mt-2">Coming Soon</Badge>
+                                            <div className="flex flex-col items-center justify-center py-16 text-muted-foreground bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
+                                                <div className="h-16 w-16 bg-emerald-500/10 rounded-full flex items-center justify-center mb-4">
+                                                    <TrendingUp className="h-8 w-8 text-emerald-600" />
+                                                </div>
+                                                <h4 className="text-xl font-bold text-foreground mb-2">Deals Tracking</h4>
+                                                <p className="text-sm max-w-sm text-center mb-6">
+                                                    Investment deals history and performance tracking will be available here soon.
+                                                </p>
+                                                <Badge variant="secondary" className="px-4 py-1.5 text-xs font-semibold bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 border-emerald-200/50">
+                                                    Coming Soon
+                                                </Badge>
                                             </div>
                                         ) : (
                                             userDetails.startups && userDetails.startups.length > 0 ? (
@@ -693,31 +711,33 @@ export function UserDetailsModal({ userId, open, onOpenChange, onAction }: UserD
                                                     {userDetails.startups.map(startup => (
                                                         <div
                                                             key={startup.id}
-                                                            className="group relative flex flex-col justify-between p-4 rounded-xl border bg-card hover:shadow-md transition-all duration-200 hover:border-primary/20 cursor-pointer"
+                                                            className="group relative flex flex-col justify-between p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:shadow-lg hover:border-purple-500/50 transition-all duration-300 cursor-pointer overflow-hidden"
                                                             onClick={() => handleViewStartup(startup.id)}
                                                         >
-                                                            <div className="flex items-start justify-between mb-3">
+                                                            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-purple-500 to-blue-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+
+                                                            <div className="flex items-start justify-between mb-4 pl-2">
                                                                 <div className="flex items-center gap-3">
-                                                                    <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-purple-500/10 to-blue-500/10 flex items-center justify-center border border-purple-500/10 group-hover:border-purple-500/20 transition-colors">
-                                                                        <Building2 className="h-5 w-5 text-purple-600" />
+                                                                    <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-purple-500/10 to-blue-500/10 flex items-center justify-center border border-purple-500/10 group-hover:scale-105 transition-transform">
+                                                                        <Building2 className="h-6 w-6 text-purple-600" />
                                                                     </div>
                                                                     <div>
                                                                         <h4 className="font-bold text-base leading-tight group-hover:text-primary transition-colors line-clamp-1" title={startup.name}>
                                                                             {startup.name}
                                                                         </h4>
-                                                                        <p className="text-xs text-muted-foreground">{startup.industry || 'Tech'}</p>
+                                                                        <p className="text-xs text-muted-foreground mt-0.5">{startup.industry || 'Tech'}</p>
                                                                     </div>
                                                                 </div>
                                                                 {getStatusBadge(startup.status || 'PENDING')}
                                                             </div>
 
-                                                            <div className="space-y-3">
+                                                            <div className="space-y-3 pl-2">
                                                                 <div className="flex flex-wrap gap-2 text-xs">
-                                                                    <Badge variant="secondary" className="font-normal bg-secondary/50">
+                                                                    <Badge variant="outline" className="bg-background/50 font-normal">
                                                                         {startup.stage || 'Idea'}
                                                                     </Badge>
                                                                     {startup.role && (
-                                                                        <Badge variant="outline" className="font-medium bg-primary/5 text-primary border-primary/20">
+                                                                        <Badge className="bg-primary/5 text-primary border-primary/20 hover:bg-primary/10">
                                                                             {startup.role.replace('_', ' ')}
                                                                         </Badge>
                                                                     )}
@@ -726,14 +746,14 @@ export function UserDetailsModal({ userId, open, onOpenChange, onAction }: UserD
                                                                 <div className="pt-3 border-t grid grid-cols-2 gap-2 text-xs text-muted-foreground">
                                                                     <div className="flex flex-col">
                                                                         <span className="text-[10px] uppercase tracking-wider opacity-70">Raised</span>
-                                                                        <span className="font-semibold text-foreground flex items-center gap-1">
-                                                                            <DollarSign className="h-3 w-3" />
+                                                                        <span className="font-semibold text-foreground flex items-center gap-1 text-sm">
+                                                                            <DollarSign className="h-3.5 w-3.5 text-emerald-500" />
                                                                             {startup.raisedAmount?.toLocaleString() || 0}
                                                                         </span>
                                                                     </div>
                                                                     <div className="flex flex-col items-end">
                                                                         <span className="text-[10px] uppercase tracking-wider opacity-70">Created</span>
-                                                                        <span className="font-medium text-foreground">
+                                                                        <span className="font-medium text-foreground text-sm">
                                                                             {startup.createdAt ? new Date(startup.createdAt).toLocaleDateString() : '-'}
                                                                         </span>
                                                                     </div>
@@ -741,19 +761,21 @@ export function UserDetailsModal({ userId, open, onOpenChange, onAction }: UserD
                                                             </div>
 
                                                             {/* Hover Action */}
-                                                            <div className="absolute top-2 right-2">
-                                                                <div className="bg-background/80 backdrop-blur-sm rounded-full p-1.5 shadow-sm border">
-                                                                    <Eye className="h-3.5 w-3.5 text-primary" />
+                                                            <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity transform translate-x-2 group-hover:translate-x-0">
+                                                                <div className="bg-primary text-primary-foreground rounded-full p-2 shadow-md">
+                                                                    <Eye className="h-4 w-4" />
                                                                 </div>
                                                             </div>
                                                         </div>
                                                     ))}
                                                 </div>
                                             ) : (
-                                                <div className="text-center py-12 text-muted-foreground bg-muted/10 rounded-lg border border-dashed">
-                                                    <Briefcase className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                                                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
+                                                    <Briefcase className="h-12 w-12 mx-auto mb-3 opacity-20" />
                                                     <p className="font-medium">No startups associated</p>
-                                                    <p className="text-xs opacity-70 mt-1">This user is not an owner or member of any startup.</p>
+                                                    <p className="text-xs opacity-70 mt-1 max-w-xs text-center">
+                                                        This user is not currently listed as an owner or member of any startup.
+                                                    </p>
                                                 </div>
                                             )
                                         )}
@@ -762,7 +784,7 @@ export function UserDetailsModal({ userId, open, onOpenChange, onAction }: UserD
 
                                 {/* Transactions Tab */}
                                 {activeTab === 'transactions' && (
-                                    <div className="space-y-3">
+                                    <div className="space-y-3 px-8 pb-8">
                                         {userDetails.recentTransactions && userDetails.recentTransactions.length > 0 ? (
                                             userDetails.recentTransactions.map(tx => (
                                                 <div key={tx.transactionId} className="p-4 rounded-lg border bg-card">
@@ -798,42 +820,75 @@ export function UserDetailsModal({ userId, open, onOpenChange, onAction }: UserD
 
                                 {/* History Tab */}
                                 {activeTab === 'history' && (
-                                    <div className="space-y-3">
+                                    <div className="space-y-4 px-8 pb-8">
                                         {userDetails.moderationHistory && userDetails.moderationHistory.length > 0 ? (
-                                            userDetails.moderationHistory.map(log => (
-                                                <div key={log.id} className="p-4 rounded-lg border bg-card relative group">
-                                                    <div className="absolute top-2 right-2">
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                                            onClick={() => handleDeleteLog(log.id)}
-                                                        >
-                                                            <Trash2 className="h-4 w-4" />
-                                                        </Button>
-                                                    </div>
-                                                    <div className="flex items-start justify-between pr-8">
-                                                        <div>
-                                                            <h4 className="font-semibold flex items-center gap-2">
-                                                                <ActionIcon type={log.actionType} />
-                                                                {log.actionType.replace('_', ' ')}
-                                                            </h4>
-                                                            <p className="text-sm text-muted-foreground">{log.reason}</p>
+                                            <div className="relative border-l-2 border-muted ml-3 space-y-6 pl-6 pt-2">
+                                                {userDetails.moderationHistory.map(log => (
+                                                    <div key={log.id} className="relative group">
+                                                        {/* Timeline Dot */}
+                                                        <div className="absolute -left-[31px] top-4 h-4 w-4 rounded-full border-2 border-background bg-muted ring-2 ring-muted ring-offset-2 ring-offset-background group-hover:bg-primary transition-colors" />
+
+                                                        <div className="p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:shadow-md transition-all relative">
+                                                            {/* Header */}
+                                                            <div className="flex items-start justify-between mb-2">
+                                                                <div className="flex items-center gap-2.5">
+                                                                    <div className="p-1.5 rounded-lg bg-background border shadow-sm">
+                                                                        <ActionIcon type={log.actionType} />
+                                                                    </div>
+                                                                    <h4 className="font-semibold text-foreground">
+                                                                        {log.actionType.replace(/_/g, ' ')}
+                                                                    </h4>
+                                                                    <Badge variant={log.isActive ? 'default' : 'secondary'} className={cn(
+                                                                        "text-[10px] px-1.5 py-0 h-5",
+                                                                        log.isActive ? "bg-primary text-primary-foreground" : "text-muted-foreground bg-muted"
+                                                                    )}>
+                                                                        {log.isActive ? 'Active' : 'Resolved'}
+                                                                    </Badge>
+                                                                </div>
+
+                                                                {/* Delete Action - Visible on hover only */}
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-all text-muted-foreground hover:text-destructive hover:bg-destructive/10 -mt-1 -mr-1"
+                                                                    onClick={() => handleDeleteLog(log.id)}
+                                                                    title="Delete Entry"
+                                                                >
+                                                                    <Trash2 className="h-3.5 w-3.5" />
+                                                                </Button>
+                                                            </div>
+
+                                                            {/* Content */}
+                                                            <div className="space-y-2">
+                                                                <p className="text-sm text-foreground/80 bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-md border border-dashed border-slate-200 dark:border-slate-700">
+                                                                    {log.reason || <span className="text-muted-foreground italic">No reason provided</span>}
+                                                                </p>
+                                                                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground pt-1">
+                                                                    <div className="flex items-center gap-1.5">
+                                                                        <Shield className="h-3 w-3" />
+                                                                        <span>{log.adminEmail}</span>
+                                                                    </div>
+                                                                    <div className="flex items-center gap-1.5">
+                                                                        <Clock className="h-3 w-3" />
+                                                                        <span>{formatDate(log.createdAt)}</span>
+                                                                    </div>
+                                                                    {log.expiresAt && log.isActive && (
+                                                                        <div className="flex items-center gap-1.5 text-orange-500">
+                                                                            <AlertCircle className="h-3 w-3" />
+                                                                            <span>Expires: {formatDate(log.expiresAt)}</span>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
                                                         </div>
-                                                        <Badge variant={log.isActive ? 'default' : 'outline'}>
-                                                            {log.isActive ? 'Active' : 'Resolved'}
-                                                        </Badge>
                                                     </div>
-                                                    <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
-                                                        <span>By: {log.adminEmail}</span>
-                                                        <span>{formatDate(log.createdAt)}</span>
-                                                    </div>
-                                                </div>
-                                            ))
+                                                ))}
+                                            </div>
                                         ) : (
-                                            <div className="text-center py-8 text-muted-foreground">
-                                                <Clock className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                                                <p>No moderation history</p>
+                                            <div className="flex flex-col items-center justify-center py-16 text-muted-foreground bg-muted/10 rounded-xl border border-dashed">
+                                                <Clock className="h-12 w-12 mx-auto mb-3 opacity-20" />
+                                                <p className="font-medium">No moderation history</p>
+                                                <p className="text-xs opacity-70 mt-1">This user has a clean record.</p>
                                             </div>
                                         )}
                                     </div>
@@ -841,7 +896,9 @@ export function UserDetailsModal({ userId, open, onOpenChange, onAction }: UserD
 
                                 {/* Security Tab */}
                                 {activeTab === 'security' && (
-                                    <SecurityTab userId={userId} canManageUser={canManageUser} />
+                                    <div className="px-8 pb-8">
+                                        <SecurityTab userId={userId} canManageUser={canManageUser} />
+                                    </div>
                                 )}
                             </div>
                         </div>
@@ -922,41 +979,14 @@ export function UserDetailsModal({ userId, open, onOpenChange, onAction }: UserD
     )
 }
 
-// Helper Components
-function InfoRow({ icon: Icon, label, value }: { icon: React.ElementType, label: string, value: string }) {
-    return (
-        <div className="flex items-center gap-3">
-            <Icon className="h-4 w-4 text-muted-foreground" />
-            <div>
-                <p className="text-xs text-muted-foreground">{label}</p>
-                <p className="text-sm font-medium">{value}</p>
-            </div>
-        </div>
-    )
-}
 
-function StatCard({ icon: Icon, label, value, color }: { icon: React.ElementType, label: string, value: number | string, color: string }) {
-    const colors: Record<string, string> = {
-        purple: 'bg-purple-500/10 text-purple-500',
-        yellow: 'bg-yellow-500/10 text-yellow-500',
-        blue: 'bg-blue-500/10 text-blue-500',
-        green: 'bg-green-500/10 text-green-500',
-    }
-    return (
-        <div className={`p-4 rounded-lg ${colors[color]} text-center`}>
-            <Icon className="h-6 w-6 mx-auto mb-1" />
-            <p className="text-2xl font-bold">{value}</p>
-            <p className="text-xs">{label}</p>
-        </div>
-    )
-}
 
 function ActionIcon({ type }: { type: string }) {
     const icons: Record<string, React.ReactNode> = {
-        WARNING: <AlertTriangle className="h-4 w-4 text-yellow-500" />,
+        WARNING: <AlertTriangle className="h-4 w-4 text-amber-500" />,
         SUSPENSION: <Ban className="h-4 w-4 text-orange-500" />,
         PERMANENT_BAN: <XCircle className="h-4 w-4 text-red-500" />,
-        UNSUSPEND: <CheckCircle className="h-4 w-4 text-green-500" />,
+        UNSUSPEND: <CheckCircle className="h-4 w-4 text-emerald-500" />,
         DELETE: <XCircle className="h-4 w-4 text-red-500" />,
     }
     return icons[type] || <Clock className="h-4 w-4 text-muted-foreground" />
@@ -1069,6 +1099,21 @@ function SecurityTab({ userId, canManageUser }: { userId: string | null, canMana
                     <p>No active sessions found</p>
                 </div>
             )}
+        </div>
+    )
+}
+
+// Helper Components
+function InfoRow({ icon: Icon, label, value, iconColor }: { icon: any, label: string, value: React.ReactNode, iconColor?: string }) {
+    return (
+        <div className="flex items-center gap-3 p-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:shadow-sm transition-colors">
+            <div className={cn("flex flex-shrink-0 items-center justify-center h-8 w-8 rounded-full bg-background shadow-sm border border-border/50", iconColor ? iconColor.replace('text-', 'bg-').replace('500', '100') : "bg-muted/50")}>
+                <Icon className={cn("h-4 w-4", iconColor || "text-muted-foreground")} />
+            </div>
+            <div className="flex flex-col min-w-0">
+                <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/80">{label}</span>
+                <span className="text-sm font-medium truncate text-foreground">{value}</span>
+            </div>
         </div>
     )
 }

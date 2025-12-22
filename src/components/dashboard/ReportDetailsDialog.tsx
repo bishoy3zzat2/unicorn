@@ -24,6 +24,7 @@ import {
 
     ArrowRight,
     Trash2,
+    Gavel,
 } from 'lucide-react'
 import { getReportDetails, Report } from '../../lib/api'
 import { formatDate } from '../../lib/utils'
@@ -31,6 +32,7 @@ import { toast } from 'sonner'
 import { Card, CardContent } from '../ui/card'
 import { UserDetailsModal } from './UserDetailsModal'
 import { StartupDetailsDialog } from './StartupDetailsDialog'
+import { ReportResolutionDialog } from './ReportResolutionDialog'
 import { Button } from '../ui/button'
 import {
     DropdownMenu,
@@ -43,6 +45,7 @@ import {
 import { MoreVertical } from "lucide-react"
 import { WarnStartupDialog, StartupStatusDialog, DeleteStartupDialog } from "./StartupActionDialogs"
 import { Startup } from '../../types'
+import { cn } from '../../lib/utils'
 
 const REPORT_REASON_LABELS: Record<string, string> = {
     SPAM: 'Spam',
@@ -76,6 +79,9 @@ export function ReportDetailsDialog({ reportId, open, onOpenChange, onReportUpda
     const [warnStartupOpen, setWarnStartupOpen] = useState(false)
     const [statusStartupOpen, setStatusStartupOpen] = useState(false)
     const [deleteStartupOpen, setDeleteStartupOpen] = useState(false)
+
+    // Resolution state
+    const [resolveDialogOpen, setResolveDialogOpen] = useState(false)
 
     useEffect(() => {
         if (open && reportId) {
@@ -176,7 +182,7 @@ export function ReportDetailsDialog({ reportId, open, onOpenChange, onReportUpda
     return (
         <>
             <Dialog open={open} onOpenChange={onOpenChange}>
-                <DialogContent className="max-w-5xl p-0 gap-0 overflow-hidden bg-background border-border sm:rounded-2xl max-h-[95vh] flex flex-col">
+                <DialogContent className="max-w-5xl p-0 gap-0 overflow-hidden bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 sm:rounded-2xl max-h-[95vh] flex flex-col shadow-2xl [&>button]:hidden">
                     {loading ? (
                         <div className="flex flex-col items-center justify-center py-32 space-y-4">
                             <div className="relative">
@@ -188,69 +194,102 @@ export function ReportDetailsDialog({ reportId, open, onOpenChange, onReportUpda
                     ) : report && statusConfig ? (
                         <>
                             {/* Header Section */}
-                            <div className="bg-muted/30 border-b border-border p-6 pr-12 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shrink-0">
-                                <div className="space-y-1">
-                                    <div className="flex items-center gap-3">
-                                        <h2 className="text-xl font-bold tracking-tight text-foreground">Report #{report.id.substring(0, 8)}</h2>
-                                        <Badge variant="outline" className={`${statusConfig.bg} ${statusConfig.text} ${statusConfig.border} gap-1.5 py-1 pr-3`}>
-                                            <statusConfig.icon className="h-3.5 w-3.5" />
-                                            {statusConfig.label}
-                                        </Badge>
-                                    </div>
-                                    <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                                        <span className="flex items-center gap-1.5">
-                                            <Calendar className="h-3.5 w-3.5" />
-                                            {formatDate(report.createdAt)}
-                                        </span>
-                                        <Separator orientation="vertical" className="h-3 bg-border sm:block hidden" />
-                                        <div className="flex items-center gap-1.5 group cursor-pointer" onClick={() => { navigator.clipboard.writeText(report.id); toast.success('Full ID Copied') }}>
-                                            <span className="font-mono text-xs opacity-70">ID: {report.id}</span>
-                                            <Copy className="h-3 w-3 transition-opacity" />
+                            <div className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 p-5 shrink-0">
+                                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                                    <div className="space-y-1">
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg text-indigo-600 dark:text-indigo-400">
+                                                <Shield className="h-5 w-5" />
+                                            </div>
+                                            <div className="space-y-0.5">
+                                                <h2 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
+                                                    Report Details
+                                                    <span className="text-muted-foreground font-normal text-base">#{report.id.substring(0, 8)}</span>
+                                                </h2>
+                                                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                                    <span className="flex items-center gap-1.5">
+                                                        <Calendar className="h-3.5 w-3.5" />
+                                                        {formatDate(report.createdAt)}
+                                                    </span>
+                                                    <Separator orientation="vertical" className="h-3 bg-border sm:block hidden" />
+                                                    <div className="flex items-center gap-1.5 group cursor-pointer hover:text-foreground transition-colors" onClick={() => { navigator.clipboard.writeText(report.id); toast.success('Full ID Copied') }}>
+                                                        <Copy className="h-3 w-3" />
+                                                        <span className="font-mono opacity-80">Copy UUID</span>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
 
-                                {/* Quick Stats / Severity Indicator could go here */}
-                                <div className="flex items-center gap-2">
-                                    <div className="bg-background border border-border px-3 py-1.5 rounded-lg flex items-center gap-2 shadow-sm">
-                                        <Flag className="h-4 w-4 text-orange-500" />
-                                        <span className="text-sm font-semibold">{REPORT_REASON_LABELS[report.reason] || report.reason}</span>
+                                    {/* Actions & Status */}
+                                    <div className="flex items-center gap-3">
+                                        <Badge variant="outline" className={cn("gap-1.5 py-1.5 px-3 text-sm font-medium border-transparent shadow-sm", statusConfig.bg, statusConfig.text)}>
+                                            <statusConfig.icon className="h-4 w-4" />
+                                            {statusConfig.label}
+                                        </Badge>
+
+                                        {(report.status !== 'RESOLVED' && report.status !== 'REJECTED') && (
+                                            <Button
+                                                onClick={() => setResolveDialogOpen(true)}
+                                                className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-all hover:shadow-md"
+                                                size="sm"
+                                            >
+                                                <Gavel className="h-4 w-4" />
+                                                Resolve Report
+                                            </Button>
+                                        )}
+
+                                        <div className="h-6 w-px bg-border mx-1" />
+
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => onOpenChange(false)}
+                                            className="rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 transition-colors h-8 w-8"
+                                        >
+                                            <XCircle className="h-5 w-5 opacity-70" />
+                                        </Button>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="flex-1 overflow-y-auto">
+                            <div className="flex-1 overflow-y-auto bg-white dark:bg-slate-950">
                                 <div className="p-6 space-y-8">
-
                                     {/* ENTITIES ROW - SIDE BY SIDE */}
                                     <div className="grid md:grid-cols-2 gap-6">
 
-                                        {/* REPORTER (LEFT) - Often context starts here */}
-                                        <Card className="group relative overflow-hidden bg-card/50 hover:bg-card transition-all border-border shadow-sm">
-                                            <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500/50 group-hover:bg-indigo-500 transition-colors" />
+                                        {/* REPORTER (LEFT) */}
+                                        <Card className="group relative overflow-hidden bg-gradient-to-br from-indigo-50/50 to-background dark:from-indigo-950/10 dark:to-background border-indigo-100 dark:border-indigo-900/30 hover:shadow-md transition-all">
                                             <CardContent className="p-5">
-                                                <div className="flex justify-between items-start mb-4">
+                                                <div className="flex justify-between items-center mb-4 border-b border-indigo-100 dark:border-indigo-900/30 pb-3">
                                                     <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
                                                         <MessageSquare className="h-3.5 w-3.5" />
                                                         Reporter
                                                     </div>
-                                                    <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs text-muted-foreground hover:text-foreground" onClick={() => setViewUserId(report.reporterId)}>
-                                                        View Profile <ArrowRight className="h-3 w-3" />
+                                                    <Button variant="ghost" size="sm" className="h-7 text-xs text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20" onClick={() => setViewUserId(report.reporterId)}>
+                                                        View Profile <ArrowRight className="h-3 w-3 ml-1" />
                                                     </Button>
                                                 </div>
 
                                                 <div className="flex items-center gap-4">
-                                                    <div className="h-12 w-12 rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 ring-4 ring-background overflow-hidden">
-                                                        {report.reporterImage ? (
-                                                            <img src={report.reporterImage} alt="Reporter" className="h-full w-full object-cover" />
-                                                        ) : (
-                                                            <User className="h-6 w-6" />
-                                                        )}
+                                                    <div className="relative">
+                                                        <div className="h-14 w-14 rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 ring-4 ring-background shadow-sm overflow-hidden">
+                                                            {report.reporterImage ? (
+                                                                <img src={report.reporterImage} alt="Reporter" className="h-full w-full object-cover" />
+                                                            ) : (
+                                                                <User className="h-7 w-7" />
+                                                            )}
+                                                        </div>
+                                                        <div className="absolute -bottom-1 -right-1 bg-background rounded-full p-0.5">
+                                                            <div className="bg-indigo-500 h-3 w-3 rounded-full border-2 border-background" />
+                                                        </div>
                                                     </div>
                                                     <div className="flex-1 min-w-0">
-                                                        <p className="font-semibold text-foreground text-lg truncate">{report.reporterName || 'Platform User'}</p>
-                                                        <div className="flex items-center gap-1.5 group/id">
-                                                            <code className="text-xs text-muted-foreground font-mono bg-muted px-1.5 rounded">{report.reporterId}</code>
+                                                        <p className="font-bold text-lg text-foreground truncate">{report.reporterName || 'Platform User'}</p>
+                                                        <div className="flex items-center gap-2 mt-1">
+                                                            <Badge variant="secondary" className="font-mono text-[10px] bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-300 pointer-events-none">
+                                                                ID: {report.reporterId.substring(0, 8)}...
+                                                            </Badge>
                                                             <CopyButton value={report.reporterId} />
                                                         </div>
                                                     </div>
@@ -258,23 +297,19 @@ export function ReportDetailsDialog({ reportId, open, onOpenChange, onReportUpda
                                             </CardContent>
                                         </Card>
 
-                                        {/* TARGET (RIGHT) - The focus */}
-                                        <Card className="group relative overflow-hidden bg-card/50 hover:bg-card transition-all border-border shadow-sm">
-                                            <div className="absolute top-0 left-0 w-1 h-full bg-orange-500/50 group-hover:bg-orange-500 transition-colors" />
+                                        {/* TARGET (RIGHT) */}
+                                        <Card className="group relative overflow-hidden bg-gradient-to-br from-orange-50/50 to-background dark:from-orange-950/10 dark:to-background border-orange-100 dark:border-orange-900/30 hover:shadow-md transition-all">
                                             <CardContent className="p-5">
-                                                <div className="flex justify-between items-start mb-4">
+                                                <div className="flex justify-between items-center mb-4 border-b border-orange-100 dark:border-orange-900/30 pb-3">
                                                     <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400">
                                                         <AlertTriangle className="h-3.5 w-3.5" />
                                                         Reported Entity
                                                     </div>
                                                     <div className="flex items-center gap-1">
-                                                        <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs text-muted-foreground hover:text-foreground" onClick={handleViewReported}>
-                                                            View Details <ExternalLink className="h-3 w-3" />
-                                                        </Button>
                                                         {report.reportedEntityType === 'STARTUP' && (
                                                             <DropdownMenu>
                                                                 <DropdownMenuTrigger asChild>
-                                                                    <Button variant="ghost" size="icon" className="h-7 w-7">
+                                                                    <Button variant="ghost" size="icon" className="h-7 w-7 text-orange-600 hover:text-orange-700 hover:bg-orange-50 dark:hover:bg-orange-900/20">
                                                                         <MoreVertical className="h-3.5 w-3.5" />
                                                                     </Button>
                                                                 </DropdownMenuTrigger>
@@ -285,11 +320,11 @@ export function ReportDetailsDialog({ reportId, open, onOpenChange, onReportUpda
                                                                         Manage Startup
                                                                     </DropdownMenuItem>
                                                                     <DropdownMenuSeparator />
-                                                                    <DropdownMenuItem onClick={() => setWarnStartupOpen(true)}>
+                                                                    <DropdownMenuItem onClick={() => setWarnStartupOpen(true)} className="text-amber-600">
                                                                         <AlertTriangle className="mr-2 h-4 w-4" />
                                                                         Issue Warning
                                                                     </DropdownMenuItem>
-                                                                    <DropdownMenuItem onClick={() => setStatusStartupOpen(true)}>
+                                                                    <DropdownMenuItem onClick={() => setStatusStartupOpen(true)} className="text-indigo-600">
                                                                         <Shield className="mr-2 h-4 w-4" />
                                                                         Change Status
                                                                     </DropdownMenuItem>
@@ -300,21 +335,31 @@ export function ReportDetailsDialog({ reportId, open, onOpenChange, onReportUpda
                                                                 </DropdownMenuContent>
                                                             </DropdownMenu>
                                                         )}
+                                                        <Button variant="ghost" size="sm" className="h-7 text-xs text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20" onClick={handleViewReported}>
+                                                            View Details <ExternalLink className="h-3 w-3 ml-1" />
+                                                        </Button>
                                                     </div>
                                                 </div>
 
                                                 <div className="flex items-center gap-4">
-                                                    <div className="h-12 w-12 rounded-xl bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400 flex items-center justify-center shrink-0 ring-4 ring-background overflow-hidden">
-                                                        {report.reportedEntityImage ? (
-                                                            <img src={report.reportedEntityImage} alt="Entity" className="h-full w-full object-cover" />
-                                                        ) : (
-                                                            report.reportedEntityType === 'USER' ? <User className="h-6 w-6" /> : <Building2 className="h-6 w-6" />
-                                                        )}
+                                                    <div className="relative">
+                                                        <div className="h-14 w-14 rounded-xl bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400 flex items-center justify-center shrink-0 ring-4 ring-background shadow-sm overflow-hidden">
+                                                            {report.reportedEntityImage ? (
+                                                                <img src={report.reportedEntityImage} alt="Entity" className="h-full w-full object-cover" />
+                                                            ) : (
+                                                                report.reportedEntityType === 'USER' ? <User className="h-7 w-7" /> : <Building2 className="h-7 w-7" />
+                                                            )}
+                                                        </div>
+                                                        <div className="absolute -bottom-1 -right-1 bg-background rounded-full p-0.5">
+                                                            <div className="bg-orange-500 h-3 w-3 rounded-full border-2 border-background" />
+                                                        </div>
                                                     </div>
                                                     <div className="flex-1 min-w-0">
-                                                        <p className="font-semibold text-foreground text-lg capitalize truncate">{report.reportedEntityName || `${report.reportedEntityType.toLowerCase()} Account`}</p>
-                                                        <div className="flex items-center gap-1.5 group/id">
-                                                            <code className="text-xs text-muted-foreground font-mono bg-muted px-1.5 rounded">{report.reportedEntityId}</code>
+                                                        <p className="font-bold text-lg text-foreground capitalize truncate">{report.reportedEntityName || `${report.reportedEntityType.toLowerCase()} Account`}</p>
+                                                        <div className="flex items-center gap-2 mt-1">
+                                                            <Badge variant="secondary" className="font-mono text-[10px] bg-orange-50 text-orange-700 dark:bg-orange-900/20 dark:text-orange-300 pointer-events-none">
+                                                                ID: {report.reportedEntityId.substring(0, 8)}...
+                                                            </Badge>
                                                             <CopyButton value={report.reportedEntityId} />
                                                         </div>
                                                     </div>
@@ -323,67 +368,89 @@ export function ReportDetailsDialog({ reportId, open, onOpenChange, onReportUpda
                                         </Card>
                                     </div>
 
-                                    <Separator className="bg-border/60" />
-
                                     {/* REPORT DETAILS CONTENT */}
                                     <div className="grid lg:grid-cols-3 gap-8">
 
                                         {/* MAIN CONTENT (Description) */}
                                         <div className="lg:col-span-2 space-y-6">
-                                            <div>
-                                                <h3 className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
-                                                    <span className="bg-primary/10 text-primary p-1 rounded-md"><MessageSquare className="h-4 w-4" /></span>
+                                            <div className="space-y-3">
+                                                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                                                    <div className="p-1.5 bg-background border rounded-md shadow-sm">
+                                                        <Flag className="h-3.5 w-3.5 text-red-500" />
+                                                    </div>
                                                     Report Description
                                                 </h3>
-                                                <div className="bg-muted/30 p-5 rounded-xl border border-border/50 text-sm leading-relaxed text-foreground/90 shadow-sm min-h-[120px]">
-                                                    {report.description}
+                                                <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 text-sm leading-relaxed text-foreground shadow-sm min-h-[120px] relative">
+                                                    {/* Quote Icon Background */}
+                                                    <div className="absolute top-4 right-4 text-muted-foreground/10">
+                                                        <MessageSquare className="h-12 w-12" />
+                                                    </div>
+                                                    <div className="relative z-10">
+                                                        {report.description}
+                                                    </div>
                                                 </div>
                                             </div>
 
                                             {/* RESOLUTION SECTION (Conditional) */}
                                             {(report.status === 'RESOLVED' || report.status === 'REJECTED') && (
-                                                <div className="space-y-3 pt-2">
-                                                    <h3 className="text-sm font-medium text-foreground mb-2 flex items-center gap-2">
-                                                        <span className="bg-emerald-500/10 text-emerald-600 p-1 rounded-md"><Shield className="h-4 w-4" /></span>
+                                                <div className="space-y-3 pt-4 border-t border-dashed">
+                                                    <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                                                        <div className="p-1.5 bg-background border rounded-md shadow-sm">
+                                                            <Shield className="h-3.5 w-3.5 text-emerald-600" />
+                                                        </div>
                                                         Resolution Outcome
                                                     </h3>
-                                                    <div className="bg-background border border-border rounded-xl overflow-hidden shadow-sm">
-                                                        <div className="p-4 grid sm:grid-cols-2 gap-4 bg-muted/20">
-                                                            <div>
+                                                    <div className="bg-gradient-to-br from-emerald-50/50 to-background dark:from-emerald-950/10 dark:to-background border border-emerald-100 dark:border-emerald-900/30 rounded-xl overflow-hidden shadow-sm">
+                                                        <div className="p-5 grid sm:grid-cols-2 gap-6">
+                                                            <div className="space-y-1">
                                                                 <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Action Taken</span>
-                                                                <div className="mt-1 flex items-center gap-2">
-                                                                    <Badge variant="secondary" className="bg-background font-mono">{report.adminAction || 'None'}</Badge>
+                                                                <div className="flex items-center gap-2">
+                                                                    <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 px-3 py-1 text-sm">
+                                                                        {report.adminAction || 'None'}
+                                                                    </Badge>
                                                                 </div>
                                                             </div>
-                                                            <div>
+                                                            <div className="space-y-1">
                                                                 <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Resolved On</span>
-                                                                <div className="mt-1 text-sm font-medium">
+                                                                <div className="text-sm font-medium flex items-center gap-1.5">
+                                                                    <Calendar className="h-3.5 w-3.5 text-emerald-600" />
                                                                     {report.resolvedAt ? formatDate(report.resolvedAt) : 'N/A'}
                                                                 </div>
                                                             </div>
                                                         </div>
                                                         {(report.adminNotes || report.actionDetails) && (
-                                                            <div className="p-4 border-t border-border space-y-3">
+                                                            <div className="px-5 py-4 border-t border-emerald-100 dark:border-emerald-900/30 space-y-4 bg-emerald-50/30 dark:bg-emerald-950/5">
                                                                 {report.actionDetails && (
-                                                                    <div>
-                                                                        <span className="text-xs text-muted-foreground block mb-1">System Action Details</span>
-                                                                        <p className="bg-muted/50 p-2 rounded text-foreground/80 font-mono text-xs">{report.actionDetails}</p>
+                                                                    <div className="space-y-1.5">
+                                                                        <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">Public Details</span>
+                                                                        <p className="text-sm text-foreground/80">{report.actionDetails}</p>
                                                                     </div>
                                                                 )}
                                                                 {report.adminNotes && (
-                                                                    <div>
-                                                                        <span className="text-xs text-muted-foreground block mb-1">Admin Notes</span>
-                                                                        <p className="text-sm italic text-foreground/80 pl-2 border-l-2 border-primary/20">{report.adminNotes}</p>
+                                                                    <div className="space-y-1.5">
+                                                                        <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">Internal Notes</span>
+                                                                        <div className="bg-background/50 p-3 rounded-lg border border-emerald-100 dark:border-emerald-900/20 text-sm text-muted-foreground italic">
+                                                                            "{report.adminNotes}"
+                                                                        </div>
                                                                     </div>
                                                                 )}
                                                             </div>
                                                         )}
-                                                        <div className="bg-muted/40 px-4 py-2 border-t border-border flex items-center gap-2 text-xs">
-                                                            {report.notifyReporter ? (
-                                                                <span className="flex items-center gap-1.5 text-emerald-600"><CheckCircle2 className="h-3 w-3" /> Reporter was notified</span>
-                                                            ) : (
-                                                                <span className="flex items-center gap-1.5 text-muted-foreground"><XCircle className="h-3 w-3" /> Reporter was not notified</span>
-                                                            )}
+                                                        <div className="px-5 py-3 border-t border-emerald-100 dark:border-emerald-900/30 flex items-center gap-3 text-xs bg-emerald-50/50 dark:bg-emerald-950/10">
+                                                            <span className="font-semibold text-emerald-700 dark:text-emerald-400">Notifications:</span>
+                                                            <div className="flex items-center gap-3">
+                                                                {report.notifyReporter ? (
+                                                                    <span className="flex items-center gap-1.5 text-emerald-600"><CheckCircle2 className="h-3 w-3" /> Reporter Notified</span>
+                                                                ) : (
+                                                                    <span className="flex items-center gap-1.5 text-muted-foreground"><XCircle className="h-3 w-3" /> Reporter Skipped</span>
+                                                                )}
+                                                                <span className="text-emerald-200">|</span>
+                                                                {report.notifyReportedEntity ? (
+                                                                    <span className="flex items-center gap-1.5 text-emerald-600"><CheckCircle2 className="h-3 w-3" /> Entity Notified</span>
+                                                                ) : (
+                                                                    <span className="flex items-center gap-1.5 text-muted-foreground"><XCircle className="h-3 w-3" /> Entity Skipped</span>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -392,30 +459,34 @@ export function ReportDetailsDialog({ reportId, open, onOpenChange, onReportUpda
 
                                         {/* SIDEBAR METADATA */}
                                         <div className="space-y-6">
-                                            <div className="rounded-xl border border-border bg-card/40 p-5 space-y-4">
-                                                <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Metadata</h4>
-
-                                                <div className="space-y-3">
+                                            <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm p-0 overflow-hidden">
+                                                <div className="bg-slate-50 dark:bg-slate-800/50 p-3 border-b border-slate-200 dark:border-slate-800">
+                                                    <h4 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-2">
+                                                        <Eye className="h-3.5 w-3.5" />
+                                                        Report Metadata
+                                                    </h4>
+                                                </div>
+                                                <div className="p-4 space-y-4">
                                                     <div className="flex justify-between items-center text-sm">
                                                         <span className="text-muted-foreground">Type</span>
-                                                        <Badge variant="outline" className="bg-background">{report.reportedEntityType}</Badge>
+                                                        <Badge variant="outline" className="bg-background font-medium">{report.reportedEntityType}</Badge>
                                                     </div>
                                                     <div className="flex justify-between items-center text-sm">
                                                         <span className="text-muted-foreground">Reason</span>
-                                                        <span className="font-medium">{REPORT_REASON_LABELS[report.reason] || report.reason}</span>
+                                                        <span className="font-medium text-foreground">{REPORT_REASON_LABELS[report.reason] || report.reason}</span>
                                                     </div>
                                                     <Separator className="bg-border/60" />
-                                                    <div className="space-y-1">
-                                                        <span className="text-xs text-muted-foreground">Submission Date</span>
-                                                        <div className="flex items-center gap-2 text-sm font-medium">
-                                                            <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+                                                    <div className="space-y-1.5">
+                                                        <span className="text-xs text-muted-foreground uppercase tracking-wider">Submission Date</span>
+                                                        <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                                                            <Calendar className="h-4 w-4 text-indigo-500" />
                                                             {formatDate(report.createdAt)}
                                                         </div>
                                                     </div>
-                                                    <div className="space-y-1">
-                                                        <span className="text-xs text-muted-foreground">Last Update</span>
-                                                        <div className="flex items-center gap-2 text-sm font-medium">
-                                                            <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                                                    <div className="space-y-1.5">
+                                                        <span className="text-xs text-muted-foreground uppercase tracking-wider">Last Update</span>
+                                                        <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                                                            <Clock className="h-4 w-4 text-orange-500" />
                                                             {formatDate(report.updatedAt)}
                                                         </div>
                                                     </div>
@@ -445,6 +516,17 @@ export function ReportDetailsDialog({ reportId, open, onOpenChange, onReportUpda
                     if (reportId) loadReport()
                 }}
             />
+
+            {report && (
+                <ReportResolutionDialog
+                    open={resolveDialogOpen}
+                    onOpenChange={setResolveDialogOpen}
+                    report={report}
+                    onSuccess={() => {
+                        if (reportId) loadReport()
+                    }}
+                />
+            )}
 
             {/* Startup Action Dialogs */}
             {

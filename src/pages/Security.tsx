@@ -280,7 +280,7 @@ export function Security() {
                 </div>
 
                 <div className="grid gap-6 md:grid-cols-2">
-                    <Card className="md:col-span-1 border-purple-200 bg-purple-50/10 dark:bg-purple-900/10">
+                    <Card className="md:col-span-1 border-purple-200 dark:border-purple-800/50 bg-white dark:bg-slate-900 shadow-sm">
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
                                 <Monitor className="h-5 w-5 text-purple-600" />
@@ -304,14 +304,14 @@ export function Security() {
                                         </div>
                                     </div>
 
-                                    <div className="bg-background/80 p-4 rounded-xl border text-center shadow-sm">
+                                    <div className="bg-purple-50 dark:bg-purple-950/50 p-4 rounded-xl border border-purple-200 dark:border-purple-800/50 text-center shadow-sm">
                                         <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1">Session Expires In</p>
                                         <p className="text-3xl font-mono font-bold text-primary tracking-tight">{timeRemaining}</p>
                                     </div>
 
                                     <div>
                                         <p className="text-xs font-medium text-muted-foreground mb-1 uppercase">User Subject</p>
-                                        <p className="font-mono text-xs bg-muted p-2 rounded truncate border">{tokenDetails.sub}</p>
+                                        <p className="font-mono text-xs bg-slate-100 dark:bg-slate-800 p-2 rounded truncate border border-slate-200 dark:border-slate-700">{tokenDetails.sub}</p>
                                     </div>
                                 </>
                             ) : (
@@ -320,7 +320,7 @@ export function Security() {
                         </CardContent>
                     </Card>
 
-                    <Card className="md:col-span-1 border-blue-200 bg-blue-50/10 dark:bg-blue-900/10">
+                    <Card className="md:col-span-1 border-blue-200 dark:border-blue-800/50 bg-white dark:bg-slate-900 shadow-sm">
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
                                 <RefreshCw className="h-5 w-5 text-blue-600" />
@@ -340,7 +340,7 @@ export function Security() {
 
                                     <div>
                                         <p className="text-xs font-medium text-muted-foreground mb-1 uppercase">Token ID (Opaque)</p>
-                                        <p className="font-mono text-xs bg-muted p-2 rounded break-all border text-muted-foreground">
+                                        <p className="font-mono text-xs bg-slate-100 dark:bg-slate-800 p-2 rounded break-all border border-slate-200 dark:border-slate-700 text-muted-foreground">
                                             {refreshTokenDetails.token}
                                         </p>
                                     </div>

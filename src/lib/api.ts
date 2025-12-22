@@ -99,11 +99,14 @@ export interface InvestorVerification {
     id: string;
     userId: string;
     userEmail: string;
+    userName?: string;
+    userAvatar?: string;
     bio: string;
     investmentBudget: number;
     preferredIndustries: string;
     linkedInUrl: string;
     verificationRequestedAt: string;
+    readyForPayment?: boolean;
 }
 
 export interface InvestorStats {
@@ -113,8 +116,22 @@ export interface InvestorStats {
     totalInvestmentBudget: number;
 }
 
-export async function fetchVerificationQueue(): Promise<InvestorVerification[]> {
-    return request(api.get('/admin/investors/queue'));
+export interface InvestorQueueResponse {
+    content: InvestorVerification[];
+    totalElements: number;
+    totalPages: number;
+    currentPage: number;
+    pageSize: number;
+}
+
+export async function fetchVerificationQueue(
+    page: number = 0,
+    size: number = 20,
+    query?: string
+): Promise<InvestorQueueResponse> {
+    const params: any = { page, size };
+    if (query) params.query = query;
+    return request(api.get('/admin/investors/queue', { params }));
 }
 
 export async function fetchInvestorStats(): Promise<InvestorStats> {
@@ -128,6 +145,7 @@ export async function approveInvestorForPayment(id: string): Promise<{ message: 
 export async function rejectInvestorVerification(id: string, reason?: string): Promise<{ message: string }> {
     return request(api.post(`/admin/investors/${id}/reject-verification`, { reason }));
 }
+
 
 // ==================== App Config API ====================
 
@@ -360,6 +378,8 @@ export interface Report {
     reportedEntityName?: string;
     reportedEntityImage?: string;
     reportedEntityStatus?: string;
+    notifyReportedEntity?: boolean;
+    reportedEntityNotified?: boolean;
 }
 
 export interface ReporterStatistics {
@@ -381,11 +401,16 @@ export interface CreateReportRequest {
     description: string;
 }
 
+export type NotificationChannel = 'EMAIL' | 'IN_APP';
+
 export interface ResolveReportRequest {
     adminAction: string;
     actionDetails?: string;
     adminNotes?: string;
     notifyReporter?: boolean;
+    reporterNotificationChannels?: NotificationChannel[];
+    notifyReportedEntity?: boolean;
+    reportedEntityNotificationChannels?: NotificationChannel[];
 }
 
 // User endpoints

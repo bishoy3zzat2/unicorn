@@ -47,6 +47,7 @@ public class UserResponseService {
                 user.getInvestorProfile() != null,
                 user.getStartups() != null && !user.getStartups().isEmpty(),
                 hasActiveSession,
-                user.getPreferredCurrency());
+                user.getPreferredCurrency(),
+                user.getInvestorProfile() != null && Boolean.TRUE.equals(user.getInvestorProfile().getIsVerified()));
     }
 }

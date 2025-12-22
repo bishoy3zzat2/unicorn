@@ -278,7 +278,22 @@ public class ReportService {
         reporterStatisticsRepository.save(stats);
 
         // TODO: Execute the actual admin action (warning, suspension, etc.)
-        // TODO: Send notification to reporter if requested
+        // Mock Notification Logic
+        if (Boolean.TRUE.equals(request.notifyReporter())) {
+            List<NotificationChannel> channels = request.reporterNotificationChannels() != null
+                    ? request.reporterNotificationChannels()
+                    : List.of(NotificationChannel.IN_APP); // Default
+            System.out.println("Mock: Notifying User " + report.getReporterId() + " via " + channels);
+            // TODO: Call NotificationService
+        }
+
+        if (Boolean.TRUE.equals(request.notifyReportedEntity())) {
+            List<NotificationChannel> channels = request.reportedEntityNotificationChannels() != null
+                    ? request.reportedEntityNotificationChannels()
+                    : List.of(NotificationChannel.IN_APP); // Default
+            System.out.println("Mock: Notifying Reported Entity " + report.getReportedEntityId() + " via " + channels);
+            // TODO: Call NotificationService
+        }
 
         return savedReport;
     }

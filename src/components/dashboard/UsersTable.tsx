@@ -23,7 +23,8 @@ import {
 import {
     Building2, TrendingUp, User as UserIcon, Loader2, ChevronLeft,
     ChevronRight, ChevronsLeft, ChevronsRight, Search, Eye, Ban,
-    AlertTriangle, Trash2, Shield, Clock, Download, RotateCcw, UserPlus, MoreVertical, Calendar
+    AlertTriangle, Trash2, Shield, Clock, Download, RotateCcw, UserPlus, MoreVertical, Calendar,
+    Filter, Table as TableIcon, Database, BadgeCheck
 } from 'lucide-react'
 import { toast } from 'sonner'
 import api from '../../lib/axios'
@@ -67,6 +68,7 @@ interface UserData {
     suspendReason?: string | null
     hasInvestorProfile?: boolean
     hasStartups?: boolean
+    isInvestorVerified?: boolean
 }
 
 const EXPORTABLE_COLUMNS = [
@@ -366,22 +368,23 @@ export function UsersTable() {
 
     const getIcon = (role: string) => {
         const r = role?.toLowerCase() || ''
-        if (r === 'investor') return <TrendingUp className="h-4 w-4 text-emerald-500" />
-        if (r === 'startup' || r === 'startup_owner') return <Building2 className="h-4 w-4 text-purple-500" />
-        if (r === 'admin') return <Shield className="h-4 w-4 text-yellow-500" />
-        return <UserIcon className="h-4 w-4 text-blue-500" />
+        if (r === 'investor') return <TrendingUp className="h-4 w-4 text-emerald-600" />
+        if (r === 'startup' || r === 'startup_owner') return <Building2 className="h-4 w-4 text-indigo-600" />
+        if (r === 'admin') return <Shield className="h-4 w-4 text-amber-600" />
+        if (r === 'super_admin') return <Shield className="h-4 w-4 text-rose-600" />
+        return <UserIcon className="h-4 w-4 text-slate-600" />
     }
 
     const getStatusBadge = (status: string) => {
         const styles: Record<string, string> = {
-            ACTIVE: 'bg-green-500/10 text-green-500 border-green-500/30',
-            SUSPENDED: 'bg-orange-500/10 text-orange-500 border-orange-500/30',
-            BANNED: 'bg-red-500/10 text-red-500 border-red-500/30',
-            DELETED: 'bg-gray-500/10 text-gray-500 border-gray-500/30',
-            PENDING: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/30',
+            ACTIVE: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
+            SUSPENDED: 'bg-orange-500/10 text-orange-500 border-orange-500/20',
+            BANNED: 'bg-red-500/10 text-red-500 border-red-500/20',
+            DELETED: 'bg-slate-500/10 text-slate-500 border-slate-500/20',
+            PENDING: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
         }
         return (
-            <span className={`px-2 py-1 rounded-full text-xs font-semibold border ${styles[status] || styles.PENDING}`}>
+            <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${styles[status] || styles.PENDING}`}>
                 {status}
             </span>
         )
@@ -389,14 +392,15 @@ export function UsersTable() {
 
     const getRoleBadge = (role: string) => {
         const styles: Record<string, string> = {
-            ADMIN: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/30',
-            INVESTOR: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30',
-            STARTUP_OWNER: 'bg-purple-500/10 text-purple-600 border-purple-500/30',
-            USER: 'bg-blue-500/10 text-blue-600 border-blue-500/30',
+            SUPER_ADMIN: 'bg-rose-500/10 text-rose-500 border-rose-500/20',
+            ADMIN: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
+            INVESTOR: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
+            STARTUP_OWNER: 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20',
+            USER: 'bg-slate-500/10 text-slate-500 border-slate-500/20',
         }
         return (
-            <span className={`px-2 py-1 rounded-full text-xs font-medium border ${styles[role] || styles.USER}`}>
-                {role}
+            <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${styles[role] || styles.USER}`}>
+                {role.replace('_', ' ')}
             </span>
         )
     }
@@ -446,19 +450,34 @@ export function UsersTable() {
         () => [
             {
                 accessorKey: 'email',
-                header: 'User',
+                header: 'User & Account',
                 cell: ({ row }) => {
                     const user = row.original
                     return (
-                        <div className="flex items-center gap-3">
-                            <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
+                        <div className="flex items-center gap-3 py-1">
+                            <div className={`h-10 w-10 rounded-xl flex items-center justify-center shadow-sm border ${user.role === 'INVESTOR' ? 'bg-emerald-50 border-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-800' :
+                                user.role === 'STARTUP_OWNER' ? 'bg-indigo-50 border-indigo-100 dark:bg-indigo-900/20 dark:border-indigo-800' :
+                                    user.role === 'ADMIN' ? 'bg-amber-50 border-amber-100 dark:bg-amber-900/20 dark:border-amber-800' :
+                                        user.role === 'SUPER_ADMIN' ? 'bg-rose-50 border-rose-100 dark:bg-rose-900/20 dark:border-rose-800' :
+                                            'bg-slate-50 border-slate-100 dark:bg-slate-900/20 dark:border-slate-800'
+                                }`}>
                                 {getIcon(user.role)}
                             </div>
                             <div>
-                                <p className="font-medium">{user.email}</p>
-                                <p className="text-xs text-muted-foreground">
-                                    {user.authProvider || 'Email'} auth
-                                </p>
+                                <div className="flex items-center gap-2">
+                                    <p className="font-semibold text-sm text-foreground">{user.email}</p>
+                                </div>
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                                    <span className="capitalize">{user.authProvider?.toLowerCase() || 'email'}</span>
+                                    <span>•</span>
+                                    <span>{user.firstName ? `${user.firstName} ${user.lastName || ''}` : 'No Name'}</span>
+                                    {user.isInvestorVerified && (
+                                        <div className="flex items-center gap-1 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-1.5 py-0.5 rounded-full" title="Verified Investor">
+                                            <BadgeCheck className="h-3 w-3" />
+                                            <span className="text-[10px] font-semibold">Verified</span>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     )
@@ -475,10 +494,10 @@ export function UsersTable() {
                 cell: ({ row }) => {
                     const user = row.original
                     return (
-                        <div className="space-y-1">
+                        <div className="space-y-1.5">
                             {getStatusBadge(user.status)}
                             {user.status === 'SUSPENDED' && user.suspendedUntil && (
-                                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                <p className="text-[10px] text-orange-600 dark:text-orange-400 flex items-center gap-1 bg-orange-50 dark:bg-orange-900/20 px-1.5 py-0.5 rounded w-fit">
                                     <Clock className="h-3 w-3" />
                                     Until {formatDate(user.suspendedUntil)}
                                 </p>
@@ -493,14 +512,16 @@ export function UsersTable() {
                 cell: ({ row }) => {
                     const user = row.original
                     return (
-                        <div className="flex flex-col gap-1 text-xs text-muted-foreground">
-                            <div className="flex items-center gap-1.5" title={`Joined: ${formatDate(user.createdAt)}`}>
-                                <Calendar className="h-3 w-3" />
+                        <div className="flex flex-col gap-1.5 text-xs text-muted-foreground">
+                            <div className="flex items-center gap-2">
+                                <Calendar className="h-3 w-3 text-slate-400" />
                                 <span>Joined {formatTimeAgo(user.createdAt)}</span>
                             </div>
-                            <div className="flex items-center gap-1.5" title={`Last Login: ${user.lastLoginAt ? formatDate(user.lastLoginAt) : 'Never'}`}>
-                                <Clock className="h-3 w-3" />
-                                <span>Active {formatTimeAgo(user.lastLoginAt)}</span>
+                            <div className="flex items-center gap-2">
+                                <Clock className="h-3 w-3 text-slate-400" />
+                                <span className={user.lastLoginAt ? "text-emerald-600 dark:text-emerald-400 font-medium" : ""}>
+                                    {user.lastLoginAt ? `Active ${formatTimeAgo(user.lastLoginAt)}` : 'Never logged in'}
+                                </span>
                             </div>
                         </div>
                     )
@@ -515,61 +536,54 @@ export function UsersTable() {
                     const isTargetSuperAdmin = user.role === 'SUPER_ADMIN'
                     const isSuspended = user.status === 'SUSPENDED' || user.status === 'BANNED'
 
-                    // Logic:
-                    // 1. If target is Super Admin, nobody can touch them (except maybe another Super Admin, but usually safeguard).
-                    // 2. If target is Admin, only Super Admin can touch them.
-                    // 3. If target is User/Investor/Startup, any Admin (including regular Admin) can touch them.
-
                     const canManage = (() => {
-                        if (isTargetSuperAdmin) return false; // Protect Super Admin from everyone
-                        if (isAdmin) return isSuperAdmin; // Only Super Admin can manage Admins
-                        return true; // Everyone can manage non-admins
+                        if (isTargetSuperAdmin) return false;
+                        if (isAdmin) return isSuperAdmin;
+                        return true;
                     })()
 
                     return (
-
                         <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-8 w-8 hover:bg-muted"
+                                className="h-8 w-8 text-muted-foreground hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
                                 onClick={() => handleViewDetails(user.id)}
                                 title="View Details"
                             >
-                                <Eye className="h-4 w-4 text-blue-500" />
+                                <Eye className="h-4 w-4 text-blue-400" />
                             </Button>
-
 
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        className="h-8 w-8 p-0"
+                                        className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
                                         disabled={!canManage}
                                     >
                                         <span className="sr-only">Open menu</span>
                                         <MoreVertical className="h-4 w-4" />
                                     </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                <DropdownMenuContent align="end" className="w-48">
+                                    <DropdownMenuLabel>Manage User</DropdownMenuLabel>
                                     <DropdownMenuSeparator />
 
                                     <DropdownMenuItem onClick={() => handleStatusChange(user.id)}>
-                                        <Shield className="mr-2 h-4 w-4 text-blue-500" />
+                                        <Shield className="mr-2 h-4 w-4 text-indigo-500" />
                                         Change Status
                                     </DropdownMenuItem>
 
                                     <DropdownMenuItem onClick={() => handleWarn(user.id)}>
-                                        <AlertTriangle className="mr-2 h-4 w-4 text-yellow-500" />
+                                        <AlertTriangle className="mr-2 h-4 w-4 text-amber-500" />
                                         Issue Warning
                                     </DropdownMenuItem>
 
                                     <DropdownMenuItem
                                         onClick={() => handleSuspend(user.id)}
                                         disabled={isSuspended}
-                                        className="text-orange-500 focus:text-orange-500"
+                                        className="text-orange-600 focus:text-orange-700 focus:bg-orange-50 dark:focus:bg-orange-900/20"
                                     >
                                         <Ban className="mr-2 h-4 w-4" />
                                         {isSuspended ? "Already Suspended" : "Suspend User"}
@@ -577,7 +591,7 @@ export function UsersTable() {
 
                                     {user.status === 'DELETED' && (
                                         <DropdownMenuItem onClick={() => handleRestore(user.id)}>
-                                            <RotateCcw className="mr-2 h-4 w-4 text-green-500" />
+                                            <RotateCcw className="mr-2 h-4 w-4 text-emerald-500" />
                                             Restore User
                                         </DropdownMenuItem>
                                     )}
@@ -586,7 +600,7 @@ export function UsersTable() {
 
                                     <DropdownMenuItem
                                         onClick={() => handleDelete(user.id)}
-                                        className="text-red-600 focus:text-red-600"
+                                        className="text-red-600 focus:text-red-700 focus:bg-red-50 dark:focus:bg-red-900/20"
                                     >
                                         <Trash2 className="mr-2 h-4 w-4" />
                                         Delete User
@@ -616,7 +630,7 @@ export function UsersTable() {
     })
 
     return (
-        <>
+        <div className="space-y-6">
             <UserStatusDialog
                 open={statusChangeDialogOpen}
                 onOpenChange={setStatusChangeDialogOpen}
@@ -633,147 +647,212 @@ export function UsersTable() {
             />
 
             <Card>
-                <CardHeader>
+                <CardHeader className="bg-white/50 dark:bg-slate-900/50 border-b border-border/50 pb-4">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div className="flex items-center gap-2">
-                            {isLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-                            <span className="text-sm text-muted-foreground">
-                                {totalUsers} {totalUsers === 1 ? 'user' : 'users'} found
-                            </span>
+                        <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                                <UserIcon className="h-5 w-5 text-primary" />
+                            </div>
+                            <div>
+                                <h2 className="text-lg font-bold tracking-tight">Users Management</h2>
+                                <div className="flex items-center gap-2">
+                                    {isLoading && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
+                                    <span className="text-xs text-muted-foreground font-medium">
+                                        {totalUsers} {totalUsers === 1 ? 'user' : 'users'} total
+                                    </span>
+                                </div>
+                            </div>
                         </div>
 
                         <div className="flex flex-col sm:flex-row gap-2">
-                            <Button
-                                variant="outline"
-                                className="gap-2"
-                                onClick={fetchData}
-                                disabled={isLoading}
-                            >
-                                <RotateCcw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-                                Refresh
-                            </Button>
-
-                            <Button
-                                className="gap-2"
-                                onClick={() => setAddAdminOpen(true)}
-                                disabled={!isSuperAdmin}
-                                title={!isSuperAdmin ? "Only Super Admin can create new admins" : "Create New Admin"}
-                            >
-                                <UserPlus className="h-4 w-4" />
-                                New Admin
-                            </Button>
-
-                            {/* Export Dropdown */}
-                            <Dialog open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
-                                <DialogTrigger asChild>
-                                    <Button variant="outline" className="gap-2">
-                                        <Download className="h-4 w-4" />
-                                        Export
-                                    </Button>
-                                </DialogTrigger>
-                                <DialogContent className="sm:max-w-[425px] md:max-w-[600px] max-h-[90vh] overflow-y-auto">
-                                    <DialogHeader>
-                                        <DialogTitle>Export Users</DialogTitle>
-                                        <DialogDescription>
-                                            Choose the scope and columns to include in your CSV export.
-                                        </DialogDescription>
-                                    </DialogHeader>
-
-                                    <div className="space-y-6 py-4">
-                                        {/* Scope Selection */}
-                                        <div className="space-y-3">
-                                            <h4 className="text-sm font-medium">Export Scope</h4>
-                                            <RadioGroup
-                                                value={exportScope}
-                                                onValueChange={(v) => setExportScope(v as 'current' | 'all')}
-                                                className="grid grid-cols-2 gap-4"
-                                            >
-                                                <div className="flex items-center space-x-2 rounded-md border p-3 hover:bg-accent/50">
-                                                    <RadioGroupItem value="current" id="scope-current" />
-                                                    <Label htmlFor="scope-current" className="cursor-pointer">
-                                                        Current Page
-                                                        <span className="block text-xs text-muted-foreground mt-1">
-                                                            Export only visible {data.length} rows
-                                                        </span>
-                                                    </Label>
-                                                </div>
-                                                <div className="flex items-center space-x-2 rounded-md border p-3 hover:bg-accent/50">
-                                                    <RadioGroupItem value="all" id="scope-all" />
-                                                    <Label htmlFor="scope-all" className="cursor-pointer">
-                                                        All Matching
-                                                        <span className="block text-xs text-muted-foreground mt-1">
-                                                            Fetch all matching rows via API
-                                                        </span>
-                                                    </Label>
-                                                </div>
-                                            </RadioGroup>
-                                        </div>
-
-                                        {/* Column Selection */}
-                                        <div className="space-y-3">
-                                            <div className="flex items-center justify-between">
-                                                <h4 className="text-sm font-medium">Select Columns</h4>
-                                                <div className="flex items-center space-x-2">
-                                                    <Checkbox
-                                                        id="select-all"
-                                                        checked={selectedColumns.length === EXPORTABLE_COLUMNS.length}
-                                                        onCheckedChange={handleSelectAllColumns}
-                                                    />
-                                                    <Label htmlFor="select-all" className="text-xs cursor-pointer">
-                                                        Select All
-                                                    </Label>
-                                                </div>
-                                            </div>
-                                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 border rounded-md p-3 max-h-[300px] overflow-y-auto">
-                                                {EXPORTABLE_COLUMNS.map((col) => (
-                                                    <div key={col.id} className="flex items-center space-x-2">
-                                                        <Checkbox
-                                                            id={`col-${col.id}`}
-                                                            checked={selectedColumns.includes(col.id)}
-                                                            onCheckedChange={(checked) => handleColumnToggle(col.id, checked as boolean)}
-                                                        />
-                                                        <Label
-                                                            htmlFor={`col-${col.id}`}
-                                                            className="text-sm font-normal cursor-pointer truncate"
-                                                            title={col.label}
-                                                        >
-                                                            {col.label}
-                                                        </Label>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                            <p className="text-xs text-muted-foreground text-right">
-                                                {selectedColumns.length} columns selected
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <DialogFooter>
-                                        <Button variant="outline" onClick={() => setExportDialogOpen(false)}>
-                                            Cancel
-                                        </Button>
-                                        <Button onClick={performExport} disabled={isExporting || selectedColumns.length === 0}>
-                                            {isExporting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                            {isExporting ? 'Exporting...' : 'Export CSV'}
-                                        </Button>
-                                    </DialogFooter>
-                                </DialogContent>
-                            </Dialog>
-
                             <div className="relative">
-                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                 <Input
                                     placeholder="Search by email..."
-                                    className="pl-8 w-full sm:w-[250px]"
+                                    className="pl-9 w-full sm:w-[250px] bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                 />
+                            </div>
+
+                            <div className="flex gap-2">
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={fetchData}
+                                    disabled={isLoading}
+                                    className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:bg-slate-50"
+                                    title="Refresh List"
+                                >
+                                    <RotateCcw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                                </Button>
+
+                                {/* Export Dropdown */}
+                                <Dialog open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
+                                    <DialogTrigger asChild>
+                                        <Button variant="outline" className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:bg-slate-50 gap-2">
+                                            <Download className="h-4 w-4" />
+                                            <span className="hidden sm:inline">Export</span>
+                                        </Button>
+                                    </DialogTrigger>
+                                    <DialogContent className="sm:max-w-[500px] max-h-[85vh] overflow-hidden flex flex-col p-0 gap-0 border-none shadow-2xl bg-white dark:bg-slate-950">
+                                        <div className="bg-gradient-to-r from-slate-800 via-blue-900/50 to-indigo-900/50 dark:from-slate-900 dark:via-blue-950/80 dark:to-indigo-950/80 p-6 border-b border-slate-700/50 shrink-0">
+                                            <DialogHeader className="space-y-2">
+                                                <DialogTitle className="flex items-center gap-3 text-2xl font-bold tracking-tight text-white">
+                                                    <div className="h-12 w-12 rounded-2xl bg-white/20 shadow-lg flex items-center justify-center backdrop-blur-sm">
+                                                        <Download className="h-6 w-6 text-white" />
+                                                    </div>
+                                                    Export Users
+                                                </DialogTitle>
+                                                <DialogDescription className="text-white/80">
+                                                    Download user data as a CSV file. Select your scope and custom columns below.
+                                                </DialogDescription>
+                                            </DialogHeader>
+                                        </div>
+
+                                        <div className="overflow-y-auto p-6 space-y-8 custom-scrollbar">
+                                            {/* Scope Selection */}
+                                            <div className="space-y-4">
+                                                <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                                                    <Filter className="h-4 w-4" />
+                                                    Export Scope
+                                                </h4>
+                                                <RadioGroup
+                                                    value={exportScope}
+                                                    onValueChange={(v) => setExportScope(v as 'current' | 'all')}
+                                                    className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+                                                >
+                                                    <label className={`
+                                                        relative flex flex-col gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all duration-200
+                                                        hover:shadow-md
+                                                        ${exportScope === 'current'
+                                                            ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-900/10 dark:border-emerald-500/50'
+                                                            : 'border-border bg-card hover:border-emerald-200 dark:hover:border-emerald-800'
+                                                        }
+                                                    `}>
+                                                        <div className="flex items-center justify-between">
+                                                            <div className={`p-2 rounded-lg ${exportScope === 'current' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20' : 'bg-muted text-muted-foreground'}`}>
+                                                                <TableIcon className="h-5 w-5" />
+                                                            </div>
+                                                            <RadioGroupItem value="current" id="scope-current" className="sr-only" />
+                                                            {exportScope === 'current' && (
+                                                                <div className="h-5 w-5 rounded-full bg-emerald-500 text-white flex items-center justify-center animate-in zoom-in">
+                                                                    <div className="h-2 w-2 rounded-full bg-white" />
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        <div>
+                                                            <span className={`font-bold block ${exportScope === 'current' ? 'text-emerald-700 dark:text-emerald-300' : 'text-foreground'}`}>Current Page</span>
+                                                            <span className="text-xs text-muted-foreground mt-1 block">
+                                                                Export only visible {data.length} rows
+                                                            </span>
+                                                        </div>
+                                                    </label>
+
+                                                    <label className={`
+                                                        relative flex flex-col gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all duration-200
+                                                        hover:shadow-md
+                                                        ${exportScope === 'all'
+                                                            ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-900/10 dark:border-indigo-500/50'
+                                                            : 'border-border bg-card hover:border-indigo-200 dark:hover:border-indigo-800'
+                                                        }
+                                                    `}>
+                                                        <div className="flex items-center justify-between">
+                                                            <div className={`p-2 rounded-lg ${exportScope === 'all' ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-500/20' : 'bg-muted text-muted-foreground'}`}>
+                                                                <Database className="h-5 w-5" />
+                                                            </div>
+                                                            <RadioGroupItem value="all" id="scope-all" className="sr-only" />
+                                                            {exportScope === 'all' && (
+                                                                <div className="h-5 w-5 rounded-full bg-indigo-500 text-white flex items-center justify-center animate-in zoom-in">
+                                                                    <div className="h-2 w-2 rounded-full bg-white" />
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        <div>
+                                                            <span className={`font-bold block ${exportScope === 'all' ? 'text-indigo-700 dark:text-indigo-300' : 'text-foreground'}`}>All Matching</span>
+                                                            <span className="text-xs text-muted-foreground mt-1 block">
+                                                                All records matching filters
+                                                            </span>
+                                                        </div>
+                                                    </label>
+                                                </RadioGroup>
+                                            </div>
+
+                                            {/* Column Selection */}
+                                            <div className="space-y-4">
+                                                <div className="flex items-center justify-between">
+                                                    <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                                                        <TableIcon className="h-4 w-4" />
+                                                        Columns
+                                                    </h4>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="h-8 text-xs font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20"
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            handleSelectAllColumns(selectedColumns.length !== EXPORTABLE_COLUMNS.length);
+                                                        }}
+                                                    >
+                                                        {selectedColumns.length === EXPORTABLE_COLUMNS.length ? 'Deselect All' : 'Select All'}
+                                                    </Button>
+                                                </div>
+                                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 border rounded-xl p-4 bg-slate-50/50 dark:bg-slate-900/50 max-h-[220px] overflow-y-auto custom-scrollbar">
+                                                    {EXPORTABLE_COLUMNS.map((col) => (
+                                                        <div key={col.id} className="group flex items-center space-x-2.5 p-2 rounded-lg hover:bg-white dark:hover:bg-slate-800 border border-transparent hover:border-border transition-all">
+                                                            <Checkbox
+                                                                id={`col-${col.id}`}
+                                                                checked={selectedColumns.includes(col.id)}
+                                                                onCheckedChange={(checked) => handleColumnToggle(col.id, checked as boolean)}
+                                                                className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                                                            />
+                                                            <Label
+                                                                htmlFor={`col-${col.id}`}
+                                                                className="text-sm text-muted-foreground group-hover:text-foreground cursor-pointer truncate flex-1 font-medium transition-colors"
+                                                                title={col.label}
+                                                            >
+                                                                {col.label}
+                                                            </Label>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                                <p className="text-xs text-muted-foreground text-right px-1 flex justify-end gap-1">
+                                                    <span className="font-semibold text-foreground">{selectedColumns.length}</span> columns selected
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <DialogFooter className="border-t p-6 bg-muted/20 shrink-0">
+                                            <Button variant="ghost" onClick={() => setExportDialogOpen(false)} className="hover:bg-muted font-medium">
+                                                Cancel
+                                            </Button>
+                                            <Button
+                                                onClick={performExport}
+                                                disabled={isExporting || selectedColumns.length === 0}
+                                                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md hover:shadow-lg transition-all gap-2 px-6"
+                                            >
+                                                {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                                                {isExporting ? 'Exporting...' : 'Export CSV'}
+                                            </Button>
+                                        </DialogFooter>
+                                    </DialogContent>
+                                </Dialog>
+
+                                <Button
+                                    className="gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md transition-all hover:shadow-lg"
+                                    onClick={() => setAddAdminOpen(true)}
+                                    disabled={!isSuperAdmin}
+                                    title={!isSuperAdmin ? "Only Super Admin can create new admins" : "Create New Admin"}
+                                >
+                                    <UserPlus className="h-4 w-4" />
+                                    <span className="hidden sm:inline">New Admin</span>
+                                </Button>
                             </div>
                         </div>
                     </div>
                 </CardHeader>
                 <CardContent>
-                    <div className="rounded-md border">
+                    <div className="rounded-md border mt-4">
                         <Table>
                             <TableHeader>
                                 {table.getHeaderGroups().map(headerGroup => (
@@ -795,14 +874,14 @@ export function UsersTable() {
                                 {isLoading ? (
                                     Array.from({ length: pageSize }).map((_, i) => (
                                         <TableRow key={i}>
-                                            <TableCell colSpan={columns.length}><div className="h-12 bg-muted/20 rounded animate-pulse" /></TableCell>
+                                            <TableCell colSpan={columns.length}><div className="h-10 bg-muted/20 rounded animate-pulse" /></TableCell>
                                         </TableRow>
                                     ))
                                 ) : table.getRowModel().rows.length > 0 ? (
                                     table.getRowModel().rows.map(row => (
                                         <TableRow
                                             key={row.id}
-                                            className="hover:bg-muted/50 cursor-pointer"
+                                            className="cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors"
                                             onClick={() => handleViewDetails(row.original.id)}
                                         >
                                             {row.getVisibleCells().map(cell => (
@@ -933,6 +1012,6 @@ export function UsersTable() {
                 userId={selectedUserId}
                 onSuccess={handleActionComplete}
             />
-        </>
+        </div>
     )
 }
