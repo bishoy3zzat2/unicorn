@@ -200,7 +200,7 @@ export function InvestorVerificationPage() {
     }
 
     return (
-        <div className="flex-1 space-y-6 p-4 md:p-8 min-h-screen transition-colors duration-300">
+        <div className="space-y-6 transition-colors duration-300">
             {/* Header Section */}
             <div className="flex flex-col gap-1">
                 <h1 className="text-3xl font-bold tracking-tight text-foreground">Investor Verification</h1>
