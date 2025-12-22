@@ -83,3 +83,65 @@ export interface User {
     country?: string;
     preferredCurrency?: string;
 }
+
+// Deal status
+export type DealStatus = 'PENDING' | 'COMPLETED' | 'CANCELLED';
+
+// Deal type (investment round)
+export type DealType =
+    | 'SEED'
+    | 'PRE_SEED'
+    | 'SERIES_A'
+    | 'SERIES_B'
+    | 'SERIES_C'
+    | 'BRIDGE'
+    | 'CONVERTIBLE_NOTE'
+    | 'SAFE'
+    | 'EQUITY'
+    | 'DEBT'
+    | 'GRANT'
+    | 'OTHER';
+
+// Deal interface (matches backend DealResponse DTO)
+export interface Deal {
+    id: string;
+    investorId: string;
+    investorName: string;
+    investorEmail: string;
+    investorAvatar?: string;
+    startupId: string;
+    startupName: string;
+    startupLogo?: string;
+    amount: number;
+    currency: string;
+    status: DealStatus;
+    dealType?: DealType;
+    equityPercentage?: number;
+    notes?: string;
+    dealDate: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
+// Deal statistics
+export interface DealStats {
+    totalDeals: number;
+    pendingDeals: number;
+    completedDeals: number;
+    cancelledDeals: number;
+    totalCompletedAmount: number;
+}
+
+// Request to create or update a deal
+export interface DealRequest {
+    investorId: string;
+    startupId: string;
+    amount: number;
+    currency?: string;
+    status?: DealStatus;
+    dealType?: DealType;
+    equityPercentage?: number;
+    notes?: string;
+    dealDate?: string;
+}
+

@@ -480,3 +480,98 @@ export async function getReportStats(): Promise<{
 export async function getReportsForEntity(entityType: string, entityId: string): Promise<Report[]> {
     return request(api.get(`/admin/reports/entity/${entityType}/${entityId}`));
 }
+
+// ==================== Deals API ====================
+
+export interface Deal {
+    id: string;
+    investorId: string;
+    investorName: string;
+    investorEmail: string;
+    investorAvatar?: string;
+    startupId: string;
+    startupName: string;
+    startupLogo?: string;
+    amount: number;
+    currency: string;
+    status: 'PENDING' | 'COMPLETED' | 'CANCELLED';
+    dealType?: string;
+    equityPercentage?: number;
+    commissionPercentage?: number;
+    notes?: string;
+    dealDate: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface DealStats {
+    totalDeals: number;
+    pendingDeals: number;
+    completedDeals: number;
+    cancelledDeals: number;
+    totalCompletedAmount: number;
+}
+
+export interface DealRequest {
+    investorId: string;
+    startupId: string;
+    amount: number;
+    currency?: string;
+    status?: 'PENDING' | 'COMPLETED' | 'CANCELLED';
+    dealType?: string;
+    equityPercentage?: number;
+    commissionPercentage?: number;
+    notes?: string;
+    dealDate?: string;
+}
+
+export interface DealFilterParams {
+    query?: string;
+    status?: string;
+    dealType?: string;
+}
+
+export async function fetchAllDeals(
+    page: number = 0,
+    size: number = 20,
+    query?: string
+): Promise<{
+    content: Deal[];
+    totalElements: number;
+    totalPages: number;
+    currentPage: number;
+    pageSize: number;
+}> {
+    const params: Record<string, any> = { page, size };
+    if (query) params.query = query;
+    return request(api.get('/admin/deals', { params }));
+}
+
+export async function fetchDealById(id: string): Promise<Deal> {
+    return request(api.get(`/admin/deals/${id}`));
+}
+
+export async function fetchDealsForInvestor(investorId: string): Promise<Deal[]> {
+    return request(api.get(`/admin/deals/investor/${investorId}`));
+}
+
+export async function fetchDealsForStartup(startupId: string): Promise<Deal[]> {
+    return request(api.get(`/admin/deals/startup/${startupId}`));
+}
+
+export async function createDeal(data: DealRequest): Promise<Deal> {
+    return request(api.post('/admin/deals', data));
+}
+
+export async function updateDeal(id: string, data: DealRequest): Promise<Deal> {
+    return request(api.put(`/admin/deals/${id}`, data));
+}
+
+export async function deleteDeal(id: string): Promise<{ message: string }> {
+    return request(api.delete(`/admin/deals/${id}`));
+}
+
+export async function fetchDealStats(): Promise<DealStats> {
+    return request(api.get('/admin/deals/stats'));
+}
+

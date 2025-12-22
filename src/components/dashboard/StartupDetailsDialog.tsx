@@ -39,7 +39,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "../ui/alert-dialog"
-import { fetchStartupModerationLogs, deleteStartupModerationLog, StartupModerationLog } from "../../lib/api"
+import { fetchStartupModerationLogs, deleteStartupModerationLog, StartupModerationLog, fetchDealsForStartup, Deal } from "../../lib/api"
 import { WarnStartupDialog, StartupStatusDialog, DeleteStartupDialog } from "./StartupActionDialogs"
 import { Badge } from "../ui/badge"
 
@@ -115,7 +115,11 @@ export function StartupDetailsDialog({
     // Audit Logs State
     const [auditLogs, setAuditLogs] = useState<StartupModerationLog[]>([])
     const [loadingLogs, setLoadingLogs] = useState(false)
-    const [activeTab, setActiveTab] = useState<'details' | 'history'>('details')
+    const [activeTab, setActiveTab] = useState<'details' | 'deals' | 'history'>('details')
+
+    // Deals State
+    const [startupDeals, setStartupDeals] = useState<Deal[]>([])
+    const [loadingDeals, setLoadingDeals] = useState(false)
 
     if (loading) {
         return (
@@ -142,6 +146,20 @@ export function StartupDetailsDialog({
             toast.error("Failed to load audit logs")
         } finally {
             setLoadingLogs(false)
+        }
+    }
+
+    const loadDeals = async () => {
+        if (!startup) return
+        try {
+            setLoadingDeals(true)
+            const deals = await fetchDealsForStartup(startup.id)
+            setStartupDeals(deals)
+        } catch (error) {
+            console.error(error)
+            toast.error("Failed to load deals")
+        } finally {
+            setLoadingDeals(false)
         }
     }
 
@@ -447,22 +465,40 @@ export function StartupDetailsDialog({
                                 Overview
                             </button>
                             {(user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN') && (
-                                <button
-                                    onClick={() => {
-                                        setActiveTab('history');
-                                        loadLogs();
-                                    }}
-                                    className={cn(
-                                        "px-4 py-2 text-sm font-medium rounded-md transition-all flex items-center gap-2",
-                                        activeTab === 'history'
-                                            ? "bg-background text-foreground shadow-sm"
-                                            : "text-muted-foreground hover:text-foreground hover:bg-background/50"
-                                    )}
-                                >
-                                    <History className="h-4 w-4" />
-                                    <span className="hidden sm:inline">Moderation History</span>
-                                    <span className="sm:hidden">History</span>
-                                </button>
+                                <>
+                                    <button
+                                        onClick={() => {
+                                            setActiveTab('deals');
+                                            loadDeals();
+                                        }}
+                                        className={cn(
+                                            "px-4 py-2 text-sm font-medium rounded-md transition-all flex items-center gap-2",
+                                            activeTab === 'deals'
+                                                ? "bg-background text-foreground shadow-sm"
+                                                : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                                        )}
+                                    >
+                                        <TrendingUp className="h-4 w-4" />
+                                        <span className="hidden sm:inline">Investment Deals</span>
+                                        <span className="sm:hidden">Deals</span>
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setActiveTab('history');
+                                            loadLogs();
+                                        }}
+                                        className={cn(
+                                            "px-4 py-2 text-sm font-medium rounded-md transition-all flex items-center gap-2",
+                                            activeTab === 'history'
+                                                ? "bg-background text-foreground shadow-sm"
+                                                : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                                        )}
+                                    >
+                                        <History className="h-4 w-4" />
+                                        <span className="hidden sm:inline">Moderation History</span>
+                                        <span className="sm:hidden">History</span>
+                                    </button>
+                                </>
                             )}
                         </div>
                     </div>
@@ -803,6 +839,98 @@ export function StartupDetailsDialog({
                             </div>
                         </div>
                     )} {/* Close details block */}
+
+                    {activeTab === 'deals' && (
+                        <div className="px-8 pb-8 pt-4">
+                            {loadingDeals ? (
+                                <div className="flex flex-col items-center justify-center py-16">
+                                    <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
+                                    <p className="text-muted-foreground">Loading deals...</p>
+                                </div>
+                            ) : startupDeals.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center py-16 text-muted-foreground bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
+                                    <div className="h-16 w-16 bg-emerald-500/10 rounded-full flex items-center justify-center mb-4">
+                                        <TrendingUp className="h-8 w-8 text-emerald-600" />
+                                    </div>
+                                    <h4 className="text-xl font-bold text-foreground mb-2">No Deals Yet</h4>
+                                    <p className="text-sm max-w-sm text-center">
+                                        This startup has no recorded investment deals.
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    <h4 className="text-lg font-bold flex items-center gap-2">
+                                        <TrendingUp className="h-5 w-5 text-emerald-600" />
+                                        Investment Deals ({startupDeals.length})
+                                    </h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {startupDeals.map(deal => (
+                                            <div
+                                                key={deal.id}
+                                                className="group relative flex flex-col justify-between p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:shadow-lg hover:border-emerald-500/50 transition-all duration-300 overflow-hidden"
+                                            >
+                                                <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-emerald-500 to-teal-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+
+                                                <div className="flex items-start justify-between mb-4 pl-2">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-indigo-500/10 to-blue-500/10 flex items-center justify-center border border-indigo-500/10 group-hover:scale-105 transition-transform overflow-hidden">
+                                                            {deal.investorAvatar ? (
+                                                                <img src={deal.investorAvatar} alt={deal.investorName} className="h-full w-full object-cover" />
+                                                            ) : (
+                                                                <Users className="h-6 w-6 text-indigo-600" />
+                                                            )}
+                                                        </div>
+                                                        <div>
+                                                            <h4 className="font-bold text-base leading-tight group-hover:text-primary transition-colors line-clamp-1" title={deal.investorName}>
+                                                                {deal.investorName}
+                                                            </h4>
+                                                            <p className="text-xs text-muted-foreground mt-0.5">{deal.dealType?.replace('_', ' ') || 'Investment'}</p>
+                                                        </div>
+                                                    </div>
+                                                    <span className={cn(
+                                                        "px-2 py-1 rounded-full text-xs font-semibold border",
+                                                        deal.status === 'COMPLETED' ? 'bg-green-500/10 text-green-500 border-green-500/30' :
+                                                            deal.status === 'CANCELLED' ? 'bg-red-500/10 text-red-500 border-red-500/30' :
+                                                                'bg-yellow-500/10 text-yellow-500 border-yellow-500/30'
+                                                    )}>
+                                                        {deal.status}
+                                                    </span>
+                                                </div>
+
+                                                <div className="space-y-3 pl-2">
+                                                    <div className="pt-3 border-t grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                                                        <div className="flex flex-col">
+                                                            <span className="text-[10px] uppercase tracking-wider opacity-70">Amount</span>
+                                                            <span className="font-semibold text-foreground flex items-center gap-1 text-sm">
+                                                                ${deal.amount?.toLocaleString()} {deal.currency}
+                                                            </span>
+                                                        </div>
+                                                        {deal.equityPercentage && (
+                                                            <div className="flex flex-col items-end">
+                                                                <span className="text-[10px] uppercase tracking-wider opacity-70">Equity</span>
+                                                                <span className="font-medium text-foreground text-sm">
+                                                                    {deal.equityPercentage}%
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                                        <span>
+                                                            <Calendar className="h-3 w-3 inline mr-1" />
+                                                            {deal.dealDate ? new Date(deal.dealDate).toLocaleDateString() : '-'}
+                                                        </span>
+                                                        <span className="text-[10px] truncate max-w-[150px]" title={deal.investorEmail}>
+                                                            {deal.investorEmail}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     {activeTab === 'history' && (
                         <div className="px-8 pb-8 pt-4">

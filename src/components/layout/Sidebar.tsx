@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom'
 import {
     LayoutDashboard, Users, DollarSign, Settings,
-    Menu, X, Shield, Rocket, UserCheck, Flag
+    Menu, X, Shield, Rocket, UserCheck, Flag, Banknote
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useState } from 'react'
@@ -15,6 +15,7 @@ const mainMenuItems = [
 const financeMenuItems = [
     { name: 'Financials', path: '/financials', icon: DollarSign },
     { name: 'Investor Verification', path: '/verification', icon: UserCheck },
+    { name: 'Deals', path: '/deals', icon: Banknote },
 ]
 
 const systemMenuItems = [

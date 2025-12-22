@@ -18,7 +18,7 @@ import { formatDate, cn, formatCompactCurrency } from '../../lib/utils'
 import api from '../../lib/axios'
 import { toast } from 'sonner'
 import { useAuth } from '../../contexts/AuthContext'
-import { getStartupById, deleteUserModerationLog } from '../../lib/api'
+import { getStartupById, deleteUserModerationLog, fetchDealsForInvestor, Deal } from '../../lib/api'
 import { StartupDetailsDialog } from './StartupDetailsDialog'
 import { Startup } from '../../types'
 import {
@@ -135,6 +135,8 @@ export function UserDetailsModal({ userId, open, onOpenChange, onAction }: UserD
     const [isStartupDetailsOpen, setIsStartupDetailsOpen] = useState(false)
     const [deleteLogId, setDeleteLogId] = useState<string | null>(null)
     const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+    const [investorDeals, setInvestorDeals] = useState<Deal[]>([])
+    const [loadingDeals, setLoadingDeals] = useState(false)
 
     // Action Dialog States
     const [suspendDialogOpen, setSuspendDialogOpen] = useState(false)
@@ -160,12 +162,20 @@ export function UserDetailsModal({ userId, open, onOpenChange, onAction }: UserD
         try {
             const response = await api.get(`/admin/users/${userId}/details`)
             const data = response.data as UserDetails
-            console.log('User Details API Response:', data)
-            console.log('hasActiveSession value:', data.hasActiveSession, 'type:', typeof data.hasActiveSession)
-            console.log('investorInfo:', data.investorInfo)
-            console.log('hasInvestorProfile:', data.hasInvestorProfile)
-            console.log('role:', data.role)
             setUserDetails(data)
+
+            // Fetch deals if user is an investor
+            if (data.role === 'INVESTOR') {
+                setLoadingDeals(true)
+                try {
+                    const deals = await fetchDealsForInvestor(userId)
+                    setInvestorDeals(deals)
+                } catch (dealError) {
+                    console.error('Failed to fetch investor deals:', dealError)
+                } finally {
+                    setLoadingDeals(false)
+                }
+            }
         } catch (error) {
             console.error('Failed to fetch user details:', error)
             toast.error('Failed to load user details')
@@ -725,18 +735,84 @@ export function UserDetailsModal({ userId, open, onOpenChange, onAction }: UserD
                                 {activeTab === 'startups' && (
                                     <div className="space-y-4 px-8 pb-8">
                                         {userDetails.role === 'INVESTOR' ? (
-                                            <div className="flex flex-col items-center justify-center py-16 text-muted-foreground bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
-                                                <div className="h-16 w-16 bg-emerald-500/10 rounded-full flex items-center justify-center mb-4">
-                                                    <TrendingUp className="h-8 w-8 text-emerald-600" />
+                                            loadingDeals ? (
+                                                <div className="flex items-center justify-center py-16">
+                                                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
                                                 </div>
-                                                <h4 className="text-xl font-bold text-foreground mb-2">Deals Tracking</h4>
-                                                <p className="text-sm max-w-sm text-center mb-6">
-                                                    Investment deals history and performance tracking will be available here soon.
-                                                </p>
-                                                <Badge variant="secondary" className="px-4 py-1.5 text-xs font-semibold bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 border-emerald-200/50">
-                                                    Coming Soon
-                                                </Badge>
-                                            </div>
+                                            ) : investorDeals.length > 0 ? (
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    {investorDeals.map(deal => (
+                                                        <div
+                                                            key={deal.id}
+                                                            className="group relative flex flex-col justify-between p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:shadow-lg hover:border-emerald-500/50 transition-all duration-300 overflow-hidden"
+                                                        >
+                                                            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-emerald-500 to-teal-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+
+                                                            <div className="flex items-start justify-between mb-4 pl-2">
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-emerald-500/10 to-teal-500/10 flex items-center justify-center border border-emerald-500/10 group-hover:scale-105 transition-transform">
+                                                                        {deal.startupLogo ? (
+                                                                            <img src={deal.startupLogo} alt={deal.startupName} className="h-8 w-8 rounded-lg object-cover" />
+                                                                        ) : (
+                                                                            <Building2 className="h-6 w-6 text-emerald-600" />
+                                                                        )}
+                                                                    </div>
+                                                                    <div>
+                                                                        <h4 className="font-bold text-base leading-tight group-hover:text-primary transition-colors line-clamp-1" title={deal.startupName}>
+                                                                            {deal.startupName}
+                                                                        </h4>
+                                                                        <p className="text-xs text-muted-foreground mt-0.5">{deal.dealType?.replace('_', ' ') || 'Investment'}</p>
+                                                                    </div>
+                                                                </div>
+                                                                <span className={cn(
+                                                                    "px-2 py-1 rounded-full text-xs font-semibold border",
+                                                                    deal.status === 'COMPLETED' ? 'bg-green-500/10 text-green-500 border-green-500/30' :
+                                                                        deal.status === 'CANCELLED' ? 'bg-red-500/10 text-red-500 border-red-500/30' :
+                                                                            'bg-yellow-500/10 text-yellow-500 border-yellow-500/30'
+                                                                )}>
+                                                                    {deal.status}
+                                                                </span>
+                                                            </div>
+
+                                                            <div className="space-y-3 pl-2">
+                                                                <div className="pt-3 border-t grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                                                                    <div className="flex flex-col">
+                                                                        <span className="text-[10px] uppercase tracking-wider opacity-70">Amount</span>
+                                                                        <span className="font-semibold text-foreground flex items-center gap-1 text-sm">
+                                                                            <DollarSign className="h-3.5 w-3.5 text-emerald-500" />
+                                                                            {formatCompactCurrency(deal.amount)} {deal.currency}
+                                                                        </span>
+                                                                    </div>
+                                                                    {deal.equityPercentage && (
+                                                                        <div className="flex flex-col items-end">
+                                                                            <span className="text-[10px] uppercase tracking-wider opacity-70">Equity</span>
+                                                                            <span className="font-medium text-foreground text-sm">
+                                                                                {deal.equityPercentage}%
+                                                                            </span>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                                                    <span>
+                                                                        <Calendar className="h-3 w-3 inline mr-1" />
+                                                                        {deal.dealDate ? new Date(deal.dealDate).toLocaleDateString() : '-'}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <div className="flex flex-col items-center justify-center py-16 text-muted-foreground bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
+                                                    <div className="h-16 w-16 bg-emerald-500/10 rounded-full flex items-center justify-center mb-4">
+                                                        <TrendingUp className="h-8 w-8 text-emerald-600" />
+                                                    </div>
+                                                    <h4 className="text-xl font-bold text-foreground mb-2">No Deals Yet</h4>
+                                                    <p className="text-sm max-w-sm text-center">
+                                                        This investor has no recorded investment deals.
+                                                    </p>
+                                                </div>
+                                            )
                                         ) : (
                                             userDetails.startups && userDetails.startups.length > 0 ? (
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
