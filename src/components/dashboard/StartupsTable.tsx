@@ -115,12 +115,8 @@ export function StartupsTable() {
 
     const getStatusBadgeClass = (status: string) => {
         switch (status) {
-            case 'APPROVED': return 'bg-green-500/10 text-green-500 border-green-500/30'
-            case 'PENDING': return 'bg-yellow-500/10 text-yellow-500 border-yellow-500/30'
-            case 'REJECTED': return 'bg-red-500/10 text-red-500 border-red-500/30'
-            case 'SUSPENDED': return 'bg-orange-500/10 text-orange-500 border-orange-500/30'
+            case 'ACTIVE': return 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30'
             case 'BANNED': return 'bg-destructive/10 text-destructive border-destructive/30'
-            case 'ARCHIVED': return 'bg-gray-500/10 text-gray-500 border-gray-500/30'
             default: return 'bg-slate-800 text-slate-400 border border-slate-700'
         }
     }
@@ -243,7 +239,7 @@ export function StartupsTable() {
                 <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800">
                     {/* Status Tabs */}
                     <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg overflow-x-auto max-w-full no-scrollbar">
-                        {['ALL', 'PENDING', 'APPROVED', 'REJECTED', 'SUSPENDED'].map((status) => (
+                        {['ALL', 'ACTIVE', 'BANNED'].map((status) => (
                             <button
                                 key={status}
                                 onClick={() => setStatusFilter(status)}

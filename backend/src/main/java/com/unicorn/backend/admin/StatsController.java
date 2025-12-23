@@ -39,9 +39,9 @@ public class StatsController {
         // Count users
         long totalUsers = userRepository.count();
 
-        // Count active startups (approved status)
+        // Count active startups
         long activeStartups = startupRepository.countByStatus(
-                com.unicorn.backend.startup.StartupStatus.APPROVED);
+                com.unicorn.backend.startup.StartupStatus.ACTIVE);
 
         // Count investors with profiles
         long activeInvestors = investorProfileRepository.count();

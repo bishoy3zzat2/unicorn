@@ -22,7 +22,10 @@ import {
     Loader2,
     Megaphone,
     RefreshCcw,
-    Trash2
+    Trash2,
+    CheckCircle2,
+    PauseCircle,
+    Ban
 } from "lucide-react"
 import { toast } from "sonner"
 import { api } from "../../lib/api"
@@ -143,13 +146,18 @@ export function StartupStatusDialog({ open, onOpenChange, startup, onSuccess }: 
     }, [open, startup.status])
 
     const handleSubmit = async () => {
+        if (status === 'BANNED' && !reason.trim()) {
+            toast.error("Please provide a reason for this action")
+            return
+        }
+
         try {
             setLoading(true)
             await api.put(`/admin/startups/${startup.id}/status`, {
                 status,
                 reason: reason.trim() || undefined
             })
-            toast.success(`Startup status updated to ${status}`)
+            toast.success(`Status updated to ${status}`)
             onSuccess()
             onOpenChange(false)
         } catch (error) {
@@ -160,76 +168,128 @@ export function StartupStatusDialog({ open, onOpenChange, startup, onSuccess }: 
         }
     }
 
-    const getStatusColor = (st: string) => {
-        switch (st) {
-            case 'APPROVED': return 'text-green-600 bg-green-50 dark:bg-green-950/30'
-            case 'PENDING': return 'text-yellow-600 bg-yellow-50 dark:bg-yellow-950/30'
-            case 'SUSPENDED': return 'text-orange-600 bg-orange-50 dark:bg-orange-950/30'
-            case 'BANNED': return 'text-red-600 bg-red-50 dark:bg-red-950/30'
-            case 'REJECTED': return 'text-rose-600 bg-rose-50 dark:bg-rose-950/30'
-            default: return 'text-slate-600 bg-slate-50 dark:bg-slate-950/30'
+    const STATUS_OPTIONS = [
+        {
+            value: 'ACTIVE',
+            label: 'Active',
+            description: 'Startup is live and visible to everyone',
+            Icon: CheckCircle2,
+            bgClass: 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-700',
+            selectedBorder: 'border-emerald-500',
+            textClass: 'text-emerald-700 dark:text-emerald-400',
+            iconBg: 'bg-emerald-100 dark:bg-emerald-900/50'
+        },
+        {
+            value: 'BANNED',
+            label: 'Banned',
+            description: 'Permanently banned from the platform',
+            Icon: Ban,
+            bgClass: 'bg-red-50 dark:bg-red-950/30 border-red-300 dark:border-red-700',
+            selectedBorder: 'border-red-500',
+            textClass: 'text-red-700 dark:text-red-400',
+            iconBg: 'bg-red-100 dark:bg-red-900/50'
         }
-    }
+    ]
+
+    const currentStatusOption = STATUS_OPTIONS.find(s => s.value === status)
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-xl p-0 gap-0 overflow-hidden bg-background">
+            <DialogContent className="max-w-md p-0 gap-0 overflow-hidden bg-background border-0 shadow-2xl">
                 {/* Header */}
-                <div className="bg-slate-900/5 dark:bg-slate-900/50 border-b border-border p-6">
+                <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-6 text-white">
                     <DialogHeader>
-                        <DialogTitle className="text-xl font-bold flex items-center gap-2.5">
-                            <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg text-indigo-600 dark:text-indigo-400">
+                        <DialogTitle className="text-xl font-bold flex items-center gap-3">
+                            <div className="p-2.5 bg-white/20 rounded-xl backdrop-blur-sm">
                                 <RefreshCcw className="h-5 w-5" />
                             </div>
                             Update Status
                         </DialogTitle>
-                        <DialogDescription className="ml-11">
-                            Change operational status for <span className="font-semibold text-foreground">{startup.name}</span>.
+                        <DialogDescription className="text-white/80 ml-12 mt-1">
+                            Change status for <span className="font-semibold text-white">{startup.name}</span>
                         </DialogDescription>
                     </DialogHeader>
                 </div>
 
-                <div className="p-6 space-y-6">
-                    <div className="space-y-2">
-                        <Label className="text-sm font-semibold">New Status</Label>
-                        <Select value={status} onValueChange={setStatus}>
-                            <SelectTrigger className={cn("h-11", getStatusColor(status))}>
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="APPROVED" className="text-green-600 font-medium">Approved</SelectItem>
-                                <SelectItem value="PENDING" className="text-yellow-600 font-medium">Pending</SelectItem>
-                                <SelectItem value="SUSPENDED" className="text-orange-600 font-medium">Suspended</SelectItem>
-                                <SelectItem value="BANNED" className="text-red-600 font-medium">Banned</SelectItem>
-                                <SelectItem value="REJECTED" className="text-rose-600 font-medium">Rejected</SelectItem>
-                                <SelectItem value="ARCHIVED" className="text-slate-500 font-medium">Archived</SelectItem>
-                            </SelectContent>
-                        </Select>
+                <div className="p-6 space-y-5">
+                    {/* Status Selection Cards */}
+                    <div className="space-y-3">
+                        <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Select Status</Label>
+                        <div className="grid gap-3">
+                            {STATUS_OPTIONS.map((option) => (
+                                <button
+                                    key={option.value}
+                                    type="button"
+                                    onClick={() => setStatus(option.value)}
+                                    className={cn(
+                                        "w-full p-4 rounded-xl border-2 transition-all text-left flex items-center gap-4 group",
+                                        status === option.value
+                                            ? `${option.bgClass} ${option.selectedBorder} ring-2 ring-offset-2 ring-offset-background`
+                                            : "bg-muted/30 border-transparent hover:border-muted-foreground/20 hover:bg-muted/50",
+                                        status === option.value && option.value === 'ACTIVE' && 'ring-emerald-500/30',
+                                        status === option.value && option.value === 'BANNED' && 'ring-red-500/30'
+                                    )}
+                                >
+                                    <div className={cn(
+                                        "h-11 w-11 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110",
+                                        status === option.value ? option.iconBg : "bg-muted"
+                                    )}>
+                                        <option.Icon className={cn(
+                                            "h-5 w-5",
+                                            status === option.value ? option.textClass : "text-muted-foreground"
+                                        )} />
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className={cn(
+                                            "font-bold text-sm",
+                                            status === option.value ? option.textClass : "text-foreground"
+                                        )}>
+                                            {option.label}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground mt-0.5">{option.description}</p>
+                                    </div>
+                                    {status === option.value && (
+                                        <div className={cn("h-6 w-6 rounded-full flex items-center justify-center", option.iconBg)}>
+                                            <CheckCircle2 className={cn("h-4 w-4", option.textClass)} />
+                                        </div>
+                                    )}
+                                </button>
+                            ))}
+                        </div>
                     </div>
 
-                    {(status === 'SUSPENDED' || status === 'BANNED' || status === 'REJECTED') && (
-                        <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                            <Label className="text-sm font-semibold text-destructive">Reason for Action (Required)</Label>
+                    {/* Reason Field - Required for BANNED */}
+                    {status === 'BANNED' && (
+                        <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                            <Label className="text-sm font-semibold flex items-center gap-2 text-red-600">
+                                <AlertTriangle className="h-4 w-4" />
+                                Reason Required
+                            </Label>
                             <Textarea
                                 value={reason}
                                 onChange={(e) => setReason(e.target.value)}
-                                placeholder="Please provide a clear reason for this administrative action..."
-                                required
-                                className="min-h-[100px] border-destructive/20 focus-visible:ring-destructive/30"
+                                placeholder="Explain why this startup is being banned..."
+                                className="min-h-[100px] resize-none border-red-200 focus-visible:ring-red-500/30"
                             />
                         </div>
                     )}
                 </div>
 
-                <DialogFooter className="p-4 bg-muted/10 border-t border-border">
-                    <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
+                <DialogFooter className="p-4 bg-muted/30 border-t flex items-center justify-between">
+                    <Button variant="ghost" onClick={() => onOpenChange(false)} className="hover:bg-muted">
+                        Cancel
+                    </Button>
                     <Button
                         onClick={handleSubmit}
-                        disabled={loading || ((status === 'SUSPENDED' || status === 'BANNED' || status === 'REJECTED') && !reason.trim())}
-                        className={status === 'APPROVED' ? "bg-green-600 hover:bg-green-700 text-white" : ""}
+                        disabled={loading || status === startup.status || (status === 'BANNED' && !reason.trim())}
+                        className={cn(
+                            "shadow-lg transition-all font-semibold",
+                            currentStatusOption?.value === 'ACTIVE' && "bg-emerald-600 hover:bg-emerald-700 text-white",
+                            currentStatusOption?.value === 'BANNED' && "bg-red-600 hover:bg-red-700 text-white"
+                        )}
                     >
                         {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Update Status
+                        Update to {currentStatusOption?.label}
                     </Button>
                 </DialogFooter>
             </DialogContent>

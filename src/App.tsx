@@ -3,7 +3,7 @@ import { ThemeProvider } from './contexts/ThemeContext'
 import { AuthProvider } from './contexts/AuthContext'
 import { Layout } from './components/layout/Layout'
 import { Overview } from './pages/Overview'
-import { StartupRequests } from './pages/StartupRequests'
+import { Startups } from './pages/Startups'
 import { UserManagement } from './pages/UserManagement'
 import { Financials } from './pages/Financials'
 import { Settings } from './pages/Settings'
@@ -35,7 +35,7 @@ function App() {
                         <Route element={<ProtectedRoute />}>
                             <Route element={<Layout />}>
                                 <Route path="/" element={<Overview />} />
-                                <Route path="/startups" element={<StartupRequests />} />
+                                <Route path="/startups" element={<Startups />} />
                                 <Route path="/users" element={<UserManagement />} />
                                 <Route path="/verification" element={<InvestorVerificationPage />} />
                                 <Route path="/financials" element={<Financials />} />

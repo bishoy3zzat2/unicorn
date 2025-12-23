@@ -50,6 +50,12 @@ public interface StartupRepository extends JpaRepository<Startup, UUID>, JpaSpec
     /**
      * Get total funding raised by all startups.
      */
-    @org.springframework.data.jpa.repository.Query("SELECT COALESCE(SUM(s.raisedAmount), 0) FROM Startup s WHERE s.status = 'APPROVED'")
+    @org.springframework.data.jpa.repository.Query("SELECT COALESCE(SUM(s.raisedAmount), 0) FROM Startup s WHERE s.status = 'ACTIVE'")
     java.math.BigDecimal getTotalFundingRaised();
+
+    /**
+     * Count total active members across all startups.
+     */
+    @org.springframework.data.jpa.repository.Query("SELECT COUNT(m) FROM StartupMember m WHERE m.isActive = true")
+    long countTotalMembers();
 }

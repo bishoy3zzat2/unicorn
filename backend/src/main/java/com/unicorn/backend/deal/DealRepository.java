@@ -52,4 +52,11 @@ public interface DealRepository extends JpaRepository<Deal, UUID> {
      */
     @Query("SELECT COALESCE(SUM(d.amount), 0) FROM Deal d WHERE d.status = 'COMPLETED'")
     java.math.BigDecimal getTotalCompletedDealsAmount();
+
+    /**
+     * Get total commission revenue from completed deals.
+     * Calculation: SUM(amount * commissionPercentage / 100)
+     */
+    @Query("SELECT COALESCE(SUM(d.amount * d.commissionPercentage / 100), 0) FROM Deal d WHERE d.status = 'COMPLETED'")
+    java.math.BigDecimal getTotalCommissionRevenue();
 }

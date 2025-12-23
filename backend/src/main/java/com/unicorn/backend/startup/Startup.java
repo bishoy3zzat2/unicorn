@@ -31,10 +31,12 @@ public class Startup {
     @Column(nullable = false)
     private String name;
 
-    @Column(length = 500)
+    @Column(length = 80)
+    @jakarta.validation.constraints.Size(max = 80, message = "Tagline must be less than 80 characters")
     private String tagline;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(length = 200)
+    @jakarta.validation.constraints.Size(max = 200, message = "Description must be less than 200 characters")
     private String fullDescription;
 
     @Column
@@ -87,7 +89,7 @@ public class Startup {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     @Builder.Default
-    private StartupStatus status = StartupStatus.APPROVED;
+    private StartupStatus status = StartupStatus.ACTIVE;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id", nullable = false)

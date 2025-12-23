@@ -22,11 +22,12 @@ import {
 } from "../ui/select"
 import { searchUsers, addStartupMember } from "../../lib/api"
 import { User } from "../../types"
-import { User as UserIcon, Loader2, Calendar, ShieldCheck } from "lucide-react"
+import { User as UserIcon, Loader2, Calendar, ShieldCheck, UserCheck, UserX } from "lucide-react"
 
 const addMemberSchema = z.object({
     role: z.string().min(1, "Role is required"),
     joinedAt: z.string().min(1, "Joined Date is required"),
+    leftAt: z.string().optional(),
 })
 
 type AddMemberFormValues = z.infer<typeof addMemberSchema>
@@ -51,12 +52,14 @@ export function AddMemberDialog({
     const [searchResults, setSearchResults] = useState<User[]>([])
     const [isSearching, setIsSearching] = useState(false)
     const [selectedUser, setSelectedUser] = useState<User | null>(null)
+    const [isActive, setIsActive] = useState(true)
 
     const form = useForm<AddMemberFormValues>({
         resolver: zodResolver(addMemberSchema),
         defaultValues: {
             role: "DEVELOPER",
             joinedAt: new Date().toISOString().split('T')[0],
+            leftAt: "",
         },
     })
 
@@ -120,12 +123,21 @@ export function AddMemberDialog({
                 joinedAtISO = new Date(values.joinedAt).toISOString()
             }
 
+            // Handle leftAt date
+            let leftAtISO: string | null = null
+            if (!isActive && form.getValues("leftAt")) {
+                const leftAtValue = form.getValues("leftAt")
+                if (leftAtValue) {
+                    leftAtISO = new Date(leftAtValue).toISOString()
+                }
+            }
+
             await addStartupMember(
                 startupId,
                 selectedUser.id,
                 values.role,
                 joinedAtISO,
-                null // leftAt is null for new active members
+                leftAtISO
             )
 
             toast.success("Member added successfully")
@@ -136,6 +148,7 @@ export function AddMemberDialog({
             form.reset()
             setSelectedUser(null)
             setSearchQuery("")
+            setIsActive(true)
 
         } catch (error) {
             console.error("Failed to add member", error)
@@ -289,6 +302,58 @@ export function AddMemberDialog({
                                 )}
                             </div>
                         </div>
+
+                        {/* Active Status Toggle */}
+                        <div className="space-y-3">
+                            <Label className="flex items-center gap-2 text-sm font-semibold text-slate-600 dark:text-slate-400">
+                                {isActive ? <UserCheck className="h-4 w-4 text-emerald-500" /> : <UserX className="h-4 w-4 text-slate-400" />}
+                                Member Status
+                            </Label>
+                            <div className="flex items-center gap-4">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsActive(true)}
+                                    className={`flex-1 p-3 rounded-xl border-2 transition-all ${isActive
+                                        ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30"
+                                        : "border-slate-200 dark:border-slate-700 hover:border-slate-300"
+                                        }`}
+                                >
+                                    <div className="flex items-center justify-center gap-2">
+                                        <UserCheck className={`h-5 w-5 ${isActive ? "text-emerald-600" : "text-slate-400"}`} />
+                                        <span className={`font-medium ${isActive ? "text-emerald-700 dark:text-emerald-400" : "text-slate-500"}`}>Active</span>
+                                    </div>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsActive(false)}
+                                    className={`flex-1 p-3 rounded-xl border-2 transition-all ${!isActive
+                                        ? "border-slate-500 bg-slate-100 dark:bg-slate-800"
+                                        : "border-slate-200 dark:border-slate-700 hover:border-slate-300"
+                                        }`}
+                                >
+                                    <div className="flex items-center justify-center gap-2">
+                                        <UserX className={`h-5 w-5 ${!isActive ? "text-slate-600" : "text-slate-400"}`} />
+                                        <span className={`font-medium ${!isActive ? "text-slate-700 dark:text-slate-300" : "text-slate-500"}`}>Left</span>
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Left Date - Only show when NOT active */}
+                        {!isActive && (
+                            <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                                <Label htmlFor="leftAt" className="flex items-center gap-2 text-sm font-semibold text-red-600 dark:text-red-400">
+                                    <Calendar className="h-4 w-4" />
+                                    Left Date *
+                                </Label>
+                                <Input
+                                    id="leftAt"
+                                    type="date"
+                                    {...form.register("leftAt")}
+                                    className="bg-white dark:bg-slate-900 border-2 border-red-200 dark:border-red-800/50 rounded-lg h-11 focus:ring-red-500"
+                                />
+                            </div>
+                        )}
                     </div>
 
                     {/* Footer */}

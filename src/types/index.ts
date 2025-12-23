@@ -7,7 +7,7 @@
 export type StartupStage = 'IDEA' | 'MVP' | 'SEED' | 'SERIES_A' | 'SERIES_B' | 'GROWTH';
 
 // Startup status
-export type StartupStatus = 'ACTIVE' | 'APPROVED';
+export type StartupStatus = 'ACTIVE' | 'BANNED';
 
 export type StartupRole = 'FOUNDER' | 'CO_FOUNDER' | 'CEO' | 'CTO' | 'COO' | 'CFO' | 'CMO' | 'CHIEF_PRODUCT_OFFICER' | 'OTHER';
 
@@ -63,8 +63,8 @@ export interface UpdateStartupStatusRequest {
 export interface StartupStats {
     total: number;
     active: number;
-    pending: number;
-    rejected: number;
+    banned: number;
+    totalMembers: number;
 }
 
 export interface User {

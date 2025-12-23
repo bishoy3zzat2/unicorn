@@ -10,7 +10,7 @@ import {
     Facebook, Instagram, Twitter, Globe, UserCog,
     FileText, FileSpreadsheet, FilePieChart,
     Building2, Calendar, Layers, Clock, TrendingUp, Target, Users,
-    LogOut, Trash2, MoreVertical, UserPlus, Eye,
+    LogOut, Trash2, MoreVertical, UserPlus, Eye, Pencil,
     Loader2, History, Shield, AlertTriangle, XCircle
 } from "lucide-react"
 import { formatDate, cn, formatCurrency } from "../../lib/utils"
@@ -27,7 +27,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "../ui/dropdown-menu"
-import { removeStartupMember, unsignStartupMember, leaveStartup, unsignStartup, transferStartupOwnership, getStartupById } from "../../lib/api"
+import { removeStartupMember, unsignStartupMember, leaveStartup, unsignStartup, transferStartupOwnership, getStartupById, updateMemberRole, reactivateStartupMember } from "../../lib/api"
 import { useState, MouseEvent, useEffect } from "react"
 import {
     AlertDialog,
@@ -120,6 +120,13 @@ export function StartupDetailsDialog({
     // Deals State
     const [startupDeals, setStartupDeals] = useState<Deal[]>([])
     const [loadingDeals, setLoadingDeals] = useState(false)
+
+    // Edit Role State
+    const [editRoleMember, setEditRoleMember] = useState<{ userId: string; userName: string; currentRole: string } | null>(null)
+    const [newRole, setNewRole] = useState('')
+    const [savingRole, setSavingRole] = useState(false)
+
+    const ROLE_OPTIONS = ['FOUNDER', 'CO_FOUNDER', 'CEO', 'CTO', 'COO', 'CFO', 'CMO', 'CHIEF_PRODUCT_OFFICER', 'DEVELOPER', 'DESIGNER', 'OTHER']
 
     if (loading) {
         return (
@@ -275,6 +282,26 @@ export function StartupDetailsDialog({
         })
     }
 
+    const handleReactivateMember = (memberId: string, memberName: string) => {
+        if (!startup) return
+        setConfirmDialog({
+            open: true,
+            title: "Reactivate Member",
+            description: `Are you sure you want to mark ${memberName} as active again?`,
+            variant: "default",
+            action: async () => {
+                try {
+                    await reactivateStartupMember(startup.id, memberId)
+                    toast.success(`${memberName} is now active.`)
+                    onActionComplete?.()
+                } catch (error) {
+                    toast.error("Failed to reactivate member")
+                    console.error(error)
+                }
+            }
+        })
+    }
+
     const handleTransferOwnership = (memberUserId: string, memberName: string) => {
         if (!startup) return
         setConfirmDialog({
@@ -298,7 +325,21 @@ export function StartupDetailsDialog({
 
     const isAdminOrOwner = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN' || (startup?.ownerId === user?.id)
 
-
+    const handleSaveRole = async () => {
+        if (!startup || !editRoleMember || !newRole) return
+        try {
+            setSavingRole(true)
+            await updateMemberRole(startup.id, editRoleMember.userId, newRole)
+            toast.success(`Role updated to ${newRole.replace(/_/g, ' ')}`)
+            setEditRoleMember(null)
+            onActionComplete?.()
+        } catch (error) {
+            toast.error("Failed to update role")
+            console.error(error)
+        } finally {
+            setSavingRole(false)
+        }
+    }
 
 
 
@@ -306,50 +347,57 @@ export function StartupDetailsDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col p-0 border-0 gap-0 [&>button]:hidden">
                 <div className="flex-1 overflow-y-auto custom-scrollbar">
-                    {/* Hero Section */}
-                    <div className="relative h-64 w-full bg-muted group">
-                        {startup.coverUrl ? (
-                            <img
-                                src={startup.coverUrl}
-                                alt="Cover"
-                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                            />
-                        ) : (
-                            <div className="w-full h-full bg-gradient-to-r from-indigo-500/20 via-purple-500/20 to-pink-500/20 animate-gradle" />
-                        )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
+                    {/* Hero Section with Logo */}
+                    <div className="relative">
+                        {/* Cover Image Container */}
+                        <div className="relative h-64 w-full bg-muted group overflow-hidden">
+                            {startup.coverUrl ? (
+                                <img
+                                    src={startup.coverUrl}
+                                    alt="Cover"
+                                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                />
+                            ) : (
+                                <div className="w-full h-full bg-gradient-to-r from-indigo-500/20 via-purple-500/20 to-pink-500/20 animate-gradle" />
+                            )}
+                            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent pointer-events-none" />
+                        </div>
 
-                        {/* Top Actions */}
+                        {/* Logo - Positioned outside overflow-hidden */}
+                        <div className="absolute bottom-0 left-8 translate-y-1/2 z-20">
+                            <div className="relative group/logo">
+                                {/* Glow Effect */}
+                                <div className="absolute -inset-2 bg-gradient-to-br from-primary/40 via-purple-500/30 to-pink-500/40 rounded-[20px] blur-lg opacity-0 group-hover/logo:opacity-70 transition-all duration-500" />
 
-
-                        <div className="absolute -bottom-12 left-8 flex items-end">
-                            <div className="relative">
                                 {startup.logoUrl ? (
-                                    <div className="h-32 w-32 rounded-2xl overflow-hidden border-4 border-background shadow-xl bg-white relative z-10">
-                                        <img
-                                            src={startup.logoUrl}
-                                            alt="Logo"
-                                            className="h-full w-full object-cover"
-                                        />
+                                    <div className="relative h-20 w-20 rounded-xl bg-gradient-to-br from-white via-white to-slate-100 dark:from-slate-800 dark:via-slate-800 dark:to-slate-900 p-0.5 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.3)] ring-2 ring-background transition-transform duration-300 group-hover/logo:scale-105">
+                                        <div className="h-full w-full rounded-[10px] bg-white dark:bg-slate-900 overflow-hidden flex items-center justify-center">
+                                            <img
+                                                src={startup.logoUrl}
+                                                alt="Logo"
+                                                className="h-[85%] w-[85%] object-contain"
+                                            />
+                                        </div>
                                     </div>
                                 ) : (
-                                    <div className="h-32 w-32 rounded-2xl bg-background border-4 border-background shadow-xl flex items-center justify-center relative z-10">
-                                        <div className="h-full w-full bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl flex items-center justify-center">
-                                            <Building2 className="h-12 w-12 text-primary/60" />
+                                    <div className="relative h-20 w-20 rounded-xl bg-gradient-to-br from-primary/20 via-purple-500/10 to-pink-500/20 p-0.5 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.3)] ring-2 ring-background transition-transform duration-300 group-hover/logo:scale-105">
+                                        <div className="h-full w-full rounded-[10px] bg-gradient-to-br from-background to-muted flex items-center justify-center">
+                                            <Building2 className="h-8 w-8 text-primary/70" />
                                         </div>
                                     </div>
                                 )}
                             </div>
                         </div>
+
+                        {/* Close Button */}
+                        <div className="absolute top-4 right-4 flex gap-2 z-50">
+                            <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)} className="rounded-full bg-black/20 text-white hover:bg-black/40 backdrop-blur-md border-0">
+                                <XCircle className="h-5 w-5" />
+                            </Button>
+                        </div>
                     </div>
-                    {/* Top Actions */}
-                    <div className="absolute top-4 right-4 flex gap-2 z-50">
-                        <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)} className="rounded-full bg-black/20 text-white hover:bg-black/40 backdrop-blur-md border-0">
-                            <XCircle className="h-5 w-5" />
-                        </Button>
-                    </div>
-                    <div className="px-8 pt-16 pb-8">
-                        <div className="flex flex-col lg:flex-row justify-between items-start gap-6 mb-8">
+                    <div className="px-8 pt-14 pb-4">
+                        <div className="flex flex-col lg:flex-row justify-between items-start gap-6">
                             <div className="space-y-2 flex-1">
                                 <div className="flex items-center gap-3 flex-wrap">
                                     <DialogTitle className="text-3xl font-bold tracking-tight text-foreground">
@@ -450,61 +498,65 @@ export function StartupDetailsDialog({
                                 )}
                             </div>
                         </div>
+                    </div>
 
-                        {/* Tabs */}
-                        <div className="flex items-center gap-1 p-1 bg-muted/50 rounded-lg w-fit">
-                            <button
-                                onClick={() => setActiveTab('details')}
-                                className={cn(
-                                    "px-4 py-2 text-sm font-medium rounded-md transition-all",
-                                    activeTab === 'details'
-                                        ? "bg-background text-foreground shadow-sm"
-                                        : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                    {/* Tabs - Centered and Sticky */}
+                    <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-md border-b py-3 px-8">
+                        <div className="flex justify-center">
+                            <div className="flex items-center gap-1 p-1 bg-muted/50 rounded-lg">
+                                <button
+                                    onClick={() => setActiveTab('details')}
+                                    className={cn(
+                                        "px-4 py-2 text-sm font-medium rounded-md transition-all",
+                                        activeTab === 'details'
+                                            ? "bg-background text-foreground shadow-sm"
+                                            : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                                    )}
+                                >
+                                    Overview
+                                </button>
+                                {(user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN') && (
+                                    <>
+                                        <button
+                                            onClick={() => {
+                                                setActiveTab('deals');
+                                                loadDeals();
+                                            }}
+                                            className={cn(
+                                                "px-4 py-2 text-sm font-medium rounded-md transition-all flex items-center gap-2",
+                                                activeTab === 'deals'
+                                                    ? "bg-background text-foreground shadow-sm"
+                                                    : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                                            )}
+                                        >
+                                            <TrendingUp className="h-4 w-4" />
+                                            <span className="hidden sm:inline">Investment Deals</span>
+                                            <span className="sm:hidden">Deals</span>
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setActiveTab('history');
+                                                loadLogs();
+                                            }}
+                                            className={cn(
+                                                "px-4 py-2 text-sm font-medium rounded-md transition-all flex items-center gap-2",
+                                                activeTab === 'history'
+                                                    ? "bg-background text-foreground shadow-sm"
+                                                    : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                                            )}
+                                        >
+                                            <History className="h-4 w-4" />
+                                            <span className="hidden sm:inline">Moderation History</span>
+                                            <span className="sm:hidden">History</span>
+                                        </button>
+                                    </>
                                 )}
-                            >
-                                Overview
-                            </button>
-                            {(user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN') && (
-                                <>
-                                    <button
-                                        onClick={() => {
-                                            setActiveTab('deals');
-                                            loadDeals();
-                                        }}
-                                        className={cn(
-                                            "px-4 py-2 text-sm font-medium rounded-md transition-all flex items-center gap-2",
-                                            activeTab === 'deals'
-                                                ? "bg-background text-foreground shadow-sm"
-                                                : "text-muted-foreground hover:text-foreground hover:bg-background/50"
-                                        )}
-                                    >
-                                        <TrendingUp className="h-4 w-4" />
-                                        <span className="hidden sm:inline">Investment Deals</span>
-                                        <span className="sm:hidden">Deals</span>
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            setActiveTab('history');
-                                            loadLogs();
-                                        }}
-                                        className={cn(
-                                            "px-4 py-2 text-sm font-medium rounded-md transition-all flex items-center gap-2",
-                                            activeTab === 'history'
-                                                ? "bg-background text-foreground shadow-sm"
-                                                : "text-muted-foreground hover:text-foreground hover:bg-background/50"
-                                        )}
-                                    >
-                                        <History className="h-4 w-4" />
-                                        <span className="hidden sm:inline">Moderation History</span>
-                                        <span className="sm:hidden">History</span>
-                                    </button>
-                                </>
-                            )}
+                            </div>
                         </div>
                     </div>
 
                     {activeTab === 'details' && (
-                        <div className="space-y-8 px-8 pb-8">
+                        <div className="space-y-8 px-8 pb-8 pt-6">
                             {/* Metrics Grid */}
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div className="p-5 rounded-2xl bg-gradient-to-br from-card to-card/50 border shadow-sm relative overflow-hidden group hover:border-primary/20 transition-all">
@@ -621,7 +673,9 @@ export function StartupDetailsDialog({
                                                     "group relative flex items-start gap-4 p-4 rounded-xl border transition-all duration-300 overflow-hidden",
                                                     isOwner
                                                         ? "border-amber-200/50 bg-gradient-to-br from-amber-50 to-white hover:border-amber-300 dark:from-amber-950/20 dark:to-card dark:border-amber-800/50"
-                                                        : "border-border/50 bg-card hover:bg-muted/30 hover:shadow-sm"
+                                                        : member.isActive
+                                                            ? "border-border/50 bg-card hover:bg-muted/30 hover:shadow-sm"
+                                                            : "border-border/30 bg-muted/20 opacity-70"
                                                 )}>
                                                     {isOwner && <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-amber-400/20 to-transparent rounded-bl-full -mr-8 -mt-8" />}
 
@@ -630,7 +684,10 @@ export function StartupDetailsDialog({
                                                         <img
                                                             src={member.userAvatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${member.userEmail}`}
                                                             alt={member.userName}
-                                                            className="h-14 w-14 rounded-2xl object-cover border-2 border-background shadow-sm"
+                                                            className={cn(
+                                                                "h-14 w-14 rounded-2xl object-cover border-2 border-background shadow-sm",
+                                                                !member.isActive && "grayscale"
+                                                            )}
                                                         />
                                                         <div className={cn(
                                                             "absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-[3px] border-background",
@@ -649,6 +706,11 @@ export function StartupDetailsDialog({
                                                                     {isOwner && (
                                                                         <span className="inline-flex items-center rounded-full bg-amber-100 dark:bg-amber-900/30 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:text-amber-400 shadow-sm whitespace-nowrap border border-amber-200 dark:border-amber-800/50">
                                                                             Owner
+                                                                        </span>
+                                                                    )}
+                                                                    {!member.isActive && (
+                                                                        <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-bold text-slate-600 dark:text-slate-400 shadow-sm whitespace-nowrap border border-slate-200 dark:border-slate-700">
+                                                                            Left
                                                                         </span>
                                                                     )}
                                                                 </div>
@@ -691,6 +753,16 @@ export function StartupDetailsDialog({
                                                                                         Transfer Ownership
                                                                                     </DropdownMenuItem>
                                                                                     <DropdownMenuItem
+                                                                                        onClick={() => {
+                                                                                            setEditRoleMember({ userId: member.userId, userName: member.userName, currentRole: member.role })
+                                                                                            setNewRole(member.role)
+                                                                                        }}
+                                                                                        className="text-purple-600 focus:text-purple-700 focus:bg-purple-50"
+                                                                                    >
+                                                                                        <Pencil className="mr-2 h-4 w-4" />
+                                                                                        Edit Role
+                                                                                    </DropdownMenuItem>
+                                                                                    <DropdownMenuItem
                                                                                         onClick={() => handleRemoveMember(member.userId, member.userName)}
                                                                                         className="text-amber-600 focus:text-amber-700 focus:bg-amber-50"
                                                                                     >
@@ -706,6 +778,15 @@ export function StartupDetailsDialog({
                                                                                 <Trash2 className="mr-2 h-4 w-4" />
                                                                                 Delete from History
                                                                             </DropdownMenuItem>
+                                                                            {!member.isActive && (
+                                                                                <DropdownMenuItem
+                                                                                    onClick={() => handleReactivateMember(member.userId, member.userName)}
+                                                                                    className="text-emerald-600 focus:text-emerald-700 focus:bg-emerald-50"
+                                                                                >
+                                                                                    <UserPlus className="mr-2 h-4 w-4" />
+                                                                                    Mark as Active
+                                                                                </DropdownMenuItem>
+                                                                            )}
                                                                         </DropdownMenuContent>
                                                                     </DropdownMenu>
                                                                 )}
@@ -739,6 +820,13 @@ export function StartupDetailsDialog({
                                                             <span className="text-[10px] text-muted-foreground pl-1 border-l border-border/50">
                                                                 Joined {new Date(member.joinedAt).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}
                                                             </span>
+
+                                                            {/* Show left date for inactive members */}
+                                                            {!member.isActive && member.leftAt && (
+                                                                <span className="text-[10px] text-red-500 pl-1 border-l border-border/50 font-medium">
+                                                                    Left {new Date(member.leftAt).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}
+                                                                </span>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1101,6 +1189,48 @@ export function StartupDetailsDialog({
                     onOpenChange={(open: boolean) => !open && setViewMemberId(null)}
                     userId={viewMemberId}
                 />
+
+                {/* Edit Role Dialog */}
+                <AlertDialog open={!!editRoleMember} onOpenChange={(open: boolean) => !open && setEditRoleMember(null)}>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle className="flex items-center gap-2">
+                                <Pencil className="h-5 w-5 text-purple-600" />
+                                Edit Role
+                            </AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Update the role for <span className="font-semibold">{editRoleMember?.userName}</span>
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <div className="py-4">
+                            <select
+                                value={newRole}
+                                onChange={(e) => setNewRole(e.target.value)}
+                                className="w-full px-3 py-2 border rounded-lg bg-background focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                            >
+                                {ROLE_OPTIONS.map((role) => (
+                                    <option key={role} value={role}>
+                                        {role.replace(/_/g, ' ')}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel disabled={savingRole}>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                                onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                                    e.preventDefault()
+                                    handleSaveRole()
+                                }}
+                                disabled={savingRole || newRole === editRoleMember?.currentRole}
+                                className="bg-purple-600 hover:bg-purple-700"
+                            >
+                                {savingRole ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                                Save Role
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             </DialogContent >
         </Dialog >
     )
@@ -1109,10 +1239,7 @@ export function StartupDetailsDialog({
 function getStatusBadge(status: string) {
     const variants: Record<string, string> = {
         ACTIVE: "bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-200",
-        APPROVED: "bg-blue-100 text-blue-700 border-blue-200 hover:bg-blue-200",
-        PENDING: "bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-200",
-        REJECTED: "bg-red-100 text-red-700 border-red-200 hover:bg-red-200",
-        SUSPENDED: "bg-gray-100 text-gray-700 border-gray-200 hover:bg-gray-200",
+        BANNED: "bg-red-100 text-red-700 border-red-200 hover:bg-red-200",
     }
     return (
         <Badge variant="outline" className={cn("font-bold shadow-sm transition-colors cursor-default", variants[status] || "bg-gray-100 text-gray-600")}>

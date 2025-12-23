@@ -9,8 +9,7 @@ import {
     Eye,
     Rocket,
     CheckCircle2,
-    Clock,
-    XCircle,
+    Ban,
     Search,
     Download,
     UserPlus,
@@ -19,6 +18,7 @@ import {
     ChevronLeft,
     ChevronRight,
     Calendar,
+    Users,
 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -91,7 +91,7 @@ const EXPORTABLE_COLUMNS = [
     { id: 'websiteUrl', label: 'Website URL' },
 ]
 
-export function StartupRequests() {
+export function Startups() {
     const [startups, setStartups] = useState<Startup[]>([])
     const [stats, setStats] = useState<StartupStats | null>(null)
     const [loading, setLoading] = useState(true)
@@ -300,14 +300,11 @@ export function StartupRequests() {
 
     function getStatusBadge(status: string) {
         const styles: Record<string, string> = {
-            APPROVED: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
             ACTIVE: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-            PENDING: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
-            REJECTED: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-            ARCHIVED: 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400'
+            BANNED: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
         }
         return (
-            <span className={`px-2 py-1 rounded-full text-xs font-medium ${styles[status] || styles.ARCHIVED}`}>
+            <span className={`px-2 py-1 rounded-full text-xs font-medium ${styles[status] || styles.ACTIVE}`}>
                 {status}
             </span>
         )
@@ -350,23 +347,23 @@ export function StartupRequests() {
                         iconColor="text-blue-500"
                     />
                     <KPICard
-                        title="Active Startups"
+                        title="Active"
                         value={formatNumber(stats.active)}
                         icon={CheckCircle2}
                         trend={0}
                         iconColor="text-emerald-500"
                     />
                     <KPICard
-                        title="Pending Review"
-                        value={formatNumber(stats.pending)}
-                        icon={Clock}
+                        title="Total Members"
+                        value={formatNumber(stats.totalMembers)}
+                        icon={Users}
                         trend={0}
-                        iconColor="text-yellow-500"
+                        iconColor="text-indigo-500"
                     />
                     <KPICard
-                        title="Rejected"
-                        value={formatNumber(stats.rejected)}
-                        icon={XCircle}
+                        title="Banned"
+                        value={formatNumber(stats.banned)}
+                        icon={Ban}
                         trend={0}
                         iconColor="text-red-500"
                     />
@@ -392,7 +389,7 @@ export function StartupRequests() {
             <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800">
                 {/* Status Tabs */}
                 <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg overflow-x-auto max-w-full no-scrollbar">
-                    {['ALL', 'PENDING', 'APPROVED', 'REJECTED', 'SUSPENDED'].map((status) => (
+                    {['ALL', 'ACTIVE', 'BANNED'].map((status) => (
                         <button
                             key={status}
                             onClick={() => {

@@ -6,10 +6,18 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Search, Loader2, UserCog, CheckCircle2, Building2 } from 'lucide-react'
+import { Label } from '@/components/ui/label'
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select'
+import { Search, Loader2, UserCog, CheckCircle2, Building2, Briefcase } from 'lucide-react'
 import { toast } from 'sonner'
 import { searchUsers, transferStartupOwnership } from '@/lib/api'
-import { Startup, User } from '@/types'
+import { Startup, User, StartupRole } from '@/types'
 import { formatDate } from '@/lib/utils'
 
 interface TransferStartupDialogProps {
@@ -18,6 +26,18 @@ interface TransferStartupDialogProps {
     startup: Startup | null
     onSuccess: () => void
 }
+
+const ROLE_OPTIONS: { value: StartupRole; label: string }[] = [
+    { value: 'FOUNDER', label: 'Founder' },
+    { value: 'CO_FOUNDER', label: 'Co-Founder' },
+    { value: 'CEO', label: 'CEO' },
+    { value: 'CTO', label: 'CTO' },
+    { value: 'COO', label: 'COO' },
+    { value: 'CFO', label: 'CFO' },
+    { value: 'CMO', label: 'CMO' },
+    { value: 'CHIEF_PRODUCT_OFFICER', label: 'CPO' },
+    { value: 'OTHER', label: 'Other' },
+]
 
 export function TransferStartupDialog({
     open,
@@ -28,6 +48,7 @@ export function TransferStartupDialog({
     const [userSearchQuery, setUserSearchQuery] = useState('')
     const [searchResults, setSearchResults] = useState<User[]>([])
     const [selectedUser, setSelectedUser] = useState<User | null>(null)
+    const [selectedRole, setSelectedRole] = useState<StartupRole>('FOUNDER')
     const [searchingUsers, setSearchingUsers] = useState(false)
     const [transferring, setTransferring] = useState(false)
 
@@ -37,6 +58,7 @@ export function TransferStartupDialog({
             setUserSearchQuery('')
             setSearchResults([])
             setSelectedUser(null)
+            setSelectedRole('FOUNDER')
         }
     }, [open])
 
@@ -49,7 +71,6 @@ export function TransferStartupDialog({
 
         try {
             setSearchingUsers(true)
-            // Filter by USER role (excludes Admins & Investors) - looking for potential owners
             const data = await searchUsers(query, 'STARTUP_OWNER')
 
             // Exclude current owner
@@ -69,10 +90,10 @@ export function TransferStartupDialog({
 
         try {
             setTransferring(true)
-            await transferStartupOwnership(startup.id, selectedUser.id)
+            await transferStartupOwnership(startup.id, selectedUser.id, selectedRole)
 
             toast.success('Ownership transferred', {
-                description: `${startup.name} is now owned by ${selectedUser.email}`
+                description: `${startup.name} is now owned by ${selectedUser.email} as ${selectedRole}`
             })
 
             onSuccess()
@@ -102,8 +123,8 @@ export function TransferStartupDialog({
                     </p>
                 </div>
 
-                <div className="p-6 space-y-6">
-                    {/* Current Owner Info (Optional context) */}
+                <div className="p-6 space-y-5">
+                    {/* Current Owner Info */}
                     <div className="bg-muted/30 rounded-lg p-3 flex items-center gap-3 border border-border/50">
                         <div className="h-8 w-8 rounded-full bg-background flex items-center justify-center border shadow-sm">
                             <Building2 className="h-4 w-4 text-muted-foreground" />
@@ -182,6 +203,28 @@ export function TransferStartupDialog({
                                 </div>
                             )}
                         </div>
+
+                        {/* Role Selection - Only show when user is selected */}
+                        {selectedUser && (
+                            <div className="space-y-2 p-3 bg-amber-50/50 dark:bg-amber-900/10 rounded-lg border border-amber-100 dark:border-amber-800/30">
+                                <Label className="flex items-center gap-2 text-sm font-medium text-amber-700 dark:text-amber-400">
+                                    <Briefcase className="h-4 w-4" />
+                                    New Owner Role
+                                </Label>
+                                <Select value={selectedRole} onValueChange={(v) => setSelectedRole(v as StartupRole)}>
+                                    <SelectTrigger className="bg-white dark:bg-slate-900">
+                                        <SelectValue placeholder="Select role" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {ROLE_OPTIONS.map((role) => (
+                                            <SelectItem key={role.value} value={role.value}>
+                                                {role.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        )}
                     </div>
                 </div>
 

@@ -1,7 +1,7 @@
 import { Card, CardContent } from '../../components/ui/card'
-import { LucideIcon, Info } from 'lucide-react'
+import { LucideIcon } from 'lucide-react'
 import { cn } from '../../lib/utils'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../components/ui/tooltip'
+
 
 interface KPICardProps {
     title: string
@@ -13,7 +13,7 @@ interface KPICardProps {
     tooltip?: string
 }
 
-export function KPICard({ title, value, icon: Icon, trend, iconColor = "text-primary", details, tooltip }: KPICardProps) {
+export function KPICard({ title, value, icon: Icon, trend, iconColor = "text-primary", details }: KPICardProps) {
     const isNumberTrend = typeof trend === 'number';
     const isPositive = isNumberTrend ? (trend as number) > 0 : false
 
@@ -81,27 +81,13 @@ export function KPICard({ title, value, icon: Icon, trend, iconColor = "text-pri
             )} />
 
             <CardContent className="p-6 relative z-10">
-                <div className="flex items-center justify-between mb-4">
-                    <div className="flex-1">
-                        <div className="flex items-center gap-1.5 mb-1">
-                            <p className="text-sm font-medium text-muted-foreground">{title}</p>
-                            {tooltip && (
-                                <TooltipProvider>
-                                    <Tooltip>
-                                        <TooltipTrigger>
-                                            <Info className="h-3.5 w-3.5 text-muted-foreground/70 hover:text-primary cursor-help" />
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                            <p className="max-w-[200px] text-xs">{tooltip}</p>
-                                        </TooltipContent>
-                                    </Tooltip>
-                                </TooltipProvider>
-                            )}
-                        </div>
+                <div className="flex items-start justify-between gap-4 mb-4">
+                    <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-muted-foreground truncate mb-2">{title}</p>
                         <h3 className="text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">{value}</h3>
                     </div>
                     <div className={cn(
-                        "p-4 rounded-2xl transition-all duration-300 group-hover:scale-110 shadow-lg",
+                        "shrink-0 p-4 rounded-2xl transition-all duration-300 group-hover:scale-110 shadow-lg",
                         `bg-gradient-to-br ${getIconGradient(iconColor)}`
                     )}>
                         <Icon className="h-8 w-8 text-white" />

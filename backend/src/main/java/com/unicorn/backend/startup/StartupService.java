@@ -63,7 +63,7 @@ public class StartupService {
                 .instagramUrl(request.instagramUrl())
                 .twitterUrl(request.twitterUrl())
                 .ownerRole(request.ownerRole())
-                // Status defaults to APPROVED via @Builder.Default
+                // Status defaults to ACTIVE via @Builder.Default
                 .owner(owner)
                 .build();
 
@@ -204,13 +204,14 @@ public class StartupService {
     /**
      * Transfer startup ownership to a new user.
      *
-     * @param id       the startup ID
-     * @param newOwner the new owner user
+     * @param id           the startup ID
+     * @param newOwner     the new owner user
+     * @param newOwnerRole the role for the new owner (e.g. FOUNDER, CEO)
      * @return the updated startup response
      * @throws IllegalArgumentException if startup not found
      */
     @Transactional
-    public StartupResponse transferOwnership(UUID id, User newOwner) {
+    public StartupResponse transferOwnership(UUID id, User newOwner, String newOwnerRole) {
         if (!"ACTIVE".equalsIgnoreCase(newOwner.getStatus())) {
             throw new IllegalArgumentException("New owner must be ACTIVE.");
         }
@@ -220,7 +221,7 @@ public class StartupService {
 
         User oldOwner = startup.getOwner();
 
-        // Ensure old owner remains as a member
+        // Ensure old owner remains as a member (if not already)
         boolean isOldOwnerMember = startup.getMembers().stream()
                 .anyMatch(m -> m.getUser().getId().equals(oldOwner.getId()));
 
@@ -232,28 +233,31 @@ public class StartupService {
             startup.getMembers().add(oldMember);
         }
 
-        // TODO: Create audit log entry when audit service is implemented
-        // auditLogService.log("OWNERSHIP_TRANSFER", startup.getId(),
-        // startup.getOwner().getId(), newOwner.getId());
+        // Add new owner as member if not already a member
+        boolean isNewOwnerMember = startup.getMembers().stream()
+                .anyMatch(m -> m.getUser().getId().equals(newOwner.getId()) && m.isActive());
 
-        // Update owner role based on new owner's existing member role
-        startup.getMembers().stream()
-                .filter(m -> m.getUser().getId().equals(newOwner.getId()) && m.isActive())
-                .findFirst()
-                .ifPresent(member -> {
-                    try {
-                        StartupRole role = StartupRole.valueOf(member.getRole());
-                        startup.setOwnerRole(role);
-                    } catch (IllegalArgumentException e) {
-                        // If role string doesn't match enum (e.g. custom role), default or keep as is?
-                        // For now, let's default to OTHER if invalid, or keep previous.
-                        // Actually, better to log and maybe default to FOUNDER if completely unknown?
-                        // User request implies they want the "correct" role displayed.
-                        // If we can't map it, let's try to leave it or set to OTHER.
-                        // Safe bet: if valid enum, set it. Logic here assumes UI sends valid enum
-                        // strings.
-                    }
-                });
+        String roleToUse = (newOwnerRole != null && !newOwnerRole.isEmpty()) ? newOwnerRole : "FOUNDER";
+
+        if (!isNewOwnerMember) {
+            // Add new owner as member with the specified role
+            StartupMember newMember = new StartupMember(startup, newOwner, roleToUse, java.time.LocalDateTime.now());
+            startup.getMembers().add(newMember);
+        } else {
+            // Update existing member's role if provided
+            startup.getMembers().stream()
+                    .filter(m -> m.getUser().getId().equals(newOwner.getId()) && m.isActive())
+                    .findFirst()
+                    .ifPresent(member -> member.setRole(roleToUse));
+        }
+
+        // Set owner role from the provided role
+        try {
+            StartupRole role = StartupRole.valueOf(roleToUse);
+            startup.setOwnerRole(role);
+        } catch (IllegalArgumentException e) {
+            startup.setOwnerRole(StartupRole.OTHER);
+        }
 
         startup.setOwner(newOwner);
         Startup updatedStartup = startupRepository.save(startup);
@@ -350,6 +354,43 @@ public class StartupService {
     }
 
     /**
+     * Update a member's role in the startup.
+     */
+    @Transactional
+    public StartupResponse updateMemberRole(UUID startupId, UUID memberUserId, String newRole, User requester) {
+        Startup startup = startupRepository.findById(startupId)
+                .orElseThrow(() -> new IllegalArgumentException("Startup not found"));
+
+        // Validate requester is Owner or Admin
+        boolean isAdmin = requester.getRole().contains("ADMIN");
+        boolean isOwner = startup.getOwner().getId().equals(requester.getId());
+
+        if (!isAdmin && !isOwner) {
+            throw new AccessDeniedException("Only the owner or admin can update member roles.");
+        }
+
+        StartupMember member = startup.getMembers().stream()
+                .filter(m -> m.getUser().getId().equals(memberUserId) && m.isActive())
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("User is not an active member of this startup"));
+
+        member.setRole(newRole);
+
+        // If this member is the owner, also update ownerRole
+        if (startup.getOwner().getId().equals(memberUserId)) {
+            try {
+                StartupRole role = StartupRole.valueOf(newRole);
+                startup.setOwnerRole(role);
+            } catch (IllegalArgumentException e) {
+                startup.setOwnerRole(StartupRole.OTHER);
+            }
+        }
+
+        Startup savedStartup = startupRepository.save(startup);
+        return StartupResponse.fromEntity(savedStartup);
+    }
+
+    /**
      * Leave a startup (Soft Delete).
      *
      * @param startupId the startup ID
@@ -368,6 +409,33 @@ public class StartupService {
         member.setLeftAt(java.time.LocalDateTime.now());
         member.setActive(false);
         startupRepository.save(startup);
+    }
+
+    /**
+     * Reactivate a member who has left the startup.
+     */
+    @Transactional
+    public StartupResponse reactivateMember(UUID startupId, UUID memberUserId, User requester) {
+        Startup startup = startupRepository.findById(startupId)
+                .orElseThrow(() -> new IllegalArgumentException("Startup not found"));
+
+        // Validate requester is Owner or Admin
+        boolean isAdmin = requester.getRole().contains("ADMIN");
+        boolean isOwner = startup.getOwner().getId().equals(requester.getId());
+        if (!isAdmin && !isOwner) {
+            throw new AccessDeniedException("Only the owner or admin can reactivate members.");
+        }
+
+        StartupMember member = startup.getMembers().stream()
+                .filter(m -> m.getUser().getId().equals(memberUserId) && !m.isActive())
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("User is not an inactive member of this startup"));
+
+        member.setActive(true);
+        member.setLeftAt(null);
+
+        Startup savedStartup = startupRepository.save(startup);
+        return StartupResponse.fromEntity(savedStartup);
     }
 
     /**

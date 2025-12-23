@@ -128,7 +128,7 @@ public class StartupController {
         User newOwner = userRepository.findById(request.getNewOwnerId())
                 .orElseThrow(() -> new IllegalArgumentException("New owner not found"));
 
-        StartupResponse updated = startupService.transferOwnership(id, newOwner);
+        StartupResponse updated = startupService.transferOwnership(id, newOwner, request.getNewOwnerRole());
         return ResponseEntity.ok(updated);
     }
 
@@ -152,6 +152,25 @@ public class StartupController {
     }
 
     /**
+     * Update a member's role in the startup.
+     */
+    @PatchMapping("/{id}/members/{userId}/role")
+    public ResponseEntity<StartupResponse> updateMemberRole(
+            @PathVariable UUID id,
+            @PathVariable UUID userId,
+            @RequestBody java.util.Map<String, String> body,
+            @AuthenticationPrincipal User user) {
+
+        String newRole = body.get("role");
+        if (newRole == null || newRole.isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        StartupResponse response = startupService.updateMemberRole(id, userId, newRole, user);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
      * Leave a startup (Soft Delete).
      */
     @PostMapping("/{id}/leave")
@@ -160,6 +179,18 @@ public class StartupController {
             @AuthenticationPrincipal User user) {
         startupService.leaveStartup(id, user);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Reactivate an inactive member.
+     */
+    @PostMapping("/{id}/members/{userId}/reactivate")
+    public ResponseEntity<StartupResponse> reactivateMember(
+            @PathVariable UUID id,
+            @PathVariable UUID userId,
+            @AuthenticationPrincipal User user) {
+        StartupResponse response = startupService.reactivateMember(id, userId, user);
+        return ResponseEntity.ok(response);
     }
 
     /**

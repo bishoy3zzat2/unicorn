@@ -291,7 +291,7 @@ public class AdminController {
      */
     @GetMapping("/startups")
     public ResponseEntity<List<StartupResponse>> getStartupsByStatus(
-            @RequestParam(required = false, defaultValue = "PENDING") StartupStatus status) {
+            @RequestParam(required = false, defaultValue = "ACTIVE") StartupStatus status) {
         List<StartupResponse> startups = startupService.getStartupsByStatus(status);
         return ResponseEntity.ok(startups);
     }
@@ -328,7 +328,7 @@ public class AdminController {
         User newOwner = userRepository.findById(request.getNewOwnerId())
                 .orElseThrow(() -> new RuntimeException("New owner not found: " + request.getNewOwnerId()));
 
-        StartupResponse updated = startupService.transferOwnership(id, newOwner);
+        StartupResponse updated = startupService.transferOwnership(id, newOwner, request.getNewOwnerRole());
         return ResponseEntity.ok(updated);
     }
 
@@ -403,15 +403,14 @@ public class AdminController {
         java.util.Map<String, Object> stats = new java.util.HashMap<>();
 
         long total = startupRepository.count();
-        long active = startupRepository.countByStatus(StartupStatus.APPROVED);
-        long activeAlt = startupRepository.countByStatus(StartupStatus.ACTIVE);
-        long pending = startupRepository.countByStatus(StartupStatus.PENDING);
-        long rejected = startupRepository.countByStatus(StartupStatus.REJECTED);
+        long active = startupRepository.countByStatus(StartupStatus.ACTIVE);
+        long banned = startupRepository.countByStatus(StartupStatus.BANNED);
+        long totalMembers = startupRepository.countTotalMembers();
 
         stats.put("total", total);
-        stats.put("active", active + activeAlt);
-        stats.put("pending", pending);
-        stats.put("rejected", rejected);
+        stats.put("active", active);
+        stats.put("banned", banned);
+        stats.put("totalMembers", totalMembers);
 
         return ResponseEntity.ok(stats);
     }
@@ -511,8 +510,8 @@ public class AdminController {
 
         StartupResponse response = startupService.updateStartupStatus(id, status);
 
-        // Notify Owner if Banned or Suspended or Rejected
-        if (status == StartupStatus.BANNED || status == StartupStatus.SUSPENDED || status == StartupStatus.REJECTED) {
+        // Notify Owner if Banned
+        if (status == StartupStatus.BANNED) {
             Startup startup = startupRepository.findById(id).orElse(null);
             if (startup != null) {
                 String subject = "Startup Status Update: " + status;

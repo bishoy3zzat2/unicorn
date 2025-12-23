@@ -26,7 +26,7 @@ import {
 } from "../ui/select"
 import { createStartup, searchUsers, searchStartups, addStartupMember } from "../../lib/api"
 import { StartupRole, StartupStage, User, Startup } from "../../types"
-import { User as UserIcon, Loader2, Upload, Building2, TrendingUp, DollarSign, Globe, FileText, Image, Briefcase, Link, Facebook, Instagram, Twitter, ShieldCheck, Users, PlusCircle, Search } from "lucide-react"
+import { User as UserIcon, Loader2, Upload, Building2, DollarSign, Globe, FileText, Link, Facebook, Instagram, Twitter, Users, PlusCircle, Search } from "lucide-react"
 
 
 const INDUSTRY_OPTIONS = [
@@ -50,24 +50,24 @@ const INDUSTRY_OPTIONS = [
 
 const startupSchema = z.object({
     name: z.string().min(2, "Name must be at least 2 characters"),
-    tagline: z.string().optional(),
-    fullDescription: z.string().optional(),
+    tagline: z.string().max(80, "Tagline must be less than 80 characters").optional(),
+    fullDescription: z.string().max(200, "Description must be less than 200 characters").optional(),
     industry: z.string().min(2, "Industry is required"),
     stage: z.string().min(1, "Stage is required"),
     fundingGoal: z.string().refine((val) => !isNaN(Number(val)) && Number(val) > 0, {
         message: "Funding goal must be a positive number",
     }),
-    websiteUrl: z.string().url("Invalid URL").optional().or(z.literal("")),
-    logoUrl: z.string().url("Invalid URL").optional().or(z.literal("")),
-    coverUrl: z.string().url("Invalid URL").optional().or(z.literal("")),
-    facebookUrl: z.string().url("Invalid URL").optional().or(z.literal("")),
-    instagramUrl: z.string().url("Invalid URL").optional().or(z.literal("")),
-    twitterUrl: z.string().url("Invalid URL").optional().or(z.literal("")),
-    pitchDeckUrl: z.string().url("Invalid URL").optional().or(z.literal("")),
-    financialDocumentsUrl: z.string().url("Invalid URL").optional().or(z.literal("")),
-    businessPlanUrl: z.string().url("Invalid URL").optional().or(z.literal("")),
-    businessModelUrl: z.string().url("Invalid URL").optional().or(z.literal("")),
-    ownerId: z.string().optional(),
+    websiteUrl: z.string().optional().or(z.literal("")),
+    logoUrl: z.string().optional().or(z.literal("")),
+    coverUrl: z.string().optional().or(z.literal("")),
+    facebookUrl: z.string().optional().or(z.literal("")),
+    instagramUrl: z.string().optional().or(z.literal("")),
+    twitterUrl: z.string().optional().or(z.literal("")),
+    pitchDeckUrl: z.string().optional().or(z.literal("")),
+    financialDocumentsUrl: z.string().optional().or(z.literal("")),
+    businessPlanUrl: z.string().optional().or(z.literal("")),
+    businessModelUrl: z.string().optional().or(z.literal("")),
+    ownerId: z.string().min(1, "Owner is required"),
     ownerRole: z.string().min(1, "Owner Role is required"),
 })
 
@@ -250,7 +250,7 @@ export function CreateStartupDialog({
 
     const clearOwner = () => {
         setSelectedOwner(null)
-        form.setValue("ownerId", undefined)
+        form.setValue("ownerId", "")
     }
 
     const onSubmit = async (data: StartupFormValues) => {
@@ -262,7 +262,7 @@ export function CreateStartupDialog({
                 raisedAmount: 0,
                 stage: data.stage as StartupStage,
                 ownerRole: data.ownerRole as StartupRole,
-                status: 'APPROVED', // Admins create approved startups directly
+                status: 'ACTIVE', // Startups are active immediately
             })
             toast.success("Startup created successfully")
             onSuccess()
@@ -326,7 +326,15 @@ export function CreateStartupDialog({
                     </div>
 
                     {mode === 'CREATE' ? (
-                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                        <form onSubmit={form.handleSubmit(onSubmit, (errors) => {
+                            console.error('Form validation errors:', errors)
+                            const firstError = Object.values(errors)[0]
+                            if (firstError?.message) {
+                                toast.error(String(firstError.message))
+                            } else {
+                                toast.error('Please fill all required fields')
+                            }
+                        })} className="space-y-6">
                             {/* Basic Info Section */}
                             <div className="space-y-4 p-4 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/10 dark:to-indigo-900/10 border border-blue-100 dark:border-blue-800/30">
                                 <h3 className="text-sm font-bold uppercase tracking-wider text-blue-700 dark:text-blue-400 flex items-center gap-2">
@@ -392,7 +400,7 @@ export function CreateStartupDialog({
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2 relative">
                                         <Label className="text-slate-700 dark:text-slate-300">
-                                            Startup Owner (Optional)
+                                            Startup Owner *
                                         </Label>
                                         {selectedOwner ? (
                                             <div className="flex items-center justify-between p-2.5 border rounded-lg bg-white dark:bg-slate-900">
@@ -433,7 +441,9 @@ export function CreateStartupDialog({
                                                         <Loader2 className="h-4 w-4 animate-spin text-purple-500" />
                                                     </div>
                                                 )}
-                                                <p className="text-[10px] text-slate-500 mt-1">Leave empty to assign to yourself</p>
+                                                {!selectedOwner && form.formState.errors.ownerId && (
+                                                    <p className="text-[10px] text-red-500 mt-1">{form.formState.errors.ownerId.message}</p>
+                                                )}
                                             </div>
                                         )}
                                     </div>

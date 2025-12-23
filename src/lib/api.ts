@@ -239,8 +239,8 @@ export async function fetchAllStartups(
     return request(api.get('/admin/startups/all', { params }));
 }
 
-export async function transferStartupOwnership(startupId: string, newOwnerId: string): Promise<Startup> {
-    return request(api.put(`/startups/${startupId}/transfer-ownership`, { newOwnerId }));
+export async function transferStartupOwnership(startupId: string, newOwnerId: string, newOwnerRole?: string): Promise<Startup> {
+    return request(api.put(`/startups/${startupId}/transfer-ownership`, { newOwnerId, newOwnerRole }));
 }
 
 // StartupStats interface imported from types
@@ -316,6 +316,14 @@ export async function syncExchangeRates(): Promise<Record<string, string>> {
 
 export async function addStartupMember(startupId: string, userId: string, role: string, joinedAt: string, leftAt: string | null): Promise<Startup> {
     return request(api.post(`/startups/${startupId}/members`, { userId, role, joinedAt, leftAt }));
+}
+
+export async function updateMemberRole(startupId: string, memberUserId: string, role: string): Promise<Startup> {
+    return request(api.patch(`/startups/${startupId}/members/${memberUserId}/role`, { role }));
+}
+
+export async function reactivateStartupMember(startupId: string, userId: string): Promise<Startup> {
+    return request(api.post(`/startups/${startupId}/members/${userId}/reactivate`));
 }
 
 // Reuse existing search functionality via getAllStartups if needed, or add specialized search
@@ -510,6 +518,7 @@ export interface DealStats {
     completedDeals: number;
     cancelledDeals: number;
     totalCompletedAmount: number;
+    totalCommissionRevenue: number;
 }
 
 export interface DealRequest {

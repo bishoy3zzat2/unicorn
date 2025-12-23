@@ -183,6 +183,7 @@ public class DealService {
                 .completedDeals(dealRepository.countByStatus(DealStatus.COMPLETED))
                 .cancelledDeals(dealRepository.countByStatus(DealStatus.CANCELLED))
                 .totalCompletedAmount(dealRepository.getTotalCompletedDealsAmount())
+                .totalCommissionRevenue(dealRepository.getTotalCommissionRevenue())
                 .build();
     }
 }

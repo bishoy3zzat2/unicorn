@@ -21,4 +21,5 @@ public class DealStats {
     private long completedDeals;
     private long cancelledDeals;
     private BigDecimal totalCompletedAmount;
+    private BigDecimal totalCommissionRevenue;
 }

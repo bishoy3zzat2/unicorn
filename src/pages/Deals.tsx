@@ -34,7 +34,9 @@ import {
     TrendingUp,
     Users,
     Building2,
-    Trash2
+    Trash2,
+    Pencil,
+    Percent
 } from 'lucide-react'
 import { KPICard } from '../components/dashboard/KPICard'
 import {
@@ -46,6 +48,7 @@ import {
 } from '../lib/api'
 import { formatTimeAgo } from '../lib/utils'
 import { CreateDealDialog } from '../components/dashboard/CreateDealDialog'
+import { EditDealDialog } from '../components/dashboard/EditDealDialog'
 import { DealDetailsDialog } from '../components/dashboard/DealDetailsDialog'
 import {
     AlertDialog,
@@ -82,7 +85,8 @@ export function Deals() {
         pendingDeals: 0,
         completedDeals: 0,
         cancelledDeals: 0,
-        totalCompletedAmount: 0
+        totalCompletedAmount: 0,
+        totalCommissionRevenue: 0
     })
     const [loading, setLoading] = useState(true)
     const [searchQuery, setSearchQuery] = useState('')
@@ -98,6 +102,8 @@ export function Deals() {
     const [createDialogOpen, setCreateDialogOpen] = useState(false)
     const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null)
     const [detailsDialogOpen, setDetailsDialogOpen] = useState(false)
+    const [editDialogOpen, setEditDialogOpen] = useState(false)
+    const [dealToEdit, setDealToEdit] = useState<Deal | null>(null)
 
     // Delete confirmation
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -256,10 +262,10 @@ export function Deals() {
                     iconColor="text-green-600 dark:text-green-400"
                 />
                 <KPICard
-                    title="Cancelled"
-                    value={stats.cancelledDeals.toString()}
-                    icon={XCircle}
-                    iconColor="text-red-600 dark:text-red-400"
+                    title="Total Commission"
+                    value={formatCompactAmount(stats.totalCommissionRevenue || 0, 'USD')}
+                    icon={Percent}
+                    iconColor="text-purple-600 dark:text-purple-400"
                 />
                 <KPICard
                     title="Total Invested"
@@ -462,6 +468,18 @@ export function Deals() {
                                                         <Button
                                                             variant="ghost"
                                                             size="icon"
+                                                            className="h-8 w-8 text-muted-foreground hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation()
+                                                                setDealToEdit(deal)
+                                                                setEditDialogOpen(true)
+                                                            }}
+                                                        >
+                                                            <Pencil className="h-4 w-4" />
+                                                        </Button>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
                                                             className="h-8 w-8 text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
                                                             onClick={(e) => {
                                                                 e.stopPropagation()
@@ -555,6 +573,14 @@ export function Deals() {
             <CreateDealDialog
                 open={createDialogOpen}
                 onOpenChange={setCreateDialogOpen}
+                onSuccess={handleRefresh}
+            />
+
+            {/* Edit Deal Dialog */}
+            <EditDealDialog
+                deal={dealToEdit}
+                open={editDialogOpen}
+                onOpenChange={setEditDialogOpen}
                 onSuccess={handleRefresh}
             />
 

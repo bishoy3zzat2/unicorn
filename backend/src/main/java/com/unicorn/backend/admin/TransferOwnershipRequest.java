@@ -14,4 +14,5 @@ import java.util.UUID;
 @AllArgsConstructor
 public class TransferOwnershipRequest {
     private UUID newOwnerId;
+    private String newOwnerRole; // Optional role for the new owner (e.g. FOUNDER, CEO, etc.)
 }
