@@ -20,12 +20,14 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@lombok.EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Entity
 @Table(name = "startups")
 public class Startup {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @lombok.EqualsAndHashCode.Include
     private UUID id;
 
     @Column(nullable = false)
@@ -93,15 +95,22 @@ public class Startup {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id", nullable = false)
+    @lombok.ToString.Exclude
     private User owner;
 
     @OneToMany(mappedBy = "startup", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
+    @lombok.ToString.Exclude
     private java.util.List<StartupMember> members = new java.util.ArrayList<>();
 
     @Column(name = "warning_count")
     @Builder.Default
     private Integer warningCount = 0;
+
+    @Override
+    public String toString() {
+        return "Startup(id=" + id + ", name=" + name + ")";
+    }
 
     @OneToMany(mappedBy = "startup", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private java.util.List<StartupModerationLog> moderationLogs;

@@ -105,21 +105,27 @@ public class User implements UserDetails {
 
     // Relationships
     @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @lombok.ToString.Exclude
     private List<Startup> startups;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @lombok.ToString.Exclude
     private List<com.unicorn.backend.startup.StartupMember> memberships;
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @lombok.ToString.Exclude
     private InvestorProfile investorProfile;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @lombok.ToString.Exclude
     private List<UserModerationLog> moderationLogs;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @lombok.ToString.Exclude
     private List<com.unicorn.backend.security.RefreshToken> refreshTokens;
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @lombok.ToString.Exclude
     private com.unicorn.backend.auth.UserOneTimePassword oneTimePassword;
 
     @Override
@@ -134,6 +140,11 @@ public class User implements UserDetails {
     @Override
     public String getPassword() {
         return this.passwordHash;
+    }
+
+    @Override
+    public String toString() {
+        return "User(id=" + id + ", email=" + email + ")";
     }
 
     @Override

@@ -33,13 +33,15 @@ import {
     ChevronsRight,
     ChevronLeft,
     ChevronRight,
-    Gavel
+    Gavel,
+    MessageSquare
 } from 'lucide-react'
 import { KPICard } from '../components/dashboard/KPICard'
 import { getAllReports, getReportStats, Report } from '../lib/api'
 import { formatTimeAgo } from '../lib/utils'
 import { ReportDetailsDialog } from '../components/dashboard/ReportDetailsDialog'
 import { ReportResolutionDialog } from '../components/dashboard/ReportResolutionDialog'
+import { getChatReports, ChatReportData } from '../api/adminChatApi'
 
 // Report reason labels
 const REPORT_REASON_LABELS: Record<string, string> = {
@@ -106,13 +108,46 @@ export function Reports() {
     const loadReports = async () => {
         setLoading(true)
         try {
-            const status = statusFilter === 'ALL' ? undefined : statusFilter
-            const type = entityTypeFilter === 'ALL' ? undefined : entityTypeFilter
-            const data = await getAllReports(currentPage, pageSize, status, type)
+            // Handle chat reports separately
+            if (entityTypeFilter === 'CHAT_MESSAGE') {
+                const status = statusFilter === 'ALL' ? undefined : statusFilter
+                const chatReportsData = await getChatReports(
+                    Number(currentPage),
+                    Number(pageSize),
+                    status
+                )
 
-            setReports(data.content)
-            setTotalPages(data.totalPages)
-            setTotalElements(data.totalElements)
+                // Convert chat reports to Report format for display
+                const convertedReports: Report[] = chatReportsData.content.map((cr: ChatReportData) => ({
+                    id: cr.id,
+                    reporterId: cr.reporterId,
+                    reportedEntityId: cr.messageId,
+                    reportedEntityType: 'CHAT_MESSAGE',
+                    reason: cr.reason,
+                    description: cr.messageContent, // Use messageContent as description
+                    status: cr.status === 'ACTION_TAKEN' ? 'RESOLVED' : cr.status === 'REVIEWED' ? 'UNDER_REVIEW' : cr.status, // Map status
+                    createdAt: cr.createdAt,
+                    reviewedAt: cr.reviewedAt,
+                    reviewedBy: cr.reviewedByName || undefined,
+                    resolution: cr.status === 'ACTION_TAKEN' ? 'Message deleted' : cr.status === 'DISMISSED' ? 'Dismissed' : undefined,
+                    notifyReporter: false,
+                    reporterNotified: false,
+                    updatedAt: cr.reviewedAt || cr.createdAt
+                }))
+
+                setReports(convertedReports)
+                setTotalPages(chatReportsData.totalPages)
+                setTotalElements(chatReportsData.totalElements)
+            } else {
+                // Regular user/startup reports
+                const status = statusFilter === 'ALL' ? undefined : statusFilter
+                const type = entityTypeFilter === 'ALL' ? undefined : entityTypeFilter
+                const data = await getAllReports(currentPage, pageSize, status, type)
+
+                setReports(data.content)
+                setTotalPages(data.totalPages)
+                setTotalElements(data.totalElements)
+            }
         } catch (error: any) {
             console.error('Failed to load reports:', error)
         } finally {
@@ -154,15 +189,25 @@ export function Reports() {
     }
 
     const getEntityTypeIcon = (type: string) => {
-        return type === 'USER' ? (
-            <div className="h-8 w-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center ring-2 ring-white dark:ring-background shadow-sm">
-                <User className="h-4 w-4" />
-            </div>
-        ) : (
-            <div className="h-8 w-8 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 flex items-center justify-center ring-2 ring-white dark:ring-background shadow-sm">
-                <Building2 className="h-4 w-4" />
-            </div>
-        )
+        if (type === 'USER') {
+            return (
+                <div className="h-8 w-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center ring-2 ring-white dark:ring-background shadow-sm">
+                    <User className="h-4 w-4" />
+                </div>
+            )
+        } else if (type === 'CHAT_MESSAGE') {
+            return (
+                <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center ring-2 ring-white dark:ring-background shadow-sm">
+                    <MessageSquare className="h-4 w-4" />
+                </div>
+            )
+        } else {
+            return (
+                <div className="h-8 w-8 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 flex items-center justify-center ring-2 ring-white dark:ring-background shadow-sm">
+                    <Building2 className="h-4 w-4" />
+                </div>
+            )
+        }
     }
 
     // Client-side search filtering (since API search isn't implemented yet)
@@ -241,14 +286,18 @@ export function Reports() {
                     </div>
 
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
-                        <Select value={entityTypeFilter} onValueChange={setEntityTypeFilter}>
-                            <SelectTrigger className="w-full sm:w-[160px] bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+                        <Select value={entityTypeFilter} onValueChange={(value) => {
+                            setEntityTypeFilter(value)
+                            setCurrentPage(0)
+                        }}>
+                            <SelectTrigger className="w-full sm:w-[180px] bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
                                 <SelectValue placeholder="Entity Type" />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="ALL">All Entities</SelectItem>
                                 <SelectItem value="USER">User Reports</SelectItem>
                                 <SelectItem value="STARTUP">Startup Reports</SelectItem>
+                                <SelectItem value="CHAT_MESSAGE">Chat Reports</SelectItem>
                             </SelectContent>
                         </Select>
 

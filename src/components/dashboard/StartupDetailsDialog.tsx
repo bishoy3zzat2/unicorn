@@ -11,7 +11,7 @@ import {
     FileText, FileSpreadsheet, FilePieChart,
     Building2, Calendar, Layers, Clock, TrendingUp, Target, Users,
     LogOut, Trash2, MoreVertical, UserPlus, Eye, Pencil,
-    Loader2, History, Shield, AlertTriangle, XCircle
+    Loader2, History, Shield, AlertTriangle, XCircle, MessageSquare
 } from "lucide-react"
 import { formatDate, cn, formatCurrency } from "../../lib/utils"
 import { Startup } from "../../types"
@@ -42,6 +42,9 @@ import {
 import { fetchStartupModerationLogs, deleteStartupModerationLog, StartupModerationLog, fetchDealsForStartup, Deal } from "../../lib/api"
 import { WarnStartupDialog, StartupStatusDialog, DeleteStartupDialog } from "./StartupActionDialogs"
 import { Badge } from "../ui/badge"
+import { getStartupChats, getChatMessages, ChatData, MessageData } from '../../api/adminChatApi'
+import { ChatViewerDialog } from './ChatViewerDialog'
+import { formatTimeAgo } from '../../lib/utils'
 
 interface StartupDetailsDialogProps {
     open: boolean
@@ -115,7 +118,15 @@ export function StartupDetailsDialog({
     // Audit Logs State
     const [auditLogs, setAuditLogs] = useState<StartupModerationLog[]>([])
     const [loadingLogs, setLoadingLogs] = useState(false)
-    const [activeTab, setActiveTab] = useState<'details' | 'deals' | 'history'>('details')
+    const [activeTab, setActiveTab] = useState<'details' | 'deals' | 'history' | 'chats'>('details')
+
+    // Chat States
+    const [startupChats, setStartupChats] = useState<ChatData[]>([])
+    const [loadingChats, setLoadingChats] = useState(false)
+    const [selectedChat, setSelectedChat] = useState<ChatData | null>(null)
+    const [chatMessages, setChatMessages] = useState<MessageData[]>([])
+    const [loadingMessages, setLoadingMessages] = useState(false)
+    const [isChatViewerOpen, setIsChatViewerOpen] = useState(false)
 
     // Deals State
     const [startupDeals, setStartupDeals] = useState<Deal[]>([])
@@ -127,6 +138,13 @@ export function StartupDetailsDialog({
     const [savingRole, setSavingRole] = useState(false)
 
     const ROLE_OPTIONS = ['FOUNDER', 'CO_FOUNDER', 'CEO', 'CTO', 'COO', 'CFO', 'CMO', 'CHIEF_PRODUCT_OFFICER', 'DEVELOPER', 'DESIGNER', 'OTHER']
+
+    // Fetch chats when switching to chats tab
+    useEffect(() => {
+        if (activeTab === 'chats' && startup && open) {
+            fetchStartupChats()
+        }
+    }, [activeTab, startup, open])
 
     if (loading) {
         return (
@@ -167,6 +185,35 @@ export function StartupDetailsDialog({
             toast.error("Failed to load deals")
         } finally {
             setLoadingDeals(false)
+        }
+    }
+
+    const fetchStartupChats = async () => {
+        if (!startup) return
+        setLoadingChats(true)
+        try {
+            const chats = await getStartupChats(startup.id)
+            setStartupChats(chats)
+        } catch (error) {
+            console.error('Failed to fetch startup chats:', error)
+            toast.error('Failed to load chats')
+        } finally {
+            setLoadingChats(false)
+        }
+    }
+
+    const handleViewChat = async (chat: ChatData) => {
+        setSelectedChat(chat)
+        setLoadingMessages(true)
+        setIsChatViewerOpen(true)
+        try {
+            const messages = await getChatMessages(chat.id)
+            setChatMessages(messages)
+        } catch (error) {
+            console.error('Failed to fetch chat messages:', error)
+            toast.error('Failed to load messages')
+        } finally {
+            setLoadingMessages(false)
         }
     }
 
@@ -548,6 +595,22 @@ export function StartupDetailsDialog({
                                             <History className="h-4 w-4" />
                                             <span className="hidden sm:inline">Moderation History</span>
                                             <span className="sm:hidden">History</span>
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setActiveTab('chats');
+                                                fetchStartupChats();
+                                            }}
+                                            className={cn(
+                                                "px-4 py-2 text-sm font-medium rounded-md transition-all flex items-center gap-2",
+                                                activeTab === 'chats'
+                                                    ? "bg-background text-foreground shadow-sm"
+                                                    : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                                            )}
+                                        >
+                                            <MessageSquare className="h-4 w-4" />
+                                            <span className="hidden sm:inline">Chats</span>
+                                            <span className="sm:hidden">Chats</span>
                                         </button>
                                     </>
                                 )}
@@ -1108,6 +1171,63 @@ export function StartupDetailsDialog({
                         </div>
                     )}
 
+                    {/* Chats Tab */}
+                    {activeTab === 'chats' && (
+                        <div className="space-y-4 px-8 pb-8 pt-6">
+                            {loadingChats ? (
+                                <div className="flex items-center justify-center py-16">
+                                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                                </div>
+                            ) : startupChats.length > 0 ? (
+                                <div className="grid grid-cols-1 gap-4">
+                                    {startupChats.map((chat) => (
+                                        <div
+                                            key={chat.id}
+                                            className="group relative flex items-center justify-between p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:shadow-lg hover:border-primary/50 transition-all duration-300 cursor-pointer"
+                                            onClick={() => handleViewChat(chat)}
+                                        >
+                                            <div className="flex items-center gap-4">
+                                                <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary/10 to-primary/20 flex items-center justify-center border border-primary/10">
+                                                    <MessageSquare className="h-6 w-6 text-primary" />
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-semibold text-base group-hover:text-primary transition-colors">
+                                                        {chat.investorName}
+                                                    </h4>
+                                                    <p className="text-xs text-muted-foreground mt-0.5">
+                                                        Last message: {formatTimeAgo(new Date(chat.lastMessageAt))}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                {chat.unreadCount > 0 && (
+                                                    <span className="px-2 py-1 rounded-full text-xs font-semibold bg-primary text-primary-foreground">
+                                                        {chat.unreadCount}
+                                                    </span>
+                                                )}
+                                                <span className={cn(
+                                                    "px-2 py-1 rounded-full text-xs font-semibold border",
+                                                    chat.status === 'ACTIVE' ? 'bg-green-500/10 text-green-500 border-green-500/30' :
+                                                        chat.status === 'BLOCKED' ? 'bg-red-500/10 text-red-500 border-red-500/30' :
+                                                            'bg-gray-500/10 text-gray-500 border-gray-500/30'
+                                                )}>
+                                                    {chat.status}
+                                                </span>
+                                                <Eye className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="flex flex-col items-center justify-center py-16 text-muted-foreground bg-muted/10 rounded-xl border border-dashed">
+                                    <MessageSquare className="h-12 w-12 mx-auto mb-3 opacity-20" />
+                                    <p className="font-medium">No chats found</p>
+                                    <p className="text-xs opacity-70 mt-1">This startup hasn't started any conversations yet.</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                 </div >
 
                 <AlertDialog open={confirmDialog.open} onOpenChange={(open: boolean) => setConfirmDialog(prev => ({ ...prev, open }))}>
@@ -1231,6 +1351,13 @@ export function StartupDetailsDialog({
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>
+
+                <ChatViewerDialog
+                    open={isChatViewerOpen}
+                    onOpenChange={setIsChatViewerOpen}
+                    messages={chatMessages}
+                    chatTitle={selectedChat ? `Chat with ${selectedChat.investorName}` : 'Chat'}
+                />
             </DialogContent >
         </Dialog >
     )

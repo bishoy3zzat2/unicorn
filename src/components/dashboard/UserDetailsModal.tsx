@@ -12,9 +12,9 @@ import {
     Loader2, User, Mail, Phone, MapPin, Calendar, Shield,
     Building2, TrendingUp, CreditCard, Clock, AlertTriangle,
     Ban, CheckCircle, XCircle, DollarSign, Briefcase,
-    Monitor, Globe, AlertCircle, Eye, Trash2
+    Monitor, Globe, AlertCircle, Eye, Trash2, MessageSquare
 } from 'lucide-react'
-import { formatDate, cn, formatCompactCurrency } from '../../lib/utils'
+import { formatDate, cn, formatCompactCurrency, formatTimeAgo } from '../../lib/utils'
 import api from '../../lib/axios'
 import { toast } from 'sonner'
 import { useAuth } from '../../contexts/AuthContext'
@@ -38,6 +38,8 @@ import { WarnUserDialog } from './WarnUserDialog'
 import { DeleteUserDialog } from './DeleteUserDialog'
 import { RestoreUserDialog } from './RestoreUserDialog'
 import { UserStatusDialog } from './UserStatusDialog'
+import { getUserChats, getStartupChats, getChatMessages, ChatData, MessageData } from '../../api/adminChatApi'
+import { ChatViewerDialog } from './ChatViewerDialog'
 
 interface UserDetailsModalProps {
     userId: string | null
@@ -130,13 +132,21 @@ interface UserDetails {
 export function UserDetailsModal({ userId, open, onOpenChange, onAction }: UserDetailsModalProps) {
     const [loading, setLoading] = useState(false)
     const [userDetails, setUserDetails] = useState<UserDetails | null>(null)
-    const [activeTab, setActiveTab] = useState<'info' | 'startups' | 'transactions' | 'history' | 'security'>('info')
+    const [activeTab, setActiveTab] = useState<'info' | 'startups' | 'transactions' | 'history' | 'security' | 'chats'>('info')
     const [selectedStartup, setSelectedStartup] = useState<Startup | null>(null)
     const [isStartupDetailsOpen, setIsStartupDetailsOpen] = useState(false)
     const [deleteLogId, setDeleteLogId] = useState<string | null>(null)
     const [showDeleteDialog, setShowDeleteDialog] = useState(false)
     const [investorDeals, setInvestorDeals] = useState<Deal[]>([])
     const [loadingDeals, setLoadingDeals] = useState(false)
+
+    // Chat States
+    const [userChats, setUserChats] = useState<ChatData[]>([])
+    const [loadingChats, setLoadingChats] = useState(false)
+    const [selectedChat, setSelectedChat] = useState<ChatData | null>(null)
+    const [chatMessages, setChatMessages] = useState<MessageData[]>([])
+    const [loadingMessages, setLoadingMessages] = useState(false)
+    const [isChatViewerOpen, setIsChatViewerOpen] = useState(false)
 
     // Action Dialog States
     const [suspendDialogOpen, setSuspendDialogOpen] = useState(false)
@@ -181,6 +191,42 @@ export function UserDetailsModal({ userId, open, onOpenChange, onAction }: UserD
             toast.error('Failed to load user details')
         } finally {
             setLoading(false)
+        }
+    }
+
+    // Fetch chats when user switches to chats tab
+    useEffect(() => {
+        if (activeTab === 'chats' && userId && open) {
+            fetchUserChats()
+        }
+    }, [activeTab, userId, open])
+
+    async function fetchUserChats() {
+        if (!userId) return
+        setLoadingChats(true)
+        try {
+            const chats = await getUserChats(userId)
+            setUserChats(chats)
+        } catch (error) {
+            console.error('Failed to fetch user chats:', error)
+            toast.error('Failed to load chats')
+        } finally {
+            setLoadingChats(false)
+        }
+    }
+
+    async function handleViewChat(chat: ChatData) {
+        setSelectedChat(chat)
+        setLoadingMessages(true)
+        setIsChatViewerOpen(true)
+        try {
+            const messages = await getChatMessages(chat.id)
+            setChatMessages(messages)
+        } catch (error) {
+            console.error('Failed to fetch chat messages:', error)
+            toast.error('Failed to load messages')
+        } finally {
+            setLoadingMessages(false)
         }
     }
 
@@ -271,12 +317,13 @@ export function UserDetailsModal({ userId, open, onOpenChange, onAction }: UserD
 
 
 
-    const tabs: Array<{ id: 'info' | 'startups' | 'transactions' | 'history' | 'security'; label: string; icon: React.ElementType; count?: number }> = [
+    const tabs: Array<{ id: 'info' | 'startups' | 'transactions' | 'history' | 'security' | 'chats'; label: string; icon: React.ElementType; count?: number }> = [
         { id: 'info', label: 'Info', icon: User },
         { id: 'startups', label: 'Startups', icon: Building2, count: userDetails?.startups?.length },
         { id: 'transactions', label: 'Transactions', icon: CreditCard, count: userDetails?.recentTransactions?.length },
         { id: 'history', label: 'History', icon: Clock, count: userDetails?.moderationHistory?.length },
         { id: 'security', label: 'Security', icon: Shield },
+        { id: 'chats', label: 'Chats', icon: MessageSquare, count: userChats.length },
     ]
 
     const canManageUser = userDetails ? (
@@ -1008,6 +1055,63 @@ export function UserDetailsModal({ userId, open, onOpenChange, onAction }: UserD
                                         <SecurityTab userId={userId} canManageUser={canManageUser} />
                                     </div>
                                 )}
+
+                                {/* Chats Tab */}
+                                {activeTab === 'chats' && (
+                                    <div className="space-y-4 px-8 pb-8">
+                                        {loadingChats ? (
+                                            <div className="flex items-center justify-center py-16">
+                                                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                                            </div>
+                                        ) : userChats.length > 0 ? (
+                                            <div className="grid grid-cols-1 gap-4">
+                                                {userChats.map((chat) => (
+                                                    <div
+                                                        key={chat.id}
+                                                        className="group relative flex items-center justify-between p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:shadow-lg hover:border-primary/50 transition-all duration-300 cursor-pointer"
+                                                        onClick={() => handleViewChat(chat)}
+                                                    >
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary/10 to-primary/20 flex items-center justify-center border border-primary/10">
+                                                                <MessageSquare className="h-6 w-6 text-primary" />
+                                                            </div>
+                                                            <div>
+                                                                <h4 className="font-semibold text-base group-hover:text-primary transition-colors">
+                                                                    {userDetails?.role === 'INVESTOR' ? chat.startupName : chat.investorName}
+                                                                </h4>
+                                                                <p className="text-xs text-muted-foreground mt-0.5">
+                                                                    Last message: {formatTimeAgo(new Date(chat.lastMessageAt))}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            {chat.unreadCount > 0 && (
+                                                                <span className="px-2 py-1 rounded-full text-xs font-semibold bg-primary text-primary-foreground">
+                                                                    {chat.unreadCount}
+                                                                </span>
+                                                            )}
+                                                            <span className={cn(
+                                                                "px-2 py-1 rounded-full text-xs font-semibold border",
+                                                                chat.status === 'ACTIVE' ? 'bg-green-500/10 text-green-500 border-green-500/30' :
+                                                                    chat.status === 'BLOCKED' ? 'bg-red-500/10 text-red-500 border-red-500/30' :
+                                                                        'bg-gray-500/10 text-gray-500 border-gray-500/30'
+                                                            )}>
+                                                                {chat.status}
+                                                            </span>
+                                                            <Eye className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="flex flex-col items-center justify-center py-16 text-muted-foreground bg-muted/10 rounded-xl border border-dashed">
+                                                <MessageSquare className="h-12 w-12 mx-auto mb-3 opacity-20" />
+                                                <p className="font-medium">No chats found</p>
+                                                <p className="text-xs opacity-70 mt-1">This user hasn't started any conversations yet.</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
@@ -1077,9 +1181,16 @@ export function UserDetailsModal({ userId, open, onOpenChange, onAction }: UserD
                     <UserStatusDialog
                         open={statusChangeDialogOpen}
                         onOpenChange={setStatusChangeDialogOpen}
-                        userId={userDetails.id}
-                        currentStatus={userDetails.status}
+                        userId={userId}
+                        currentStatus={userDetails?.status || ''}
                         onSuccess={handleActionComplete}
+                    />
+
+                    <ChatViewerDialog
+                        open={isChatViewerOpen}
+                        onOpenChange={setIsChatViewerOpen}
+                        messages={chatMessages}
+                        chatTitle={selectedChat ? `Chat with ${userDetails?.role === 'INVESTOR' ? selectedChat.startupName : selectedChat.investorName}` : 'Chat'}
                     />
                 </>
             )}
