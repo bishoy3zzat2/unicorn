@@ -139,6 +139,9 @@ export function StartupRequests() {
     )
     const [isExporting, setIsExporting] = useState(false)
 
+    // Quick Status Filter
+    const [statusFilter, setStatusFilter] = useState<string>('ALL')
+
 
 
     // Helper functions for Export Column Selection
@@ -163,7 +166,7 @@ export function StartupRequests() {
 
     useEffect(() => {
         loadData()
-    }, [page, pageSize, appliedFilters])
+    }, [page, pageSize, appliedFilters, statusFilter])
 
 
 
@@ -188,8 +191,12 @@ export function StartupRequests() {
         try {
             setLoading(true)
             setError(null)
+            const filterParams = { ...appliedFilters }
+            if (statusFilter !== 'ALL') {
+                filterParams.status = statusFilter
+            }
             const [startupsData, statsData] = await Promise.all([
-                fetchAllStartups(page, pageSize, appliedFilters),
+                fetchAllStartups(page, pageSize, filterParams),
                 fetchStartupStats()
             ])
             setStartups(startupsData.content)
@@ -388,96 +395,118 @@ export function StartupRequests() {
                 </Alert>
             )}
 
-            {/* Startups Table */}
-            <Card className="overflow-hidden">
-                <CardHeader className="bg-white/50 dark:bg-slate-900/50 border-b border-border/50 pb-4">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                                <Building2 className="h-5 w-5 text-primary" />
-                            </div>
-                            <div>
-                                <CardTitle>All Startups</CardTitle>
-                                <div className="flex items-center gap-2">
-                                    {loading && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
-                                    <span className="text-xs text-muted-foreground font-medium">
-                                        {startups.length} {startups.length === 1 ? 'startup' : 'startups'} total
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
+            {/* Toolbar Section */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800">
+                {/* Status Tabs */}
+                <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg overflow-x-auto max-w-full no-scrollbar">
+                    {['ALL', 'PENDING', 'APPROVED', 'REJECTED', 'SUSPENDED'].map((status) => (
+                        <button
+                            key={status}
+                            onClick={() => {
+                                setStatusFilter(status)
+                                setPage(0)
+                            }}
+                            className={`
+                                px-4 py-1.5 rounded-md text-sm font-medium transition-all duration-200 whitespace-nowrap
+                                ${statusFilter === status
+                                    ? 'bg-white dark:bg-slate-700 text-foreground shadow-sm'
+                                    : 'text-slate-500 dark:text-slate-400 hover:text-foreground hover:bg-white/50 dark:hover:bg-slate-700/50'}
+                            `}
+                        >
+                            {status === 'ALL' ? 'All' : status.charAt(0) + status.slice(1).toLowerCase()}
+                        </button>
+                    ))}
+                </div>
 
-                        <div className="flex flex-col sm:flex-row gap-2">
-                            <div className="relative">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input
-                                    placeholder="Search by email..."
-                                    value={quickSearch}
-                                    onChange={(e) => setQuickSearch(e.target.value)}
-                                    className="pl-9 w-full sm:w-[250px] bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
-                                />
-                            </div>
-
-                            <div className="flex gap-2">
-                                <Button
-                                    variant="outline"
-                                    size="icon"
-                                    onClick={loadData}
-                                    disabled={loading}
-                                    className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:bg-slate-50"
-                                    title="Refresh List"
-                                >
-                                    <RefreshCcw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-                                </Button>
-
-                                <Button
-                                    variant="outline"
-                                    onClick={() => setExportDialogOpen(true)}
-                                    className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:bg-slate-50 gap-2"
-                                >
-                                    <Download className="h-4 w-4" />
-                                    <span className="hidden sm:inline">Export</span>
-                                </Button>
-
-                                <Button
-                                    onClick={() => setCreateDialogOpen(true)}
-                                    className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg shadow-indigo-500/20 gap-2"
-                                >
-                                    <UserPlus className="h-4 w-4" />
-                                    <span className="hidden sm:inline">New Startup</span>
-                                </Button>
-                            </div>
-                        </div>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+                    <div className="relative flex-1 sm:w-64">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            placeholder="Search by email..."
+                            value={quickSearch}
+                            onChange={(e) => setQuickSearch(e.target.value)}
+                            className="pl-9 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
+                        />
                     </div>
-                </CardHeader>
-                <CardContent>
-                    {startups.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-12">
-                            <Rocket className="h-12 w-12 text-muted-foreground mb-4" />
-                            <p className="text-muted-foreground">No startups found</p>
+
+                    <div className="flex gap-2">
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={loadData}
+                            disabled={loading}
+                            className="shrink-0 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
+                            title="Refresh List"
+                        >
+                            <RefreshCcw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                        </Button>
+
+                        <Button
+                            variant="outline"
+                            onClick={() => setExportDialogOpen(true)}
+                            className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:bg-slate-50 gap-2"
+                        >
+                            <Download className="h-4 w-4" />
+                            <span className="hidden sm:inline">Export</span>
+                        </Button>
+
+                        <Button
+                            onClick={() => setCreateDialogOpen(true)}
+                            className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg shadow-indigo-500/20 gap-2"
+                        >
+                            <UserPlus className="h-4 w-4" />
+                            <span className="hidden sm:inline">New Startup</span>
+                        </Button>
+                    </div>
+                </div>
+            </div>
+
+            {/* Table Section */}
+            <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
+                {startups.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-20 text-center">
+                        <div className="h-16 w-16 bg-muted rounded-full flex items-center justify-center mb-4">
+                            <Rocket className="h-8 w-8 text-muted-foreground" />
                         </div>
-                    ) : (
-                        <div className="rounded-md border mt-4">
+                        <h3 className="text-lg font-semibold text-foreground">No startups found</h3>
+                        <p className="text-muted-foreground max-w-sm mx-auto mt-1">
+                            No startups match your current filters. Try adjusting them.
+                        </p>
+                        <Button
+                            variant="outline"
+                            className="mt-6"
+                            onClick={() => {
+                                setStatusFilter('ALL')
+                                setQuickSearch('')
+                                handleClearFilters()
+                            }}
+                        >
+                            Clear All Filters
+                        </Button>
+                    </div>
+                ) : (
+                    <>
+                        <div className="overflow-x-auto">
                             <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Startup & Owner</TableHead>
-                                        <TableHead>Industry</TableHead>
-                                        <TableHead>Stage</TableHead>
-                                        <TableHead>Funding Goal</TableHead>
-                                        <TableHead>Status</TableHead>
-                                        <TableHead>Created</TableHead>
-                                        <TableHead className="text-right">Actions</TableHead>
+                                <TableHeader className="bg-slate-50 dark:bg-slate-800/50">
+                                    <TableRow className="hover:bg-transparent border-b-border">
+                                        <TableHead className="font-semibold text-muted-foreground pl-6">Startup & Owner</TableHead>
+                                        <TableHead className="font-semibold text-muted-foreground">Industry</TableHead>
+                                        <TableHead className="font-semibold text-muted-foreground">Stage</TableHead>
+                                        <TableHead className="font-semibold text-muted-foreground">Funding Goal</TableHead>
+                                        <TableHead className="font-semibold text-muted-foreground">Status</TableHead>
+                                        <TableHead className="font-semibold text-muted-foreground">Created</TableHead>
+                                        <TableHead className="text-right pr-6 font-semibold text-muted-foreground">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {startups.map((startup) => (
                                         <TableRow
                                             key={startup.id}
-                                            className="group cursor-pointer hover:bg-muted/50 transition-colors"
+                                            className="group cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors border-b-border"
                                             onClick={() => setViewDialog({ open: true, startup })}
                                         >
-                                            <TableCell>
+                                            <TableCell className="pl-6 py-4">
                                                 <div className="flex items-center gap-3">
                                                     {startup.logoUrl ? (
                                                         <img
@@ -506,44 +535,38 @@ export function StartupRequests() {
                                                             <UserCog className="h-3 w-3" />
                                                             {startup.ownerEmail}
                                                         </div>
-                                                        {filters.memberEmail && (
-                                                            <div className="flex items-center gap-1 text-xs text-blue-500">
-                                                                <UserCog className="h-3 w-3" />
-                                                                Member: {filters.memberEmail}
-                                                            </div>
-                                                        )}
                                                     </div>
                                                 </div>
                                             </TableCell>
-                                            <TableCell>
+                                            <TableCell className="py-4">
                                                 <Badge variant="outline" className={cn("font-normal", getIndustryStyle(startup.industry))}>
                                                     {startup.industry || 'General'}
                                                 </Badge>
                                             </TableCell>
-                                            <TableCell>
+                                            <TableCell className="py-4">
                                                 {getStageBadge(startup.stage)}
                                             </TableCell>
-                                            <TableCell>
+                                            <TableCell className="py-4">
                                                 <div className="font-medium">
                                                     {(startup.fundingGoal || 0).toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                                                 </div>
                                             </TableCell>
-                                            <TableCell>
+                                            <TableCell className="py-4">
                                                 {getStatusBadge(startup.status)}
                                             </TableCell>
-                                            <TableCell className="text-muted-foreground text-xs">
+                                            <TableCell className="text-muted-foreground text-xs py-4">
                                                 <div className="flex items-center gap-1.5" title={formatDate(startup.createdAt)}>
                                                     <Calendar className="h-3 w-3" />
                                                     <span>Created {formatTimeAgo(startup.createdAt)}</span>
                                                 </div>
                                             </TableCell>
-                                            <TableCell className="text-right">
+                                            <TableCell className="text-right pr-6">
                                                 <div className="flex items-center justify-end gap-1">
                                                     {startup.websiteUrl && (
                                                         <Button
                                                             variant="ghost"
                                                             size="icon"
-                                                            className="h-8 w-8 hover:bg-muted"
+                                                            className="h-8 w-8 text-muted-foreground hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all"
                                                             asChild
                                                             title="Visit Website"
                                                         >
@@ -553,21 +576,21 @@ export function StartupRequests() {
                                                                 rel="noopener noreferrer"
                                                                 onClick={(e) => e.stopPropagation()}
                                                             >
-                                                                <Globe className="h-4 w-4 text-indigo-500" />
+                                                                <Globe className="h-4 w-4" />
                                                             </a>
                                                         </Button>
                                                     )}
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
-                                                        className="h-8 w-8 hover:bg-muted"
+                                                        className="h-8 w-8 text-muted-foreground hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all"
                                                         onClick={(e) => {
                                                             e.stopPropagation()
                                                             setViewDialog({ open: true, startup })
                                                         }}
                                                         title="View Details"
                                                     >
-                                                        <Eye className="h-4 w-4 text-blue-500" />
+                                                        <Eye className="h-4 w-4" />
                                                     </Button>
                                                     <DropdownMenu>
                                                         <DropdownMenuTrigger asChild>
@@ -590,8 +613,6 @@ export function StartupRequests() {
                                                                 <UserCog className="mr-2 h-4 w-4" />
                                                                 Transfer Ownership
                                                             </DropdownMenuItem>
-
-
                                                             <DropdownMenuSeparator />
                                                             <DropdownMenuLabel>Moderation</DropdownMenuLabel>
                                                             <DropdownMenuItem onClick={(e) => handleStatusChange(e, startup)} disabled={!isAdmin}>
@@ -611,7 +632,6 @@ export function StartupRequests() {
                                                                 <Trash2 className="mr-2 h-4 w-4" />
                                                                 Delete Permanently
                                                             </DropdownMenuItem>
-
                                                         </DropdownMenuContent>
                                                     </DropdownMenu>
                                                 </div>
@@ -621,77 +641,77 @@ export function StartupRequests() {
                                 </TableBody>
                             </Table>
                         </div>
-                    )}
 
-                    {/* Pagination */}
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-2 py-4">
-                        <div className="text-sm text-muted-foreground">
-                            Showing {page * pageSize + 1} to {Math.min((page + 1) * pageSize, stats?.total || 0)} of {stats?.total || 0} entries
-                        </div>
-                        <div className="flex flex-wrap items-center gap-4 lg:gap-6">
-                            <div className="flex items-center space-x-2">
-                                <p className="text-sm font-medium">Rows per page</p>
-                                <Select
-                                    value={`${pageSize}`}
-                                    onValueChange={(value) => {
-                                        setPageSize(Number(value))
-                                        setPage(0)
-                                    }}
-                                >
-                                    <SelectTrigger className="h-8 w-[70px]">
-                                        <SelectValue placeholder={pageSize} />
-                                    </SelectTrigger>
-                                    <SelectContent side="top">
-                                        {[10, 20, 50, 100, 200, 500].map((size) => (
-                                            <SelectItem key={size} value={`${size}`}>
-                                                {size}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                        {/* Pagination Footer */}
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-4 py-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
+                            <div className="text-sm text-muted-foreground">
+                                Showing {page * pageSize + 1} to {Math.min((page + 1) * pageSize, stats?.total || 0)} of {stats?.total || 0} entries
                             </div>
-                            <div className="flex items-center space-x-2">
-                                <Button
-                                    variant="outline"
-                                    className="hidden h-8 w-8 p-0 lg:flex"
-                                    onClick={() => setPage(0)}
-                                    disabled={page === 0}
-                                >
-                                    <span className="sr-only">Go to first page</span>
-                                    <ChevronsLeft className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    className="h-8 w-8 p-0"
-                                    onClick={() => setPage(p => Math.max(0, p - 1))}
-                                    disabled={page === 0}
-                                >
-                                    <span className="sr-only">Go to previous page</span>
-                                    <ChevronLeft className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    className="h-8 w-8 p-0"
-                                    onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
-                                    disabled={page >= totalPages - 1}
-                                >
-                                    <span className="sr-only">Go to next page</span>
-                                    <ChevronRight className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    className="hidden h-8 w-8 p-0 lg:flex"
-                                    onClick={() => setPage(totalPages - 1)}
-                                    disabled={page >= totalPages - 1}
-                                >
-                                    <span className="sr-only">Go to last page</span>
-                                    <ChevronsRight className="h-4 w-4" />
-                                </Button>
+                            <div className="flex flex-wrap items-center gap-4 lg:gap-6">
+                                <div className="flex items-center space-x-2">
+                                    <p className="text-sm font-medium">Rows per page</p>
+                                    <Select
+                                        value={`${pageSize}`}
+                                        onValueChange={(value) => {
+                                            setPageSize(Number(value))
+                                            setPage(0)
+                                        }}
+                                    >
+                                        <SelectTrigger className="h-8 w-[70px]">
+                                            <SelectValue placeholder={pageSize} />
+                                        </SelectTrigger>
+                                        <SelectContent side="top">
+                                            {[10, 20, 50, 100, 200, 500].map((size) => (
+                                                <SelectItem key={size} value={`${size}`}>
+                                                    {size}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <Button
+                                        variant="outline"
+                                        className="hidden h-8 w-8 p-0 lg:flex bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+                                        onClick={() => setPage(0)}
+                                        disabled={page === 0}
+                                    >
+                                        <span className="sr-only">Go to first page</span>
+                                        <ChevronsLeft className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        className="h-8 w-8 p-0 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+                                        onClick={() => setPage(p => Math.max(0, p - 1))}
+                                        disabled={page === 0}
+                                    >
+                                        <span className="sr-only">Go to previous page</span>
+                                        <ChevronLeft className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        className="h-8 w-8 p-0 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+                                        onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                                        disabled={page >= totalPages - 1}
+                                    >
+                                        <span className="sr-only">Go to next page</span>
+                                        <ChevronRight className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        className="hidden h-8 w-8 p-0 lg:flex bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+                                        onClick={() => setPage(totalPages - 1)}
+                                        disabled={page >= totalPages - 1}
+                                    >
+                                        <span className="sr-only">Go to last page</span>
+                                        <ChevronsRight className="h-4 w-4" />
+                                    </Button>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </CardContent >
-            </Card >
+                    </>
+                )}
+            </div>
 
             {/* View Startup Dialog */}
 
