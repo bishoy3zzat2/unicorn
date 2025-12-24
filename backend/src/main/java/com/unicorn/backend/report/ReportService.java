@@ -395,4 +395,13 @@ public class ReportService {
             }
         }
     }
+
+    /**
+     * Delete a report.
+     */
+    @Transactional
+    public void deleteReport(UUID reportId) {
+        Report report = getReportById(reportId);
+        reportRepository.delete(report);
+    }
 }

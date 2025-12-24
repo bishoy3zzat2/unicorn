@@ -125,7 +125,7 @@ export function StartupDetailsDialog({
     const [loadingChats, setLoadingChats] = useState(false)
     const [selectedChat, setSelectedChat] = useState<ChatData | null>(null)
     const [chatMessages, setChatMessages] = useState<MessageData[]>([])
-    const [loadingMessages, setLoadingMessages] = useState(false)
+    const [_loadingMessages, setLoadingMessages] = useState(false) // eslint-disable-line @typescript-eslint/no-unused-vars
     const [isChatViewerOpen, setIsChatViewerOpen] = useState(false)
 
     // Deals State

@@ -6,8 +6,8 @@ import org.springframework.cache.annotation.EnableCaching;
 
 @EnableCaching
 @SpringBootApplication
-@org.springframework.boot.autoconfigure.domain.EntityScan(basePackages = "com.unicorn.backend")
-@org.springframework.data.jpa.repository.config.EnableJpaRepositories(basePackages = "com.unicorn.backend")
+@EntityScan(basePackages = "com.unicorn.backend")
+@EnableJpaRepositories(basePackages = "com.unicorn.backend")
 public class BackendApplication {
 
     public static void main(String[] args) {

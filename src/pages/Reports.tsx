@@ -10,6 +10,16 @@ import {
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
 import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "../components/ui/alert-dialog"
+import {
     Select,
     SelectContent,
     SelectItem,
@@ -34,10 +44,11 @@ import {
     ChevronLeft,
     ChevronRight,
     Gavel,
-    MessageSquare
+    MessageSquare,
+    Trash2,
 } from 'lucide-react'
 import { KPICard } from '../components/dashboard/KPICard'
-import { getAllReports, getReportStats, Report } from '../lib/api'
+import { getAllReports, getReportStats, deleteReport, Report } from '../lib/api'
 import { formatTimeAgo } from '../lib/utils'
 import { ReportDetailsDialog } from '../components/dashboard/ReportDetailsDialog'
 import { ReportResolutionDialog } from '../components/dashboard/ReportResolutionDialog'
@@ -85,6 +96,10 @@ export function Reports() {
     // Quick Resolve State
     const [quickResolveReport, setQuickResolveReport] = useState<Report | null>(null)
     const [resolveDialogOpen, setResolveDialogOpen] = useState(false)
+
+    // Delete State
+    const [deleteReportId, setDeleteReportId] = useState<string | null>(null)
+    const [deleteLoading, setDeleteLoading] = useState(false)
 
     // Load stats
     useEffect(() => {
@@ -411,8 +426,21 @@ export function Reports() {
                                                             e.stopPropagation()
                                                             setSelectedReportId(report.id)
                                                         }}
+                                                        title="View Details"
                                                     >
                                                         <Eye className="h-4 w-4" />
+                                                    </Button>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-8 w-8 text-muted-foreground hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-all"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation()
+                                                            setDeleteReportId(report.id)
+                                                        }}
+                                                        title="Delete Report"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
                                                     </Button>
                                                     {(report.status !== 'RESOLVED' && report.status !== 'REJECTED') && (
                                                         <Button
@@ -530,6 +558,60 @@ export function Reports() {
                     }}
                 />
             )}
+
+            {/* Delete Confirmation Dialog */}
+            <AlertDialog open={!!deleteReportId} onOpenChange={(open) => !open && setDeleteReportId(null)}>
+                <AlertDialogContent className="max-w-md bg-white dark:bg-slate-950 border-rose-200 dark:border-rose-800/50">
+                    <AlertDialogHeader>
+                        <div className="mx-auto h-14 w-14 rounded-2xl bg-gradient-to-br from-rose-100 to-red-100 dark:from-rose-900/30 dark:to-red-900/30 shadow-lg flex items-center justify-center mb-3">
+                            <Trash2 className="h-7 w-7 text-rose-600 dark:text-rose-400" />
+                        </div>
+                        <AlertDialogTitle className="text-xl font-bold text-center text-foreground">
+                            Delete Report?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription className="text-center text-muted-foreground">
+                            This action cannot be undone. The report will be permanently deleted from the system.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter className="gap-3">
+                        <AlertDialogCancel
+                            className="flex-1 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
+                            disabled={deleteLoading}
+                        >
+                            Cancel
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={async (e: React.MouseEvent<HTMLButtonElement>) => {
+                                e.preventDefault()
+                                if (!deleteReportId) return
+
+                                setDeleteLoading(true)
+                                try {
+                                    await deleteReport(deleteReportId)
+                                    setDeleteReportId(null)
+                                    handleRefresh()
+                                    loadStats()
+                                } catch (error: any) {
+                                    console.error('Failed to delete report:', error)
+                                } finally {
+                                    setDeleteLoading(false)
+                                }
+                            }}
+                            disabled={deleteLoading}
+                            className="flex-1 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 text-white shadow-lg shadow-rose-500/25 border-0"
+                        >
+                            {deleteLoading ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Deleting...
+                                </>
+                            ) : (
+                                'Delete Report'
+                            )}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
 
         </div>
     )

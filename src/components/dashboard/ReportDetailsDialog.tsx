@@ -2,7 +2,21 @@ import { useState, useEffect } from 'react'
 import {
     Dialog,
     DialogContent,
+    DialogTitle,
+    DialogDescription,
 } from "../ui/dialog"
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "../ui/alert-dialog"
+import { Textarea } from "../ui/textarea"
+import { Label } from "../ui/label"
 import { Badge } from "../ui/badge"
 import { Separator } from "../ui/separator"
 import {
@@ -21,12 +35,12 @@ import {
     MessageSquare,
     ExternalLink,
     AlertTriangle,
-
     ArrowRight,
     Trash2,
     Gavel,
+    Ban,
 } from 'lucide-react'
-import { getReportDetails, Report, updateReportStatus } from '../../lib/api'
+import { getReportDetails, Report, updateReportStatus, rejectReport } from '../../lib/api'
 import { formatDate } from '../../lib/utils'
 import { toast } from 'sonner'
 import { Card, CardContent } from '../ui/card'
@@ -82,6 +96,11 @@ export function ReportDetailsDialog({ reportId, open, onOpenChange, onReportUpda
 
     // Resolution state
     const [resolveDialogOpen, setResolveDialogOpen] = useState(false)
+
+    // Reject state
+    const [rejectDialogOpen, setRejectDialogOpen] = useState(false)
+    const [rejectReason, setRejectReason] = useState('')
+    const [rejectLoading, setRejectLoading] = useState(false)
 
     useEffect(() => {
         if (open && reportId) {
@@ -197,6 +216,10 @@ export function ReportDetailsDialog({ reportId, open, onOpenChange, onReportUpda
         <>
             <Dialog open={open} onOpenChange={onOpenChange}>
                 <DialogContent className="max-w-5xl p-0 gap-0 overflow-hidden bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 sm:rounded-2xl max-h-[95vh] flex flex-col shadow-2xl [&>button]:hidden">
+                    {/* Accessibility: visually hidden title and description */}
+                    <DialogTitle className="sr-only">Report Details</DialogTitle>
+                    <DialogDescription className="sr-only">View and manage report details, change status, and take actions</DialogDescription>
+
                     {loading ? (
                         <div className="flex flex-col items-center justify-center py-32 space-y-4">
                             <div className="relative">
@@ -324,6 +347,18 @@ export function ReportDetailsDialog({ reportId, open, onOpenChange, onReportUpda
                                                                     <Gavel className="h-4 w-4" />
                                                                 </div>
                                                                 <span>Resolve Report</span>
+                                                            </div>
+                                                        </DropdownMenuItem>
+
+                                                        <DropdownMenuItem
+                                                            onClick={() => setRejectDialogOpen(true)}
+                                                            className="cursor-pointer rounded-lg px-2 py-2 text-sm font-medium transition-colors hover:bg-rose-50 dark:hover:bg-rose-900/20 focus:bg-rose-50 dark:focus:bg-rose-900/20 text-rose-700 dark:text-rose-300 mt-1"
+                                                        >
+                                                            <div className="flex items-center gap-2 w-full">
+                                                                <div className="p-1.5 rounded-md bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-400">
+                                                                    <Ban className="h-4 w-4" />
+                                                                </div>
+                                                                <span>Reject Report</span>
                                                             </div>
                                                         </DropdownMenuItem>
                                                     </DropdownMenuContent>
@@ -616,6 +651,7 @@ export function ReportDetailsDialog({ reportId, open, onOpenChange, onReportUpda
                     report={report}
                     onSuccess={() => {
                         if (reportId) loadReport()
+                        onReportUpdated?.()
                     }}
                 />
             )}
@@ -648,6 +684,79 @@ export function ReportDetailsDialog({ reportId, open, onOpenChange, onReportUpda
                     </>
                 )
             }
+            {/* Reject Report Dialog */}
+            <AlertDialog open={rejectDialogOpen} onOpenChange={(open) => {
+                setRejectDialogOpen(open)
+                if (!open) setRejectReason('')
+            }}>
+                <AlertDialogContent className="max-w-md bg-white dark:bg-slate-950 border-rose-200 dark:border-rose-800/50">
+                    <AlertDialogHeader>
+                        <div className="mx-auto h-14 w-14 rounded-2xl bg-gradient-to-br from-rose-100 to-red-100 dark:from-rose-900/30 dark:to-red-900/30 shadow-lg flex items-center justify-center mb-3">
+                            <Ban className="h-7 w-7 text-rose-600 dark:text-rose-400" />
+                        </div>
+                        <AlertDialogTitle className="text-xl font-bold text-center text-foreground">
+                            Reject Report?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription className="text-center text-muted-foreground">
+                            This will mark the report as invalid or false. This action updates reporter statistics.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+
+                    <div className="space-y-3 py-4">
+                        <div className="space-y-2">
+                            <Label className="text-sm font-medium text-foreground">
+                                Rejection Reason <span className="text-muted-foreground font-normal">(optional)</span>
+                            </Label>
+                            <Textarea
+                                value={rejectReason}
+                                onChange={(e) => setRejectReason(e.target.value)}
+                                placeholder="E.g., No evidence of violation found, Duplicate report, etc."
+                                className="h-24 resize-none bg-slate-50 dark:bg-slate-900 border-2 border-rose-200 dark:border-rose-800/50 focus:border-rose-400 dark:focus:border-rose-600 rounded-lg placeholder:text-slate-400"
+                            />
+                        </div>
+                    </div>
+
+                    <AlertDialogFooter className="gap-3">
+                        <AlertDialogCancel
+                            className="flex-1 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
+                            disabled={rejectLoading}
+                        >
+                            Cancel
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={async (e: React.MouseEvent<HTMLButtonElement>) => {
+                                e.preventDefault()
+                                if (!report) return
+
+                                setRejectLoading(true)
+                                try {
+                                    await rejectReport(report.id, rejectReason || undefined)
+                                    toast.success('Report rejected successfully')
+                                    setRejectDialogOpen(false)
+                                    setRejectReason('')
+                                    if (reportId) loadReport()
+                                    onReportUpdated?.()
+                                } catch (error: any) {
+                                    toast.error(error.message || 'Failed to reject report')
+                                } finally {
+                                    setRejectLoading(false)
+                                }
+                            }}
+                            disabled={rejectLoading}
+                            className="flex-1 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 text-white shadow-lg shadow-rose-500/25 border-0"
+                        >
+                            {rejectLoading ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Rejecting...
+                                </>
+                            ) : (
+                                'Reject Report'
+                            )}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </>
     )
 }

@@ -489,6 +489,10 @@ export async function getReportsForEntity(entityType: string, entityId: string):
     return request(api.get(`/admin/reports/entity/${entityType}/${entityId}`));
 }
 
+export async function deleteReport(reportId: string): Promise<{ message: string }> {
+    return request(api.delete(`/admin/reports/${reportId}`));
+}
+
 // ==================== Deals API ====================
 
 export interface Deal {

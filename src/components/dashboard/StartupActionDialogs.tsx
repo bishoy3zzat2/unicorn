@@ -24,7 +24,6 @@ import {
     RefreshCcw,
     Trash2,
     CheckCircle2,
-    PauseCircle,
     Ban
 } from "lucide-react"
 import { toast } from "sonner"

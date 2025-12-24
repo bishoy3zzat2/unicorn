@@ -271,4 +271,19 @@ public class ReportController {
         List<ReportResponse> reports = reportService.getReportsForEntity(entityType, entityId);
         return ResponseEntity.ok(reports);
     }
+
+    /**
+     * Delete a report (admin).
+     * DELETE /api/v1/admin/reports/{id}
+     */
+    @DeleteMapping("/admin/reports/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    public ResponseEntity<Map<String, String>> deleteReport(@PathVariable UUID id) {
+        reportService.deleteReport(id);
+
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Report deleted successfully");
+
+        return ResponseEntity.ok(response);
+    }
 }

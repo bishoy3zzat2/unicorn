@@ -38,7 +38,7 @@ import { WarnUserDialog } from './WarnUserDialog'
 import { DeleteUserDialog } from './DeleteUserDialog'
 import { RestoreUserDialog } from './RestoreUserDialog'
 import { UserStatusDialog } from './UserStatusDialog'
-import { getUserChats, getStartupChats, getChatMessages, ChatData, MessageData } from '../../api/adminChatApi'
+import { getUserChats, getChatMessages, ChatData, MessageData } from '../../api/adminChatApi'
 import { ChatViewerDialog } from './ChatViewerDialog'
 
 interface UserDetailsModalProps {
@@ -145,7 +145,7 @@ export function UserDetailsModal({ userId, open, onOpenChange, onAction }: UserD
     const [loadingChats, setLoadingChats] = useState(false)
     const [selectedChat, setSelectedChat] = useState<ChatData | null>(null)
     const [chatMessages, setChatMessages] = useState<MessageData[]>([])
-    const [loadingMessages, setLoadingMessages] = useState(false)
+    const [_loadingMessages, setLoadingMessages] = useState(false) // eslint-disable-line @typescript-eslint/no-unused-vars
     const [isChatViewerOpen, setIsChatViewerOpen] = useState(false)
 
     // Action Dialog States
