@@ -43,8 +43,10 @@ import { fetchStartupModerationLogs, deleteStartupModerationLog, StartupModerati
 import { WarnStartupDialog, StartupStatusDialog, DeleteStartupDialog } from "./StartupActionDialogs"
 import { Badge } from "../ui/badge"
 import { getStartupChats, getChatMessages, ChatData, MessageData } from '../../api/adminChatApi'
+import { getStartupNudges, NudgeInfo } from '../../api/nudgeApi'
 import { ChatViewerDialog } from './ChatViewerDialog'
 import { formatTimeAgo } from '../../lib/utils'
+import { Bell } from 'lucide-react'
 
 interface StartupDetailsDialogProps {
     open: boolean
@@ -118,7 +120,7 @@ export function StartupDetailsDialog({
     // Audit Logs State
     const [auditLogs, setAuditLogs] = useState<StartupModerationLog[]>([])
     const [loadingLogs, setLoadingLogs] = useState(false)
-    const [activeTab, setActiveTab] = useState<'details' | 'deals' | 'history' | 'chats'>('details')
+    const [activeTab, setActiveTab] = useState<'details' | 'deals' | 'history' | 'chats' | 'nudges'>('details')
 
     // Chat States
     const [startupChats, setStartupChats] = useState<ChatData[]>([])
@@ -131,6 +133,11 @@ export function StartupDetailsDialog({
     // Deals State
     const [startupDeals, setStartupDeals] = useState<Deal[]>([])
     const [loadingDeals, setLoadingDeals] = useState(false)
+
+    // Nudge States
+    const [startupNudges, setStartupNudges] = useState<NudgeInfo[]>([])
+    const [nudgeCount, setNudgeCount] = useState(0)
+    const [loadingNudges, setLoadingNudges] = useState(false)
 
     // Edit Role State
     const [editRoleMember, setEditRoleMember] = useState<{ userId: string; userName: string; currentRole: string } | null>(null)
@@ -199,6 +206,21 @@ export function StartupDetailsDialog({
             toast.error('Failed to load chats')
         } finally {
             setLoadingChats(false)
+        }
+    }
+
+    const fetchStartupNudges = async () => {
+        if (!startup) return
+        setLoadingNudges(true)
+        try {
+            const data = await getStartupNudges(startup.id)
+            setStartupNudges(data.nudges)
+            setNudgeCount(data.count)
+        } catch (error) {
+            console.error('Failed to fetch startup nudges:', error)
+            toast.error('Failed to load nudges')
+        } finally {
+            setLoadingNudges(false)
         }
     }
 
@@ -611,6 +633,27 @@ export function StartupDetailsDialog({
                                             <MessageSquare className="h-4 w-4" />
                                             <span className="hidden sm:inline">Chats</span>
                                             <span className="sm:hidden">Chats</span>
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setActiveTab('nudges');
+                                                fetchStartupNudges();
+                                            }}
+                                            className={cn(
+                                                "px-4 py-2 text-sm font-medium rounded-md transition-all flex items-center gap-2",
+                                                activeTab === 'nudges'
+                                                    ? "bg-background text-foreground shadow-sm"
+                                                    : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                                            )}
+                                        >
+                                            <Bell className="h-4 w-4" />
+                                            <span className="hidden sm:inline">Nudges</span>
+                                            <span className="sm:hidden">Nudges</span>
+                                            {nudgeCount > 0 && (
+                                                <span className="ml-1 px-1.5 py-0.5 text-[10px] font-bold bg-primary text-primary-foreground rounded-full">
+                                                    {nudgeCount}
+                                                </span>
+                                            )}
                                         </button>
                                     </>
                                 )}
@@ -1223,6 +1266,97 @@ export function StartupDetailsDialog({
                                     <MessageSquare className="h-12 w-12 mx-auto mb-3 opacity-20" />
                                     <p className="font-medium">No chats found</p>
                                     <p className="text-xs opacity-70 mt-1">This startup hasn't started any conversations yet.</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Nudges Tab Content */}
+                    {activeTab === 'nudges' && (
+                        <div className="px-8 pb-8 pt-4">
+                            {loadingNudges ? (
+                                <div className="flex flex-col items-center justify-center py-16">
+                                    <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
+                                    <p className="text-muted-foreground">Loading nudges...</p>
+                                </div>
+                            ) : startupNudges && startupNudges.length > 0 ? (
+                                <>
+                                    {/* Stats Summary */}
+                                    <div className="mb-6 p-4 rounded-xl bg-gradient-to-br from-purple-50 to-purple-100/50 dark:from-purple-950/20 dark:to-purple-900/10 border border-purple-200/50 dark:border-purple-800/50">
+                                        <div className="flex items-center gap-3">
+                                            <div className="h-12 w-12 rounded-xl bg-purple-500/20 flex items-center justify-center">
+                                                <Bell className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                                            </div>
+                                            <div>
+                                                <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">{nudgeCount}</p>
+                                                <p className="text-xs text-purple-600/70 dark:text-purple-400/70">Total Nudges Sent</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Nudge List */}
+                                    <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider mb-3">
+                                        Nudge History
+                                    </h4>
+                                    <div className="space-y-3">
+                                        {startupNudges.map(nudge => (
+                                            <div
+                                                key={nudge.id}
+                                                className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:shadow-md transition-all group"
+                                            >
+                                                {/* Sender and Receiver Info */}
+                                                <div className="flex items-center justify-between mb-3 pb-3 border-b border-slate-100 dark:border-slate-800">
+                                                    {/* Sender */}
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="h-10 w-10 rounded-full overflow-hidden border border-border">
+                                                            <img
+                                                                src={nudge.senderAvatarUrl || '/avatars/avatar_1.png'}
+                                                                alt={nudge.senderName}
+                                                                className="h-full w-full object-cover"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-semibold text-sm">{nudge.senderName}</p>
+                                                            <p className="text-[10px] text-muted-foreground">Sender</p>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Arrow */}
+                                                    <div className="text-muted-foreground text-lg px-4">→</div>
+
+                                                    {/* Receiver */}
+                                                    <div className="flex items-center gap-3">
+                                                        <div>
+                                                            <p className="font-semibold text-sm text-right">{nudge.receiverName}</p>
+                                                            <p className="text-[10px] text-muted-foreground text-right">Investor</p>
+                                                        </div>
+                                                        <div className="h-10 w-10 rounded-full overflow-hidden border border-border">
+                                                            <img
+                                                                src={nudge.receiverAvatarUrl || '/avatars/avatar_1.png'}
+                                                                alt={nudge.receiverName}
+                                                                className="h-full w-full object-cover"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Time */}
+                                                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                                    <span className="flex items-center gap-1">
+                                                        <Clock className="h-3 w-3" />
+                                                        {formatTimeAgo(new Date(nudge.createdAt))}
+                                                    </span>
+                                                    <span className="text-[10px]">{nudge.senderEmail}</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="flex flex-col items-center justify-center py-16 text-muted-foreground bg-muted/10 rounded-xl border border-dashed">
+                                    <Bell className="h-12 w-12 mx-auto mb-3 opacity-20" />
+                                    <p className="font-medium">No nudges found</p>
+                                    <p className="text-xs opacity-70 mt-1">This startup hasn't sent any nudges to investors yet.</p>
                                 </div>
                             )}
                         </div>

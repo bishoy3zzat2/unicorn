@@ -126,6 +126,15 @@
             text-align: left;
             max-height: 200px;
             overflow-y: auto;
+            word-wrap: break-word;
+            word-break: break-all;
+            white-space: pre-wrap;
+        }
+
+        .response p {
+            word-wrap: break-word;
+            word-break: break-all;
+            overflow-wrap: anywhere;
         }
 
         .info {
@@ -408,6 +417,63 @@
             </button>
             <div id="myReportsResponse" class="response"></div>
         </div>
+
+        <!-- Nudges Card -->
+        <div class="card" id="nudgesCard" style="display: none; border-top: 5px solid #9b59b6;">
+            <h2>🔔 نظام النادج (Nudge System)</h2>
+            <div class="info">
+                <strong>اختبار نظام النادج:</strong> يمكنك إرسال nudge لمستثمر لجذب انتباهه (حسب خطتك)
+            </div>
+
+            <!-- Check Availability -->
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <h3 style="color: #9b59b6; margin-bottom: 15px; font-size: 16px;">📊 التحقق من الرصيد</h3>
+                <form id="checkNudgeForm">
+                    <div class="form-group">
+                        <label for="checkInvestorId">Investor ID (UUID) *</label>
+                        <input type="text" id="checkInvestorId" placeholder="أدخل UUID المستثمر" required>
+                    </div>
+                    <button type="submit" style="background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);">
+                        🔍 تحقق من الإمكانية
+                    </button>
+                </form>
+                <div id="checkNudgeResponse" class="response"></div>
+            </div>
+
+            <hr style="margin: 20px 0; border: none; border-top: 2px dashed #e0e0e0;">
+
+            <!-- Send Nudge -->
+            <h3 style="color: #27ae60; margin-bottom: 15px; font-size: 16px;">🚀 إرسال Nudge</h3>
+            <form id="sendNudgeForm">
+                <div class="form-group">
+                    <label for="nudgeInvestorId">Investor ID (UUID) *</label>
+                    <input type="text" id="nudgeInvestorId" placeholder="أدخل UUID المستثمر" required>
+                    <small style="color: #666; font-size: 12px;">💡 استخدم نفس الـ ID اللي تحققت منه</small>
+                </div>
+                <div class="form-group">
+                    <label for="nudgeStartupId">Startup ID (UUID) * 🏢</label>
+                    <input type="text" id="nudgeStartupId"
+                        placeholder="أدخل UUID الستارتاب اللي عايز المستثمر يبص عليها" required>
+                    <small style="color: #666; font-size: 12px;">💡 نسخ الـ ID من response إنشاء المشروع</small>
+                </div>
+                <button type="submit" style="background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);">
+                    🔔 إرسال Nudge
+                </button>
+            </form>
+            <div id="sendNudgeResponse" class="response"></div>
+
+            <hr style="margin: 30px 0; border: none; border-top: 2px dashed #e0e0e0;">
+
+            <!-- Nudge Stats Info Box -->
+            <div style="background: #e8f5e9; padding: 15px; border-radius: 8px;">
+                <h4 style="color: #2e7d32; margin-bottom: 10px;">📋 حدود النادج حسب الخطة:</h4>
+                <ul style="font-size: 13px; color: #333; padding-right: 20px;">
+                    <li><strong>FREE:</strong> 4 nudges/شهر - مرة واحدة لكل مستثمر</li>
+                    <li><strong>PRO:</strong> 12 nudges/شهر - مرة كل 5 أيام لكل مستثمر</li>
+                    <li><strong>ELITE:</strong> غير محدود - مرة كل 3 أيام لكل مستثمر</li>
+                </ul>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -554,6 +620,7 @@
             const responseDiv = document.getElementById('loginResponse');
             const startupCard = document.getElementById('startupCard');
             const reportsCard = document.getElementById('reportsCard');
+            const nudgesCard = document.getElementById('nudgesCard');
 
             try {
                 const response = await fetch(`${API_URL}/login`, {
@@ -582,12 +649,19 @@
                     // Show Reports Card for all users
                     reportsCard.style.display = 'block';
 
-                    // Check Role and Show Startup Card
-                    if (data.role === 'STARTUP_OWNER') {
+                    // Debug: Log role to console
+                    console.log('User Role:', data.role);
+
+                    // Check Role and Show Startup Card + Nudges Card
+                    // Check for both STARTUP_OWNER and ROLE_STARTUP_OWNER formats
+                    const isStartupOwner = data.role === 'STARTUP_OWNER' || data.role === 'ROLE_STARTUP_OWNER';
+                    if (isStartupOwner) {
                         startupCard.style.display = 'block';
+                        nudgesCard.style.display = 'block';
                         startupCard.scrollIntoView({ behavior: 'smooth' });
                     } else {
                         startupCard.style.display = 'none';
+                        nudgesCard.style.display = 'none';
                         reportsCard.scrollIntoView({ behavior: 'smooth' });
                     }
 
@@ -772,6 +846,102 @@
                 responseDiv.style.display = 'block';
                 responseDiv.innerHTML = `
                     <strong>❌ فشل تحميل البلاغات</strong>
+                    <p>${error.message}</p>
+                `;
+            }
+        });
+
+        // Check Nudge Availability Handler
+        document.getElementById('checkNudgeForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            if (!currentAccessToken) {
+                alert('يجب تسجيل الدخول أولاً!');
+                return;
+            }
+
+            const investorId = document.getElementById('checkInvestorId').value;
+            const responseDiv = document.getElementById('checkNudgeResponse');
+
+            try {
+                const response = await fetch(`http://localhost:9090/api/v1/nudges/availability/${investorId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${currentAccessToken}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    responseDiv.className = data.canNudge ? 'response success' : 'response error';
+                    responseDiv.style.display = 'block';
+                    responseDiv.innerHTML = `
+                        <strong>${data.canNudge ? '✅ يمكنك إرسال Nudge!' : '❌ لا يمكنك إرسال Nudge'}</strong>
+                        ${data.reason ? `<p>السبب: ${data.reason}</p>` : ''}
+                        <p><strong>الخطة الحالية:</strong> ${data.currentPlan}</p>
+                        <p><strong>المستخدم هذا الشهر:</strong> ${data.usedThisMonth} / ${data.monthlyLimit}</p>
+                        <p><strong>المتبقي:</strong> ${data.remainingNudges}</p>
+                        ${data.cooldownEndsAt ? `<p><strong>انتهاء الانتظار:</strong> ${new Date(data.cooldownEndsAt).toLocaleString('ar-EG')}</p>` : ''}
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+
+                    // Auto-fill the send nudge input
+                    document.getElementById('nudgeInvestorId').value = investorId;
+                } else {
+                    throw new Error(data.message || data.error || 'Check failed');
+                }
+            } catch (error) {
+                responseDiv.className = 'response error';
+                responseDiv.style.display = 'block';
+                responseDiv.innerHTML = `
+                    <strong>❌ فشل التحقق</strong>
+                    <p>${error.message}</p>
+                `;
+            }
+        });
+
+        // Send Nudge Handler
+        document.getElementById('sendNudgeForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            if (!currentAccessToken) {
+                alert('يجب تسجيل الدخول أولاً!');
+                return;
+            }
+
+            const investorId = document.getElementById('nudgeInvestorId').value;
+            const startupId = document.getElementById('nudgeStartupId').value;
+            const responseDiv = document.getElementById('sendNudgeResponse');
+
+            try {
+                const response = await fetch(`http://localhost:9090/api/v1/nudges/send/${investorId}?startupId=${startupId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${currentAccessToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    responseDiv.className = 'response success';
+                    responseDiv.style.display = 'block';
+                    responseDiv.innerHTML = `
+                        <strong>✅ تم إرسال Nudge بنجاح!</strong>
+                        <p>${data.message}</p>
+                        <p><strong>Nudge ID:</strong> ${data.nudgeId}</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    throw new Error(data.message || 'Send nudge failed');
+                }
+            } catch (error) {
+                responseDiv.className = 'response error';
+                responseDiv.style.display = 'block';
+                responseDiv.innerHTML = `
+                    <strong>❌ فشل إرسال Nudge</strong>
                     <p>${error.message}</p>
                 `;
             }

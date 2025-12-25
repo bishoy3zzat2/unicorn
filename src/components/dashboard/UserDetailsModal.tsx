@@ -40,6 +40,8 @@ import { RestoreUserDialog } from './RestoreUserDialog'
 import { UserStatusDialog } from './UserStatusDialog'
 import { getUserChats, getChatMessages, ChatData, MessageData } from '../../api/adminChatApi'
 import { ChatViewerDialog } from './ChatViewerDialog'
+import { getUserNudgeStats, UserNudgeStats } from '../../api/nudgeApi'
+import { Bell } from 'lucide-react'
 
 interface UserDetailsModalProps {
     userId: string | null
@@ -132,7 +134,7 @@ interface UserDetails {
 export function UserDetailsModal({ userId, open, onOpenChange, onAction }: UserDetailsModalProps) {
     const [loading, setLoading] = useState(false)
     const [userDetails, setUserDetails] = useState<UserDetails | null>(null)
-    const [activeTab, setActiveTab] = useState<'info' | 'startups' | 'transactions' | 'history' | 'security' | 'chats'>('info')
+    const [activeTab, setActiveTab] = useState<'info' | 'startups' | 'transactions' | 'history' | 'security' | 'chats' | 'nudges'>('info')
     const [selectedStartup, setSelectedStartup] = useState<Startup | null>(null)
     const [isStartupDetailsOpen, setIsStartupDetailsOpen] = useState(false)
     const [deleteLogId, setDeleteLogId] = useState<string | null>(null)
@@ -147,6 +149,10 @@ export function UserDetailsModal({ userId, open, onOpenChange, onAction }: UserD
     const [chatMessages, setChatMessages] = useState<MessageData[]>([])
     const [_loadingMessages, setLoadingMessages] = useState(false) // eslint-disable-line @typescript-eslint/no-unused-vars
     const [isChatViewerOpen, setIsChatViewerOpen] = useState(false)
+
+    // Nudge States
+    const [nudgeStats, setNudgeStats] = useState<UserNudgeStats | null>(null)
+    const [loadingNudges, setLoadingNudges] = useState(false)
 
     // Action Dialog States
     const [suspendDialogOpen, setSuspendDialogOpen] = useState(false)
@@ -214,6 +220,27 @@ export function UserDetailsModal({ userId, open, onOpenChange, onAction }: UserD
             toast.error('Failed to load chats')
         } finally {
             setLoadingChats(false)
+        }
+    }
+
+    // Fetch nudges when user switches to nudges tab
+    useEffect(() => {
+        if (activeTab === 'nudges' && userId && open) {
+            fetchUserNudges()
+        }
+    }, [activeTab, userId, open])
+
+    async function fetchUserNudges() {
+        if (!userId) return
+        setLoadingNudges(true)
+        try {
+            const stats = await getUserNudgeStats(userId)
+            setNudgeStats(stats)
+        } catch (error) {
+            console.error('Failed to fetch user nudges:', error)
+            toast.error('Failed to load nudges')
+        } finally {
+            setLoadingNudges(false)
         }
     }
 
@@ -343,13 +370,14 @@ export function UserDetailsModal({ userId, open, onOpenChange, onAction }: UserD
 
 
 
-    const tabs: Array<{ id: 'info' | 'startups' | 'transactions' | 'history' | 'security' | 'chats'; label: string; icon: React.ElementType; count?: number }> = [
+    const tabs: Array<{ id: 'info' | 'startups' | 'transactions' | 'history' | 'security' | 'chats' | 'nudges'; label: string; icon: React.ElementType; count?: number }> = [
         { id: 'info', label: 'Info', icon: User },
         { id: 'startups', label: 'Startups', icon: Building2, count: userDetails?.startups?.length },
         { id: 'transactions', label: 'Transactions', icon: CreditCard, count: userDetails?.recentTransactions?.length },
         { id: 'history', label: 'History', icon: Clock, count: userDetails?.moderationHistory?.length },
         { id: 'security', label: 'Security', icon: Shield },
         { id: 'chats', label: 'Chats', icon: MessageSquare, count: userChats.length },
+        { id: 'nudges', label: 'Nudges', icon: Bell, count: nudgeStats?.nudges?.length },
     ]
 
     const canManageUser = userDetails ? (
@@ -1165,6 +1193,166 @@ export function UserDetailsModal({ userId, open, onOpenChange, onAction }: UserD
                                                 <MessageSquare className="h-12 w-12 mx-auto mb-3 opacity-20" />
                                                 <p className="font-medium">No chats found</p>
                                                 <p className="text-xs opacity-70 mt-1">This user hasn't started any conversations yet.</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Nudges Tab */}
+                                {activeTab === 'nudges' && (
+                                    <div className="space-y-4 px-8 pb-8">
+                                        {loadingNudges ? (
+                                            <div className="flex items-center justify-center py-12">
+                                                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                                            </div>
+                                        ) : nudgeStats ? (
+                                            <>
+                                                {/* Stats Summary */}
+                                                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+                                                    {nudgeStats.userRole === 'INVESTOR' ? (
+                                                        <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="h-10 w-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                                                                    <Bell className="h-5 w-5 text-emerald-500" />
+                                                                </div>
+                                                                <div>
+                                                                    <p className="text-2xl font-bold">{nudgeStats.receivedCount || 0}</p>
+                                                                    <p className="text-xs text-muted-foreground">Nudges Received</p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ) : nudgeStats.userRole === 'STARTUP_OWNER' ? (
+                                                        <>
+                                                            <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className="h-10 w-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                                                                        <Bell className="h-5 w-5 text-blue-500" />
+                                                                    </div>
+                                                                    <div>
+                                                                        <p className="text-2xl font-bold">{nudgeStats.sentCount || 0}</p>
+                                                                        <p className="text-xs text-muted-foreground">Nudges Sent</p>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className="h-10 w-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                                                                        <TrendingUp className="h-5 w-5 text-purple-500" />
+                                                                    </div>
+                                                                    <div>
+                                                                        <p className="text-2xl font-bold">
+                                                                            {nudgeStats.remainingThisMonth === -1 ? '∞' : nudgeStats.remainingThisMonth}
+                                                                        </p>
+                                                                        <p className="text-xs text-muted-foreground">Remaining This Month</p>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className="h-10 w-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                                                                        <Shield className="h-5 w-5 text-amber-500" />
+                                                                    </div>
+                                                                    <div>
+                                                                        <Badge className={cn(
+                                                                            "text-sm",
+                                                                            nudgeStats.currentPlan === 'ELITE' ? 'bg-purple-500' :
+                                                                                nudgeStats.currentPlan === 'PRO' ? 'bg-blue-500' : 'bg-gray-500'
+                                                                        )}>
+                                                                            {nudgeStats.currentPlan || 'FREE'}
+                                                                        </Badge>
+                                                                        <p className="text-xs text-muted-foreground mt-1">Current Plan</p>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </>
+                                                    ) : null}
+                                                </div>
+
+                                                {/* Nudge List */}
+                                                <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider mb-3">
+                                                    {nudgeStats.userRole === 'INVESTOR' ? 'Received From' : 'Sent To'}
+                                                </h4>
+                                                {nudgeStats.nudges && nudgeStats.nudges.length > 0 ? (
+                                                    <div className="space-y-3">
+                                                        {nudgeStats.nudges.map(nudge => (
+                                                            <div
+                                                                key={nudge.id}
+                                                                className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:shadow-md transition-all group"
+                                                            >
+                                                                {/* Startup Section - Main Focus */}
+                                                                <div className="flex items-center gap-4 mb-3 pb-3 border-b border-slate-100 dark:border-slate-800">
+                                                                    <div className="h-12 w-12 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                                                                        {nudge.startupLogoUrl ? (
+                                                                            <img
+                                                                                src={nudge.startupLogoUrl}
+                                                                                alt={nudge.startupName}
+                                                                                className="h-full w-full object-cover"
+                                                                            />
+                                                                        ) : (
+                                                                            <Building2 className="h-6 w-6 text-slate-400" />
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="flex-1">
+                                                                        <p className="font-bold text-primary group-hover:underline cursor-pointer">
+                                                                            {nudge.startupName}
+                                                                        </p>
+                                                                        {nudge.startupIndustry && (
+                                                                            <Badge variant="outline" className="mt-1 text-xs">
+                                                                                {nudge.startupIndustry}
+                                                                            </Badge>
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="text-right">
+                                                                        <p className="text-xs text-muted-foreground">
+                                                                            {formatTimeAgo(new Date(nudge.createdAt))}
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* User Section - Secondary Info */}
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className="h-8 w-8 rounded-full overflow-hidden border border-border">
+                                                                        <img
+                                                                            src={
+                                                                                nudgeStats.userRole === 'INVESTOR'
+                                                                                    ? nudge.senderAvatarUrl || '/avatars/avatar_1.png'
+                                                                                    : nudge.receiverAvatarUrl || '/avatars/avatar_1.png'
+                                                                            }
+                                                                            alt="avatar"
+                                                                            className="h-full w-full object-cover"
+                                                                        />
+                                                                    </div>
+                                                                    <div className="flex-1">
+                                                                        <p className="text-sm font-medium">
+                                                                            {nudgeStats.userRole === 'INVESTOR'
+                                                                                ? `From: ${nudge.senderName}`
+                                                                                : `To: ${nudge.receiverName}`}
+                                                                        </p>
+                                                                        <p className="text-xs text-muted-foreground">
+                                                                            {nudgeStats.userRole === 'INVESTOR' ? nudge.senderEmail : nudge.receiverEmail}
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex flex-col items-center justify-center py-16 text-muted-foreground bg-muted/10 rounded-xl border border-dashed">
+                                                        <Bell className="h-12 w-12 mx-auto mb-3 opacity-20" />
+                                                        <p className="font-medium">No nudges found</p>
+                                                        <p className="text-xs opacity-70 mt-1">
+                                                            {nudgeStats.userRole === 'INVESTOR'
+                                                                ? "This investor hasn't received any nudges yet."
+                                                                : "This user hasn't sent any nudges yet."}
+                                                        </p>
+                                                    </div>
+                                                )}
+                                            </>
+                                        ) : (
+                                            <div className="flex flex-col items-center justify-center py-16 text-muted-foreground bg-muted/10 rounded-xl border border-dashed">
+                                                <Bell className="h-12 w-12 mx-auto mb-3 opacity-20" />
+                                                <p className="font-medium">No nudge data available</p>
+                                                <p className="text-xs opacity-70 mt-1">Nudge tracking is only available for Investors and Startup Owners.</p>
                                             </div>
                                         )}
                                     </div>

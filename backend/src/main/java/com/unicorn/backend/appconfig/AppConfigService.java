@@ -169,9 +169,13 @@ public class AppConfigService {
         upsert("max_comment_length", "1000", "Maximum comment length", "limits_general", "NUMBER");
         upsert("max_bio_length", "250", "Maximum user bio length", "limits_general", "NUMBER");
 
-        // Limits - Plans
-        upsert("nudge_limit_free", "4", "Weekly nudge limit for free users", "limits_plans", "NUMBER");
-        upsert("nudge_limit_pro", "12", "Flexible nudge limit for pro users", "limits_plans", "NUMBER");
+        // Limits - Plans (Nudge)
+        upsertIfNotExists("nudge.limit.free.monthly", "4", "Monthly nudge limit for FREE plan", "nudge", "NUMBER");
+        upsertIfNotExists("nudge.limit.pro.monthly", "12", "Monthly nudge limit for PRO plan", "nudge", "NUMBER");
+        upsertIfNotExists("nudge.cooldown.pro.days", "5", "Cooldown days between nudges to same investor (PRO)",
+                "nudge", "NUMBER");
+        upsertIfNotExists("nudge.cooldown.elite.days", "3", "Cooldown days between nudges to same investor (ELITE)",
+                "nudge", "NUMBER");
 
         // System
         upsertIfNotExists("maintenance_mode", "false", "Enable maintenance mode", "system", "BOOLEAN");
