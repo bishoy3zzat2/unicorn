@@ -17,51 +17,59 @@ import java.util.UUID;
 @Repository
 public interface SubscriptionRepository extends JpaRepository<Subscription, Long> {
 
-    /**
-     * Find all subscriptions for a user ordered by creation date descending.
-     */
-    List<Subscription> findByUserOrderByCreatedAtDesc(User user);
+        /**
+         * Find all subscriptions for a user ordered by creation date descending.
+         */
+        List<Subscription> findByUserOrderByCreatedAtDesc(User user);
 
-    /**
-     * Find the active subscription for a user.
-     */
-    Optional<Subscription> findByUserAndStatus(User user, SubscriptionStatus status);
+        /**
+         * Find the active subscription for a user.
+         */
+        Optional<Subscription> findByUserAndStatus(User user, SubscriptionStatus status);
 
-    /**
-     * Find active subscription by user ID.
-     */
-    @Query("SELECT s FROM Subscription s WHERE s.user.id = :userId AND s.status = 'ACTIVE'")
-    Optional<Subscription> findActiveByUserId(@Param("userId") UUID userId);
+        /**
+         * Find active subscription by user ID.
+         */
+        @Query("SELECT s FROM Subscription s WHERE s.user.id = :userId AND s.status = 'ACTIVE'")
+        Optional<Subscription> findActiveByUserId(@Param("userId") UUID userId);
 
-    /**
-     * Count subscriptions by plan type.
-     */
-    long countByPlanType(SubscriptionPlan planType);
+        /**
+         * Count subscriptions by plan type.
+         */
+        long countByPlanType(SubscriptionPlan planType);
 
-    /**
-     * Count subscriptions by status.
-     */
-    long countByStatus(SubscriptionStatus status);
+        /**
+         * Count subscriptions by status.
+         */
+        long countByStatus(SubscriptionStatus status);
 
-    /**
-     * Count subscriptions by plan type and status.
-     */
-    long countByPlanTypeAndStatus(SubscriptionPlan planType, SubscriptionStatus status);
+        /**
+         * Count subscriptions by plan type and status.
+         */
+        long countByPlanTypeAndStatus(SubscriptionPlan planType, SubscriptionStatus status);
 
-    /**
-     * Find subscriptions created between dates (for MRR calculation).
-     */
-    @Query("SELECT s FROM Subscription s WHERE s.createdAt BETWEEN :startDate AND :endDate")
-    List<Subscription> findByCreatedAtBetween(
-            @Param("startDate") LocalDateTime startDate,
-            @Param("endDate") LocalDateTime endDate);
+        /**
+         * Find subscriptions created between dates (for MRR calculation).
+         */
+        @Query("SELECT s FROM Subscription s WHERE s.createdAt BETWEEN :startDate AND :endDate")
+        List<Subscription> findByCreatedAtBetween(
+                        @Param("startDate") LocalDateTime startDate,
+                        @Param("endDate") LocalDateTime endDate);
 
-    /**
-     * Get total revenue for a month.
-     */
-    @Query("SELECT COALESCE(SUM(s.amount), 0) FROM Subscription s " +
-            "WHERE s.status = 'ACTIVE' AND s.createdAt BETWEEN :startDate AND :endDate")
-    java.math.BigDecimal getTotalRevenueForPeriod(
-            @Param("startDate") LocalDateTime startDate,
-            @Param("endDate") LocalDateTime endDate);
+        /**
+         * Get total revenue for a month.
+         */
+        @Query("SELECT COALESCE(SUM(s.amount), 0) FROM Subscription s " +
+                        "WHERE s.status = 'ACTIVE' AND s.createdAt BETWEEN :startDate AND :endDate")
+        java.math.BigDecimal getTotalRevenueForPeriod(
+                        @Param("startDate") LocalDateTime startDate,
+                        @Param("endDate") LocalDateTime endDate);
+
+        /**
+         * Find active subscriptions that expire before the given date.
+         * Used by AutoRenewService to check for renewals.
+         */
+        @Query("SELECT s FROM Subscription s WHERE s.status = 'ACTIVE' AND s.endDate <= :expiryThreshold")
+        List<Subscription> findActiveSubscriptionsExpiringBefore(
+                        @Param("expiryThreshold") LocalDateTime expiryThreshold);
 }

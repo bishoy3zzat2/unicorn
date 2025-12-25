@@ -1,12 +1,15 @@
 package com.unicorn.backend.admin;
 
 import com.unicorn.backend.startup.*;
+import com.unicorn.backend.subscription.SubscriptionService;
 import com.unicorn.backend.user.User;
 import com.unicorn.backend.user.UserRepository;
 import com.unicorn.backend.user.UserResponse;
 import com.unicorn.backend.user.UserResponseService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -34,6 +37,7 @@ public class AdminController {
     private final TokenBlacklistService tokenBlacklistService;
     private final com.unicorn.backend.service.EmailService emailService;
     private final StartupModerationLogRepository startupModerationLogRepository;
+    private final SubscriptionService subscriptionService;
 
     public AdminController(UserRepository userRepository, StartupService startupService,
             com.unicorn.backend.security.RefreshTokenRepository refreshTokenRepository,
@@ -43,7 +47,8 @@ public class AdminController {
             com.unicorn.backend.user.AvatarService avatarService,
             TokenBlacklistService tokenBlacklistService,
             com.unicorn.backend.service.EmailService emailService,
-            StartupModerationLogRepository startupModerationLogRepository) {
+            StartupModerationLogRepository startupModerationLogRepository,
+            SubscriptionService subscriptionService) {
         this.userRepository = userRepository;
         this.startupService = startupService;
         this.refreshTokenRepository = refreshTokenRepository;
@@ -54,6 +59,7 @@ public class AdminController {
         this.tokenBlacklistService = tokenBlacklistService;
         this.emailService = emailService;
         this.startupModerationLogRepository = startupModerationLogRepository;
+        this.subscriptionService = subscriptionService;
     }
 
     @PostMapping("/users")
@@ -609,5 +615,54 @@ public class AdminController {
     public ResponseEntity<Void> deleteStartupModerationLog(@PathVariable UUID id) {
         startupModerationLogRepository.deleteById(id);
         return ResponseEntity.ok().build();
+    }
+
+    /**
+     * Revoke a user's subscription (for refund cases).
+     * Use this after processing a refund in Google Play Console to immediately
+     * downgrade the user to the FREE plan.
+     * 
+     * POST /api/v1/admin/subscriptions/{userId}/revoke
+     * 
+     * @param userId  The user whose subscription to revoke
+     * @param request Optional request body containing reason
+     * @return Success or error response
+     */
+    @PostMapping("/subscriptions/{userId}/revoke")
+    public ResponseEntity<?> revokeUserSubscription(
+            @PathVariable UUID userId,
+            @RequestBody(required = false) java.util.Map<String, String> request) {
+
+        try {
+            // Get current admin info
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            User admin = (User) auth.getPrincipal();
+
+            String reason = request != null ? request.get("reason") : null;
+            if (reason == null || reason.trim().isEmpty()) {
+                reason = "Subscription revoked after Google Play refund";
+            }
+
+            var subscription = subscriptionService.revokeSubscription(
+                    userId,
+                    admin.getId(),
+                    admin.getEmail(),
+                    reason);
+
+            if (subscription != null) {
+                return ResponseEntity.ok(java.util.Map.of(
+                        "success", true,
+                        "message", "Subscription revoked successfully. User downgraded to FREE plan.",
+                        "previousPlan", subscription.getPlanType().name()));
+            } else {
+                return ResponseEntity.ok(java.util.Map.of(
+                        "success", true,
+                        "message", "No active subscription found. User is already on FREE plan."));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(java.util.Map.of(
+                    "success", false,
+                    "message", "Failed to revoke subscription: " + e.getMessage()));
+        }
     }
 }

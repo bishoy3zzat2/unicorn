@@ -29,13 +29,7 @@ export interface StartupStatusDataPoint {
     color: string
 }
 
-export interface StartupRequest {
-    id: string
-    startupName: string
-    founderName: string
-    dateSubmitted: string
-    status: 'pending' | 'approved' | 'rejected'
-}
+// StartupRequest interface removed - startups no longer require approval workflow
 
 export interface User {
     id: string
@@ -92,8 +86,7 @@ export const userGrowthData: UserGrowthDataPoint[] = [
 
 export const startupStatusData: StartupStatusDataPoint[] = [
     { name: 'Active', value: 342, color: '#8b5cf6' }, // Violet-500
-    { name: 'Pending', value: 48, color: '#f59e0b' }, // Amber-500
-    { name: 'Rejected', value: 125, color: '#ef4444' }, // Red-500
+    { name: 'Banned', value: 12, color: '#ef4444' }, // Red-500
 ]
 
 export const securityStats = {
@@ -106,50 +99,7 @@ export const securityStats = {
     revokedGrowth: -15.4, // Decreased revocations is good
 }
 
-export const startupRequests: StartupRequest[] = [
-    {
-        id: '1',
-        startupName: 'TechVision AI',
-        founderName: 'Sarah Johnson',
-        dateSubmitted: '2024-12-08',
-        status: 'pending',
-    },
-    {
-        id: '2',
-        startupName: 'GreenEnergy Solutions',
-        founderName: 'Michael Chen',
-        dateSubmitted: '2024-12-07',
-        status: 'pending',
-    },
-    {
-        id: '3',
-        startupName: 'HealthTech Pro',
-        founderName: 'Emily Rodriguez',
-        dateSubmitted: '2024-12-06',
-        status: 'pending',
-    },
-    {
-        id: '4',
-        startupName: 'FinanceFlow',
-        founderName: 'David Park',
-        dateSubmitted: '2024-12-05',
-        status: 'pending',
-    },
-    {
-        id: '5',
-        startupName: 'EduLearn Platform',
-        founderName: 'Jessica Williams',
-        dateSubmitted: '2024-12-04',
-        status: 'pending',
-    },
-    {
-        id: '6',
-        startupName: 'CloudSecure',
-        founderName: 'Robert Martinez',
-        dateSubmitted: '2024-12-03',
-        status: 'pending',
-    },
-]
+// startupRequests array removed - startups no longer require approval workflow
 
 export const users: User[] = [
     {

@@ -154,6 +154,8 @@ export function UserDetailsModal({ userId, open, onOpenChange, onAction }: UserD
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
     const [restoreDialogOpen, setRestoreDialogOpen] = useState(false)
     const [statusChangeDialogOpen, setStatusChangeDialogOpen] = useState(false)
+    const [revokeSubscriptionDialogOpen, setRevokeSubscriptionDialogOpen] = useState(false)
+    const [revokingSubscription, setRevokingSubscription] = useState(false)
 
     const { user: currentUser } = useAuth()
     const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN'
@@ -247,6 +249,30 @@ export function UserDetailsModal({ userId, open, onOpenChange, onAction }: UserD
         } catch (error) {
             console.error('Failed to unsuspend user:', error)
             toast.error('Failed to unsuspend user')
+        }
+    }
+
+    async function handleRevokeSubscription() {
+        if (!userId) return
+        setRevokingSubscription(true)
+        try {
+            const response = await api.post(`/admin/subscriptions/${userId}/revoke`, {
+                reason: 'Subscription revoked after Google Play refund'
+            })
+            const data = response.data as { success: boolean; message: string; previousPlan?: string }
+            if (data.success) {
+                toast.success(data.message)
+                fetchUserDetails()
+                onAction?.()
+            } else {
+                toast.error(data.message)
+            }
+        } catch (error) {
+            console.error('Failed to revoke subscription:', error)
+            toast.error('Failed to revoke subscription')
+        } finally {
+            setRevokingSubscription(false)
+            setRevokeSubscriptionDialogOpen(false)
         }
     }
 
@@ -487,6 +513,24 @@ export function UserDetailsModal({ userId, open, onOpenChange, onAction }: UserD
                                                                 <Trash2 className="h-4 w-4" />
                                                             </Button>
                                                         )}
+
+                                                        {/* Revoke Subscription Button - Only show for PRO/ELITE users */}
+                                                        {userDetails.currentSubscription &&
+                                                            userDetails.currentSubscription.plan !== 'FREE' &&
+                                                            userDetails.currentSubscription.status === 'ACTIVE' && (
+                                                                <>
+                                                                    <Separator orientation="vertical" className="h-4 mx-1" />
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="sm"
+                                                                        className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                                                                        onClick={() => setRevokeSubscriptionDialogOpen(true)}
+                                                                        title="Revoke Subscription (After Refund)"
+                                                                    >
+                                                                        <DollarSign className="h-4 w-4" />
+                                                                    </Button>
+                                                                </>
+                                                            )}
                                                     </div>
                                                 )}
                                             </div>
@@ -767,10 +811,23 @@ export function UserDetailsModal({ userId, open, onOpenChange, onAction }: UserD
 
                                             {(userDetails.role !== 'ADMIN' && userDetails.role !== 'SUPER_ADMIN') && (
                                                 <div className="flex flex-col items-center justify-center p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm hover:shadow-md transition-all group hover:-translate-y-1">
-                                                    <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-lg shadow-emerald-500/20 text-white flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300">
+                                                    <div className={cn(
+                                                        "h-12 w-12 rounded-xl shadow-lg text-white flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300",
+                                                        userDetails.currentSubscription?.plan === 'ELITE'
+                                                            ? "bg-gradient-to-br from-purple-500 to-purple-600 shadow-purple-500/20"
+                                                            : userDetails.currentSubscription?.plan === 'PRO'
+                                                                ? "bg-gradient-to-br from-blue-500 to-blue-600 shadow-blue-500/20"
+                                                                : "bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-emerald-500/20"
+                                                    )}>
                                                         <CreditCard className="h-6 w-6" />
                                                     </div>
-                                                    <span className="text-xl font-bold text-foreground tracking-tight">FREE</span>
+                                                    <span className={cn(
+                                                        "text-xl font-bold tracking-tight",
+                                                        userDetails.currentSubscription?.plan === 'ELITE' ? "text-purple-600" :
+                                                            userDetails.currentSubscription?.plan === 'PRO' ? "text-blue-600" : "text-foreground"
+                                                    )}>
+                                                        {userDetails.currentSubscription?.plan || 'FREE'}
+                                                    </span>
                                                     <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-1">Plan</span>
                                                 </div>
                                             )}
@@ -883,7 +940,7 @@ export function UserDetailsModal({ userId, open, onOpenChange, onAction }: UserD
                                                                         <p className="text-xs text-muted-foreground mt-0.5">{startup.industry || 'Tech'}</p>
                                                                     </div>
                                                                 </div>
-                                                                {getStatusBadge(startup.status || 'PENDING')}
+                                                                {getStatusBadge(startup.status || 'ACTIVE')}
                                                             </div>
 
                                                             <div className="space-y-3 pl-2">
@@ -1192,6 +1249,45 @@ export function UserDetailsModal({ userId, open, onOpenChange, onAction }: UserD
                         messages={chatMessages}
                         chatTitle={selectedChat ? `Chat with ${userDetails?.role === 'INVESTOR' ? selectedChat.startupName : selectedChat.investorName}` : 'Chat'}
                     />
+
+                    {/* Revoke Subscription Confirmation Dialog */}
+                    <AlertDialog open={revokeSubscriptionDialogOpen} onOpenChange={setRevokeSubscriptionDialogOpen}>
+                        <AlertDialogContent className="bg-white dark:bg-slate-900 rounded-xl shadow-xl border-0">
+                            <AlertDialogHeader>
+                                <AlertDialogTitle className="text-red-600 flex items-center gap-2">
+                                    <DollarSign className="h-5 w-5" />
+                                    Revoke Subscription
+                                </AlertDialogTitle>
+                                <AlertDialogDescription className="text-slate-600 dark:text-slate-400">
+                                    <span className="font-semibold text-red-500">Are you sure?</span> This will immediately downgrade the user to the <span className="font-semibold">Free</span> plan.
+                                    <br /><br />
+                                    <span className="text-amber-600 dark:text-amber-400 text-sm">
+                                        ⚠️ Use this only after processing a refund in Google Play Console.
+                                    </span>
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel disabled={revokingSubscription}>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                    onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                                        e.preventDefault()
+                                        handleRevokeSubscription()
+                                    }}
+                                    disabled={revokingSubscription}
+                                    className="bg-red-600 hover:bg-red-700 text-white"
+                                >
+                                    {revokingSubscription ? (
+                                        <>
+                                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                            Revoking...
+                                        </>
+                                    ) : (
+                                        'Revoke Subscription'
+                                    )}
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
                 </>
             )}
         </>
@@ -1207,6 +1303,7 @@ function ActionIcon({ type }: { type: string }) {
         PERMANENT_BAN: <XCircle className="h-4 w-4 text-red-500" />,
         UNSUSPEND: <CheckCircle className="h-4 w-4 text-emerald-500" />,
         DELETE: <XCircle className="h-4 w-4 text-red-500" />,
+        SUBSCRIPTION_REVOKED: <DollarSign className="h-4 w-4 text-red-500" />,
     }
     return icons[type] || <Clock className="h-4 w-4 text-muted-foreground" />
 }

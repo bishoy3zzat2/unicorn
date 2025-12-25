@@ -38,7 +38,6 @@ export function StartupDetailsModal({ startup, isOpen, onClose, onActionComplete
 
     const getStatusBadgeClass = (status: StartupStatus) => {
         switch (status) {
-            case 'APPROVED':
             case 'ACTIVE':
                 return 'bg-green-950/50 text-green-400 border-green-900';
             default:

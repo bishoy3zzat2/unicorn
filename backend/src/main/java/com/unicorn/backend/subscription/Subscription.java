@@ -55,6 +55,9 @@ public class Subscription {
     @Builder.Default
     private String currency = "EGP";
 
+    @Column(name = "google_play_purchase_token", length = 500)
+    private String googlePlayPurchaseToken;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

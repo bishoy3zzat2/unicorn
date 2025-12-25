@@ -17,7 +17,7 @@ export default defineConfig({
         host: '0.0.0.0',
         port: 5173,
         strictPort: false,
-        allowedHosts: ['282c1a1e74d64e94-41-46-5-118.serveousercontent.com'], // Allow ngrok domain
+        allowedHosts: ['38b70cf7bd33b292-41-46-5-118.serveousercontent.com'], // Allow ngrok domain
         proxy: {
             '/api': {
                 target: 'http://localhost:9090',

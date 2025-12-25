@@ -11,5 +11,6 @@ public enum ModerationActionType {
     UNBAN, // Remove ban
     DELETE, // Soft delete user
     RESTORE, // Restore deleted user
-    STATUS_CHANGE // General status change
+    STATUS_CHANGE, // General status change
+    SUBSCRIPTION_REVOKED // Subscription revoked due to refund
 }

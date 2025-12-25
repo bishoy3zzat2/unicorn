@@ -1,8 +1,12 @@
 package com.unicorn.backend.subscription;
 
+import com.unicorn.backend.user.ModerationActionType;
 import com.unicorn.backend.user.User;
+import com.unicorn.backend.user.UserModerationLog;
+import com.unicorn.backend.user.UserModerationLogRepository;
 import com.unicorn.backend.user.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,12 +20,62 @@ import java.util.UUID;
 /**
  * Service for managing user subscriptions.
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SubscriptionService {
 
     private final SubscriptionRepository subscriptionRepository;
     private final UserRepository userRepository;
+    private final UserModerationLogRepository moderationLogRepository;
+
+    /**
+     * Revoke a user's subscription (for refund cases).
+     * Downgrades the user to FREE plan and logs the action.
+     * 
+     * @param userId     The user whose subscription to revoke
+     * @param adminId    The admin performing the action
+     * @param adminEmail The admin's email for audit trail
+     * @param reason     The reason for revocation
+     * @return The cancelled subscription, or null if no active subscription
+     */
+    @Transactional
+    public Subscription revokeSubscription(UUID userId, UUID adminId, String adminEmail, String reason) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+
+        // Find and cancel active subscription
+        Subscription activeSubscription = subscriptionRepository.findActiveByUserId(userId)
+                .orElse(null);
+
+        String previousPlan = "FREE";
+        if (activeSubscription != null) {
+            previousPlan = activeSubscription.getPlanType().name();
+            activeSubscription.setStatus(SubscriptionStatus.CANCELLED);
+            activeSubscription.setEndDate(LocalDateTime.now());
+            subscriptionRepository.save(activeSubscription);
+            log.info("Revoked {} subscription for user: {}", previousPlan, userId);
+        } else {
+            log.warn("No active subscription found for user: {}", userId);
+        }
+
+        // Log the moderation action
+        UserModerationLog logEntry = UserModerationLog.builder()
+                .user(user)
+                .adminId(adminId)
+                .adminEmail(adminEmail)
+                .actionType(ModerationActionType.SUBSCRIPTION_REVOKED)
+                .reason(reason != null ? reason : "Subscription revoked due to refund")
+                .previousStatus(previousPlan)
+                .newStatus("FREE")
+                .isActive(true)
+                .build();
+
+        moderationLogRepository.save(logEntry);
+        log.info("Subscription revocation logged for user: {} by admin: {}", userId, adminEmail);
+
+        return activeSubscription;
+    }
 
     /**
      * Create a new subscription for a user.

@@ -51,7 +51,7 @@ interface StartupFiltersProps {
 }
 
 const STAGES = ['IDEA', 'MVP', 'GROWTH', 'SCALING', 'MATURE'] as const
-const STATUSES = ['PENDING', 'APPROVED', 'REJECTED', 'ACTIVE', 'ARCHIVED'] as const
+const STATUSES = ['ACTIVE', 'BANNED'] as const
 
 // Helper component for filter row with negate toggle - matching UserFilters design
 const FilterRow = ({
