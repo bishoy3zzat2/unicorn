@@ -78,10 +78,35 @@ public class SubscriptionService {
     }
 
     /**
-     * Create a new subscription for a user.
+     * Subscription duration options.
+     */
+    public enum SubscriptionDuration {
+        MONTHLY(1),
+        YEARLY(12);
+
+        private final int months;
+
+        SubscriptionDuration(int months) {
+            this.months = months;
+        }
+
+        public int getMonths() {
+            return months;
+        }
+    }
+
+    /**
+     * Create a new subscription for a user with specified duration.
+     * 
+     * @param userId   The user ID
+     * @param plan     The subscription plan (PRO or ELITE)
+     * @param duration The subscription duration (MONTHLY or YEARLY)
+     * @param amount   The payment amount
+     * @return The created subscription
      */
     @Transactional
-    public Subscription createSubscription(UUID userId, SubscriptionPlan plan, BigDecimal amount) {
+    public Subscription createSubscription(UUID userId, SubscriptionPlan plan, SubscriptionDuration duration,
+            BigDecimal amount) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found: " + userId));
 
@@ -92,18 +117,33 @@ public class SubscriptionService {
             subscriptionRepository.save(existing);
         });
 
+        // Calculate end date based on duration
+        LocalDateTime endDate = LocalDateTime.now().plusMonths(duration.getMonths());
+
         // Create new subscription
         Subscription subscription = Subscription.builder()
                 .user(user)
                 .planType(plan)
                 .startDate(LocalDateTime.now())
-                .endDate(LocalDateTime.now().plusMonths(1))
+                .endDate(endDate)
                 .status(SubscriptionStatus.ACTIVE)
                 .amount(amount)
                 .currency("EGP")
                 .build();
 
+        log.info("Created {} subscription for user: {}, plan: {}, expires: {}",
+                duration, userId, plan, endDate);
+
         return subscriptionRepository.save(subscription);
+    }
+
+    /**
+     * Create a new subscription for a user (defaults to MONTHLY for backward
+     * compatibility).
+     */
+    @Transactional
+    public Subscription createSubscription(UUID userId, SubscriptionPlan plan, BigDecimal amount) {
+        return createSubscription(userId, plan, SubscriptionDuration.MONTHLY, amount);
     }
 
     /**
