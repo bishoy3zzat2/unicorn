@@ -72,4 +72,30 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
         @Query("SELECT s FROM Subscription s WHERE s.status = 'ACTIVE' AND s.endDate <= :expiryThreshold")
         List<Subscription> findActiveSubscriptionsExpiringBefore(
                         @Param("expiryThreshold") LocalDateTime expiryThreshold);
+
+        /**
+         * Calculate MRR from actual subscription amounts.
+         */
+        @Query("SELECT COALESCE(SUM(s.amount), 0) FROM Subscription s WHERE s.status = 'ACTIVE'")
+        java.math.BigDecimal calculateTotalActiveMRR();
+
+        /**
+         * Calculate MRR grouped by currency from active subscriptions.
+         */
+        @Query("SELECT s.currency, COALESCE(SUM(s.amount), 0) FROM Subscription s WHERE s.status = 'ACTIVE' GROUP BY s.currency")
+        List<Object[]> calculateTotalActiveMRRByCurrency();
+
+        /**
+         * Calculate MRR for a specific plan from actual amounts.
+         */
+        @Query("SELECT COALESCE(SUM(s.amount), 0) FROM Subscription s WHERE s.status = 'ACTIVE' AND s.planType = :plan")
+        java.math.BigDecimal calculateMRRByPlan(@Param("plan") SubscriptionPlan plan);
+
+        /**
+         * Calculate MRR for a specific plan grouped by currency.
+         */
+        @Query("SELECT s.currency, COALESCE(SUM(s.amount), 0) FROM Subscription s " +
+                        "WHERE s.status = 'ACTIVE' AND s.planType = :plan " +
+                        "GROUP BY s.currency")
+        List<Object[]> calculateMRRByPlanAndCurrency(@Param("plan") SubscriptionPlan plan);
 }

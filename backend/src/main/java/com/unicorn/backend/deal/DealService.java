@@ -1,5 +1,6 @@
 package com.unicorn.backend.deal;
 
+import com.unicorn.backend.appconfig.AppConfigService;
 import com.unicorn.backend.startup.Startup;
 import com.unicorn.backend.startup.StartupRepository;
 import com.unicorn.backend.user.User;
@@ -10,6 +11,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -25,6 +28,7 @@ public class DealService {
     private final DealRepository dealRepository;
     private final UserRepository userRepository;
     private final StartupRepository startupRepository;
+    private final AppConfigService appConfigService;
 
     /**
      * Create a new deal.
@@ -144,12 +148,10 @@ public class DealService {
         if (request.getDealType() != null) {
             deal.setDealType(request.getDealType());
         }
-        if (request.getEquityPercentage() != null) {
-            deal.setEquityPercentage(request.getEquityPercentage());
-        }
-        if (request.getCommissionPercentage() != null) {
-            deal.setCommissionPercentage(request.getCommissionPercentage());
-        }
+        // Always set equity and commission to allow clearing (null = no
+        // equity/commission)
+        deal.setEquityPercentage(request.getEquityPercentage());
+        deal.setCommissionPercentage(request.getCommissionPercentage());
         if (request.getNotes() != null) {
             deal.setNotes(request.getNotes());
         }
@@ -173,17 +175,66 @@ public class DealService {
     }
 
     /**
-     * Get deal statistics.
+     * Get deal statistics with amounts converted to USD.
+     * Uses exchange rates from AppConfig for proper multi-currency handling.
      */
     @Transactional(readOnly = true)
     public DealStats getDealStats() {
+        // Calculate totals with currency conversion to USD
+        List<Deal> completedDeals = dealRepository.findAll().stream()
+                .filter(d -> d.getStatus() == DealStatus.COMPLETED)
+                .toList();
+
+        BigDecimal totalCompletedAmountUSD = BigDecimal.ZERO;
+        BigDecimal totalCommissionUSD = BigDecimal.ZERO;
+
+        for (Deal deal : completedDeals) {
+            BigDecimal amountInUSD = convertToUSD(deal.getAmount(), deal.getCurrency());
+            totalCompletedAmountUSD = totalCompletedAmountUSD.add(amountInUSD);
+
+            if (deal.getCommissionPercentage() != null) {
+                BigDecimal commission = amountInUSD.multiply(deal.getCommissionPercentage())
+                        .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+                totalCommissionUSD = totalCommissionUSD.add(commission);
+            }
+        }
+
         return DealStats.builder()
                 .totalDeals(dealRepository.count())
                 .pendingDeals(dealRepository.countByStatus(DealStatus.PENDING))
                 .completedDeals(dealRepository.countByStatus(DealStatus.COMPLETED))
                 .cancelledDeals(dealRepository.countByStatus(DealStatus.CANCELLED))
-                .totalCompletedAmount(dealRepository.getTotalCompletedDealsAmount())
-                .totalCommissionRevenue(dealRepository.getTotalCommissionRevenue())
+                .totalCompletedAmount(totalCompletedAmountUSD)
+                .totalCommissionRevenue(totalCommissionUSD)
                 .build();
+    }
+
+    /**
+     * Convert amount from any currency to USD using exchange rates from AppConfig.
+     */
+    private BigDecimal convertToUSD(BigDecimal amount, String currency) {
+        if (amount == null)
+            return BigDecimal.ZERO;
+        if (currency == null || "USD".equalsIgnoreCase(currency)) {
+            return amount;
+        }
+
+        // Get exchange rate from AppConfig (rate is: 1 USD = X currency)
+        String rateKey = "rate_" + currency.toLowerCase();
+        String rateValue = appConfigService.getValue(rateKey).orElse(null);
+
+        if (rateValue != null) {
+            try {
+                BigDecimal rate = new BigDecimal(rateValue);
+                // Convert: amount in currency / rate = amount in USD
+                return amount.divide(rate, 2, RoundingMode.HALF_UP);
+            } catch (NumberFormatException e) {
+                // If rate parsing fails, return original amount
+                return amount;
+            }
+        }
+
+        // No exchange rate found, return original amount
+        return amount;
     }
 }

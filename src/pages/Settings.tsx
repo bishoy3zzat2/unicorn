@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import {
     Loader2, Save, RefreshCw, Settings2, Globe, DollarSign,
-    Palette, CreditCard, Percent, Sparkles, ChevronRight
+    Palette, Percent, Sparkles, ChevronRight
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/contexts/AuthContext';
@@ -16,12 +16,11 @@ import { cn } from '@/lib/utils';
 const CURRENCIES = ['USD', 'SAR', 'AED', 'EGP', 'QAR', 'KWD', 'BHD', 'OMR', 'JOD', 'LBP', 'MAD'];
 
 // Category icons and colors for visual distinction
+// Note: pricing and android_subscriptions are NOT included - managed via Google Play Console
 const CATEGORY_CONFIG: Record<string, { icon: React.ElementType; color: string; gradient: string; bgColor: string }> = {
     preferences: { icon: Palette, color: 'text-indigo-500', gradient: 'from-indigo-500 to-purple-500', bgColor: 'bg-indigo-50 dark:bg-indigo-950/30' },
-    pricing: { icon: DollarSign, color: 'text-emerald-500', gradient: 'from-emerald-500 to-teal-500', bgColor: 'bg-emerald-50 dark:bg-emerald-950/30' },
     fees: { icon: Percent, color: 'text-amber-500', gradient: 'from-amber-500 to-orange-500', bgColor: 'bg-amber-50 dark:bg-amber-950/30' },
     exchange_rates: { icon: Globe, color: 'text-blue-500', gradient: 'from-blue-500 to-cyan-500', bgColor: 'bg-blue-50 dark:bg-blue-950/30' },
-    plans: { icon: CreditCard, color: 'text-purple-500', gradient: 'from-purple-500 to-pink-500', bgColor: 'bg-purple-50 dark:bg-purple-950/30' },
 };
 
 export function Settings() {
@@ -130,7 +129,10 @@ export function Settings() {
         }
     };
 
-    const categories = Object.keys(groupedConfigs);
+    // Filter out pricing and android_subscriptions - prices are managed via Google Play Console
+    const categories = Object.keys(groupedConfigs).filter(cat =>
+        cat !== 'pricing' && cat !== 'android_subscriptions'
+    );
     const allTabs = ['preferences', ...categories];
 
     const getCategoryConfig = (category: string) => {

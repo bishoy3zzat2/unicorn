@@ -123,8 +123,13 @@ export function EditDealDialog({ deal, open, onOpenChange, onSuccess }: EditDeal
                 currency,
                 status,
                 dealType: dealType || undefined,
-                equityPercentage: equityPercentage ? parseFloat(equityPercentage) : undefined,
-                commissionPercentage: commissionPercentage ? parseFloat(commissionPercentage) : undefined,
+                // Send undefined if empty or 0 - backend should clear the value
+                equityPercentage: equityPercentage && parseFloat(equityPercentage) > 0
+                    ? parseFloat(equityPercentage)
+                    : undefined,
+                commissionPercentage: commissionPercentage && parseFloat(commissionPercentage) > 0
+                    ? parseFloat(commissionPercentage)
+                    : undefined,
                 notes: notes || undefined,
                 dealDate: dealDate ? new Date(dealDate).toISOString() : undefined,
             }

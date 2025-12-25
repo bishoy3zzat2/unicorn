@@ -242,36 +242,42 @@ export function Deals() {
     return (
         <div className="space-y-6 transition-colors duration-300">
 
-            {/* Stats Overview */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+            {/* Stats Overview - 3 cards per row */}
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <KPICard
                     title="Total Deals"
                     value={stats.totalDeals.toString()}
                     icon={Briefcase}
                 />
                 <KPICard
-                    title="Pending"
+                    title="Pending Deals"
                     value={stats.pendingDeals.toString()}
                     icon={Clock}
                     iconColor="text-yellow-600 dark:text-yellow-400"
                 />
                 <KPICard
-                    title="Completed"
+                    title="Completed Deals"
                     value={stats.completedDeals.toString()}
                     icon={CheckCircle2}
                     iconColor="text-green-600 dark:text-green-400"
                 />
                 <KPICard
-                    title="Total Commission"
-                    value={formatCompactAmount(stats.totalCommissionRevenue || 0, 'USD')}
-                    icon={Percent}
-                    iconColor="text-purple-600 dark:text-purple-400"
+                    title="Cancelled Deals"
+                    value={stats.cancelledDeals.toString()}
+                    icon={XCircle}
+                    iconColor="text-red-600 dark:text-red-400"
                 />
                 <KPICard
-                    title="Total Invested"
+                    title="Total Invested (USD)"
                     value={formatCompactAmount(stats.totalCompletedAmount || 0, 'USD')}
                     icon={TrendingUp}
                     iconColor="text-emerald-600 dark:text-emerald-400"
+                />
+                <KPICard
+                    title="Commission Revenue"
+                    value={formatCompactAmount(stats.totalCommissionRevenue || 0, 'USD')}
+                    icon={Percent}
+                    iconColor="text-purple-600 dark:text-purple-400"
                 />
             </div>
 

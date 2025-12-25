@@ -102,8 +102,11 @@ public class AppConfigService {
 
         updateCachedMaintenanceMode(key, value);
 
-        // Auto-increment version when any config is updated
-        incrementVersion();
+        // Auto-increment version when a config is updated,
+        // UNLESS it's an exchange rate (dashboard only)
+        if (!key.startsWith("rate_")) {
+            incrementVersion();
+        }
 
         return configRepository.save(config);
     }
@@ -155,13 +158,12 @@ public class AppConfigService {
 
     /**
      * Initialize default configs if not exist.
+     * Note: Subscription pricing is NOT stored here - it's managed via Google Play
+     * Console.
+     * The actual prices are fetched from Google Play API when processing payments.
      */
     @Transactional
     public void initializeDefaults() {
-        // Pricing
-        upsertIfNotExists("pricing_pro", "299", "Pro plan monthly price", "pricing", "NUMBER");
-        upsertIfNotExists("pricing_elite", "799", "Elite plan monthly price", "pricing", "NUMBER");
-
         // Limits - General
         upsert("max_post_length", "2000", "Maximum post content length", "limits_general", "NUMBER");
         upsert("max_comment_length", "1000", "Maximum comment length", "limits_general", "NUMBER");
@@ -186,6 +188,9 @@ public class AppConfigService {
         upsertIfNotExists("rate_jod", "0.71", "Jordanian Dinar Exchange Rate", "exchange_rates", "NUMBER");
         upsertIfNotExists("rate_lbp", "89500", "Lebanese Pound Exchange Rate", "exchange_rates", "NUMBER");
         upsertIfNotExists("rate_mad", "10.0", "Moroccan Dirham Exchange Rate", "exchange_rates", "NUMBER");
+
+        // Note: Android subscription product IDs are NOT stored here.
+        // Mobile app gets product details directly from Google Play BillingClient.
 
         // Ensure cache is synced after defaults
         init();

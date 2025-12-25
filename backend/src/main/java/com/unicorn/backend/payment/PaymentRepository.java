@@ -51,16 +51,30 @@ public interface PaymentRepository extends JpaRepository<Payment, String> {
                         @Param("endDate") LocalDateTime endDate);
 
         /**
+         * Get total revenue for a period grouped by currency (completed payments only).
+         */
+        @Query("SELECT p.currency, COALESCE(SUM(p.amount), 0) FROM Payment p " +
+                        "WHERE p.status = 'COMPLETED' AND p.timestamp BETWEEN :startDate AND :endDate " +
+                        "GROUP BY p.currency")
+        List<Object[]> getTotalRevenueForPeriodByCurrency(
+                        @Param("startDate") LocalDateTime startDate,
+                        @Param("endDate") LocalDateTime endDate);
+
+        /**
          * Get monthly revenue data for charts.
+         */
+        /**
+         * Get monthly revenue data grouped by currency.
          */
         @Query(value = "SELECT TO_CHAR(p.timestamp, 'Mon') as month, " +
                         "EXTRACT(MONTH FROM p.timestamp) as month_num, " +
+                        "p.currency, " +
                         "COALESCE(SUM(p.amount), 0) as revenue " +
                         "FROM payments p " +
                         "WHERE p.status = 'COMPLETED' AND p.timestamp >= :startDate " +
-                        "GROUP BY TO_CHAR(p.timestamp, 'Mon'), EXTRACT(MONTH FROM p.timestamp) " +
+                        "GROUP BY TO_CHAR(p.timestamp, 'Mon'), EXTRACT(MONTH FROM p.timestamp), p.currency " +
                         "ORDER BY month_num", nativeQuery = true)
-        List<Object[]> getMonthlyRevenue(@Param("startDate") LocalDateTime startDate);
+        List<Object[]> getMonthlyRevenueByCurrency(@Param("startDate") LocalDateTime startDate);
 
         /**
          * Count payments by status.

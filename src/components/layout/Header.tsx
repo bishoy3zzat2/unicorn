@@ -20,21 +20,21 @@ export function Header() {
 
     return (
         <header className="fixed top-4 right-0 left-0 lg:left-[300px] z-30 px-3 lg:px-6 transition-all duration-300">
-            <div className="flex items-center justify-between p-3 rounded-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-white/20 dark:border-slate-800/50 shadow-xl shadow-slate-200/60 dark:shadow-slate-900/20 transition-all duration-300">
-                {/* Left Section: Breadcrumbs (Padded on mobile to clear Hamburger) */}
-                <div className="flex items-center gap-2 pl-12 lg:pl-0">
+            <div className="flex items-center justify-between px-5 py-3 rounded-2xl bg-gradient-to-br from-slate-50/95 via-white/95 to-slate-100/95 dark:from-slate-800/95 dark:via-slate-900/95 dark:to-slate-800/95 backdrop-blur-2xl border-2 border-slate-200 dark:border-slate-700 shadow-lg shadow-slate-300/30 dark:shadow-black/40 transition-all duration-300">
+                {/* Left Section: Breadcrumbs */}
+                <div className="flex items-center gap-3 pl-10 lg:pl-0">
                     <Link
                         to="/"
-                        className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 transition-colors"
+                        className="text-sm font-medium text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 transition-colors"
                     >
                         Dashboard
                     </Link>
                     {breadcrumbs.map((crumb) => (
-                        <div key={crumb.path} className="flex items-center gap-2">
-                            <ChevronRight className="h-4 w-4 text-slate-400" />
+                        <div key={crumb.path} className="flex items-center gap-3">
+                            <ChevronRight className="h-4 w-4 text-slate-300 dark:text-slate-600" />
                             <Link
                                 to={crumb.path}
-                                className="font-medium text-slate-900 dark:text-slate-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors capitalize"
+                                className="text-sm font-semibold text-slate-800 dark:text-slate-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors capitalize px-3 py-1 rounded-lg bg-slate-100/80 dark:bg-slate-700/50"
                             >
                                 {crumb.name}
                             </Link>

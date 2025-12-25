@@ -47,12 +47,31 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
 
 export interface RevenueDataPoint {
     month: string;
+    monthNum: number;
+    revenue: number;
+    proRevenue?: number;
+    eliteRevenue?: number;
+}
+
+export interface DailyRevenuePoint {
+    date: string;
+    day: number;
     revenue: number;
 }
 
 export interface SubscriptionStats {
     totalSubscriptions: number;
     activeSubscriptions: number;
+    cancelledSubscriptions: number;
+    expiredSubscriptions: number;
+    freeUsers: number;
+    proMonthly: number;
+    proYearly: number;
+    eliteMonthly: number;
+    eliteYearly: number;
+    proRevenue: number;
+    eliteRevenue: number;
+    totalRevenue: number;
     byPlan: {
         FREE: number;
         PRO: number;
@@ -71,26 +90,64 @@ export interface Payment {
     timestamp: string;
 }
 
-export async function fetchRevenueChart(): Promise<RevenueDataPoint[]> {
-    return request(api.get('/admin/financials/revenue-chart'));
-}
-
-export async function fetchSubscriptionStats(): Promise<SubscriptionStats> {
-    return request(api.get('/admin/financials/subscriptions'));
-}
-
-export async function fetchRecentPayments(limit: number = 10): Promise<Payment[]> {
-    return request(api.get(`/admin/financials/payments`, { params: { limit } }));
+export interface PaymentsPage {
+    content: Payment[];
+    totalElements: number;
+    totalPages: number;
 }
 
 export interface FinancialSummary {
     currentMonthRevenue: number;
+    previousMonthRevenue: number;
+    revenueGrowthPercent: number;
     mrr: number;
+    arr: number;
+    totalLifetimeRevenue: number;
+    arpu: number;
+    totalUsers: number;
+    freeUsers: number;
+    proSubscribers: number;
+    eliteSubscribers: number;
+    activeSubscriptions: number;
+    conversionRate: number;
+    churnRate: number;
+    totalPayments: number;
+    completedPayments: number;
+    pendingPayments: number;
+    failedPayments: number;
+    refundedPayments: number;
+    totalCommissionRevenue: number;
+    totalDeals: number;
+    completedDeals: number;
     subscriptions: SubscriptionStats;
 }
 
 export async function fetchFinancialSummary(): Promise<FinancialSummary> {
     return request(api.get('/admin/financials/summary'));
+}
+
+export async function fetchMonthlyRevenue(): Promise<RevenueDataPoint[]> {
+    return request(api.get('/admin/financials/revenue/monthly'));
+}
+
+export async function fetchDailyRevenue(): Promise<DailyRevenuePoint[]> {
+    return request(api.get('/admin/financials/revenue/daily'));
+}
+
+export async function fetchRevenueChart(): Promise<RevenueDataPoint[]> {
+    return request(api.get('/admin/financials/revenue/monthly'));
+}
+
+export async function fetchSubscriptionStats(): Promise<SubscriptionStats> {
+    return request(api.get('/admin/financials/subscriptions/stats'));
+}
+
+export async function fetchRecentPayments(page: number = 0, size: number = 10): Promise<PaymentsPage> {
+    return request(api.get('/admin/financials/payments', { params: { page, size } }));
+}
+
+export async function fetchPaymentStatusBreakdown(): Promise<Record<string, number>> {
+    return request(api.get('/admin/financials/payments/status-breakdown'));
 }
 
 // ==================== Investor Verification API ====================

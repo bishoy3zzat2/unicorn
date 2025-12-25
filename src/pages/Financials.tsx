@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
+import { Button } from '../components/ui/button'
 import {
     DollarSign,
     TrendingUp,
@@ -9,18 +10,45 @@ import {
     AlertCircle,
     Crown,
     Sparkles,
-    User
+    User,
+    RefreshCcw,
+    Percent,
+    Target,
+    Receipt,
+    CheckCircle,
+    XCircle,
+    Clock,
+    RotateCcw,
+    Briefcase,
+    PieChart as PieChartIcon,
+    Search,
+    Download,
+    Filter,
+    ChevronLeft,
+    ChevronRight
 } from 'lucide-react'
 import { Alert, AlertDescription } from '../components/ui/alert'
+import { Input } from '../components/ui/input'
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '../components/ui/select'
+import { KPICard } from '../components/dashboard/KPICard'
 import {
     fetchFinancialSummary,
+    fetchMonthlyRevenue,
+    fetchDailyRevenue,
     fetchRecentPayments,
-    fetchRevenueChart,
+    fetchPaymentStatusBreakdown,
     FinancialSummary,
-    Payment,
-    RevenueDataPoint
+    RevenueDataPoint,
+    DailyRevenuePoint,
+    PaymentsPage
 } from '../lib/api'
-import { formatCurrency, formatDate } from '../lib/utils'
+import { formatCurrency, formatDate, cn } from '../lib/utils'
 import {
     AreaChart,
     Area,
@@ -32,57 +60,144 @@ import {
     PieChart,
     Pie,
     Cell,
-    Legend
+    Legend,
+    BarChart,
+    Bar,
 } from 'recharts'
 
-// Subscription plan colors
-const PLAN_COLORS = {
-    FREE: '#94a3b8',
-    PRO: '#8b5cf6',
-    ELITE: '#f59e0b'
+// Color palette
+const COLORS = {
+    primary: '#8b5cf6',
+    secondary: '#06b6d4',
+    success: '#10b981',
+    warning: '#f59e0b',
+    danger: '#ef4444',
+    muted: '#64748b',
+    free: '#94a3b8',
+    pro: '#8b5cf6',
+    elite: '#f59e0b'
+}
+
+// Format currency with K/M for large amounts
+const formatCompactCurrency = (amount: number, currency: string = 'USD') => {
+    const currencySymbol = currency === 'USD' ? '$' : currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : currency === 'EGP' ? 'E£' : '$'
+
+    if (amount < 1000) {
+        return `${currencySymbol}${amount.toFixed(0)}`
+    } else if (amount < 1000000) {
+        const value = amount / 1000
+        return `${currencySymbol}${value % 1 === 0 ? value : value.toFixed(1)}K`
+    } else if (amount < 1000000000) {
+        const value = amount / 1000000
+        return `${currencySymbol}${value % 1 === 0 ? value : value.toFixed(1)}M`
+    } else {
+        const value = amount / 1000000000
+        return `${currencySymbol}${value % 1 === 0 ? value : value.toFixed(1)}B`
+    }
 }
 
 export function Financials() {
     const [summary, setSummary] = useState<FinancialSummary | null>(null)
-    const [payments, setPayments] = useState<Payment[]>([])
-    const [revenueData, setRevenueData] = useState<RevenueDataPoint[]>([])
+    const [monthlyRevenue, setMonthlyRevenue] = useState<RevenueDataPoint[]>([])
+    const [dailyRevenue, setDailyRevenue] = useState<DailyRevenuePoint[]>([])
+    const [payments, setPayments] = useState<PaymentsPage | null>(null)
+    const [paymentBreakdown, setPaymentBreakdown] = useState<Record<string, number>>({})
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
+    const [paymentsPage, setPaymentsPage] = useState(0)
+    const [paymentsFilter, setPaymentsFilter] = useState<string>('all')
+    const [paymentsSearch, setPaymentsSearch] = useState('')
+    const [paymentsPerPage] = useState(10)
+
+    const loadData = async () => {
+        try {
+            setLoading(true)
+            setError(null)
+
+            const [summaryData, monthlyData, dailyData, paymentsData, breakdownData] = await Promise.all([
+                fetchFinancialSummary(),
+                fetchMonthlyRevenue(),
+                fetchDailyRevenue(),
+                fetchRecentPayments(0, 10),
+                fetchPaymentStatusBreakdown()
+            ])
+
+            setSummary(summaryData)
+            setMonthlyRevenue(monthlyData)
+            setDailyRevenue(dailyData)
+            setPayments(paymentsData)
+            setPaymentBreakdown(breakdownData)
+        } catch (err) {
+            console.error('Failed to fetch financial data:', err)
+            setError(err instanceof Error ? err.message : 'Failed to load financial data')
+        } finally {
+            setLoading(false)
+        }
+    }
 
     useEffect(() => {
-        async function loadData() {
-            try {
-                setLoading(true)
-                setError(null)
-
-                const [summaryData, paymentsData, revenueChartData] = await Promise.all([
-                    fetchFinancialSummary(),
-                    fetchRecentPayments(10),
-                    fetchRevenueChart()
-                ])
-
-                setSummary(summaryData)
-                setPayments(paymentsData)
-                setRevenueData(revenueChartData)
-            } catch (err) {
-                console.error('Failed to fetch financial data:', err)
-                setError(err instanceof Error ? err.message : 'Failed to load financial data')
-                // Use mock data on error
-                setRevenueData(mockRevenueData)
-            } finally {
-                setLoading(false)
-            }
-        }
-
         loadData()
     }, [])
 
-    // Prepare subscription pie chart data
+    const loadPayments = async (page: number = 0) => {
+        try {
+            const data = await fetchRecentPayments(page, paymentsPerPage)
+            setPayments(data)
+            setPaymentsPage(page)
+        } catch (err) {
+            console.error('Failed to load payments:', err)
+        }
+    }
+
+    // Filter payments locally (for status filter and search)
+    const filteredPayments = payments?.content?.filter(payment => {
+        const matchesStatus = paymentsFilter === 'all' || payment.status === paymentsFilter
+        const matchesSearch = paymentsSearch === '' ||
+            payment.userEmail.toLowerCase().includes(paymentsSearch.toLowerCase()) ||
+            payment.transactionId.toLowerCase().includes(paymentsSearch.toLowerCase())
+        return matchesStatus && matchesSearch
+    }) || []
+
+    // Export payments to CSV
+    const exportPayments = () => {
+        if (!payments?.content) return
+
+        const headers = ['Transaction ID', 'User Email', 'Amount', 'Currency', 'Status', 'Date']
+        const csvData = payments.content.map(p => [
+            p.transactionId,
+            p.userEmail,
+            p.amount.toString(),
+            p.currency || 'USD',
+            p.status,
+            new Date(p.timestamp).toISOString()
+        ])
+
+        const csvContent = [
+            headers.join(','),
+            ...csvData.map(row => row.join(','))
+        ].join('\n')
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+        const link = document.createElement('a')
+        link.href = URL.createObjectURL(blob)
+        link.download = `payments_export_${new Date().toISOString().split('T')[0]}.csv`
+        link.click()
+    }
+
+    // Subscription pie chart data
     const subscriptionPieData = summary ? [
-        { name: 'Free', value: summary.subscriptions.byPlan?.FREE || 0, color: PLAN_COLORS.FREE },
-        { name: 'Pro', value: summary.subscriptions.byPlan?.PRO || 0, color: PLAN_COLORS.PRO },
-        { name: 'Elite', value: summary.subscriptions.byPlan?.ELITE || 0, color: PLAN_COLORS.ELITE },
+        { name: 'Free', value: summary.freeUsers || 0, color: COLORS.free },
+        { name: 'Pro', value: summary.proSubscribers || 0, color: COLORS.pro },
+        { name: 'Elite', value: summary.eliteSubscribers || 0, color: COLORS.elite },
     ] : []
+
+    // Payment status pie data
+    const paymentStatusData = [
+        { name: 'Completed', value: paymentBreakdown.COMPLETED || 0, color: COLORS.success },
+        { name: 'Pending', value: paymentBreakdown.PENDING || 0, color: COLORS.warning },
+        { name: 'Failed', value: paymentBreakdown.FAILED || 0, color: COLORS.danger },
+        { name: 'Refunded', value: paymentBreakdown.REFUNDED || 0, color: COLORS.secondary },
+    ].filter(d => d.value > 0)
 
     if (loading) {
         return (
@@ -94,94 +209,114 @@ export function Financials() {
     }
 
     return (
-        <div className="space-y-6">
-
-
+        <div className="space-y-6 transition-colors duration-300">
             {error && (
                 <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>
-                        {error}. Showing sample data.
-                    </AlertDescription>
+                    <AlertDescription>{error}</AlertDescription>
                 </Alert>
             )}
 
-            {/* KPI Cards */}
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium">Monthly Revenue</CardTitle>
-                        <DollarSign className="h-4 w-4 text-emerald-500" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">
-                            {formatCurrency(summary?.currentMonthRevenue || 0)}
-                        </div>
-                        <p className="text-xs text-muted-foreground">This month</p>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium">MRR</CardTitle>
-                        <TrendingUp className="h-4 w-4 text-blue-500" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">
-                            {formatCurrency(summary?.mrr || 0)}
-                        </div>
-                        <p className="text-xs text-muted-foreground">Monthly recurring revenue</p>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium">Active Subscriptions</CardTitle>
-                        <Users className="h-4 w-4 text-purple-500" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">
-                            {summary?.subscriptions?.activeSubscriptions || 0}
-                        </div>
-                        <p className="text-xs text-muted-foreground">Paid subscribers</p>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium">Total Subscriptions</CardTitle>
-                        <CreditCard className="h-4 w-4 text-orange-500" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">
-                            {summary?.subscriptions?.totalSubscriptions || 0}
-                        </div>
-                        <p className="text-xs text-muted-foreground">All time</p>
-                    </CardContent>
-                </Card>
+            {/* KPI Cards - Row 1 */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <KPICard
+                    title="Monthly Revenue"
+                    value={formatCompactCurrency(summary?.currentMonthRevenue || 0)}
+                    icon={DollarSign}
+                    iconColor="text-emerald-600 dark:text-emerald-400"
+                    trend={summary?.revenueGrowthPercent || 0}
+                />
+                <KPICard
+                    title="MRR"
+                    value={formatCompactCurrency(summary?.mrr || 0)}
+                    icon={TrendingUp}
+                    iconColor="text-blue-600 dark:text-blue-400"
+                    trend="Monthly Recurring Revenue"
+                />
+                <KPICard
+                    title="ARR"
+                    value={formatCompactCurrency(summary?.arr || 0)}
+                    icon={Target}
+                    iconColor="text-purple-600 dark:text-purple-400"
+                    trend="Annual Recurring Revenue"
+                />
+                <KPICard
+                    title="Lifetime Revenue"
+                    value={formatCompactCurrency(summary?.totalLifetimeRevenue || 0)}
+                    icon={CreditCard}
+                    iconColor="text-orange-600 dark:text-orange-400"
+                    trend="All time"
+                />
             </div>
 
-            {/* Charts Row */}
+            {/* KPI Cards - Row 2 */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <KPICard
+                    title="Active Subscribers"
+                    value={summary?.activeSubscriptions?.toString() || '0'}
+                    icon={Users}
+                    iconColor="text-indigo-600 dark:text-indigo-400"
+                    trend="Paid users"
+                />
+                <KPICard
+                    title="ARPU"
+                    value={formatCompactCurrency(summary?.arpu || 0)}
+                    icon={User}
+                    iconColor="text-green-600 dark:text-green-400"
+                    trend="Avg Revenue Per User"
+                />
+                <KPICard
+                    title="Conversion Rate"
+                    value={`${(summary?.conversionRate || 0).toFixed(1)}%`}
+                    icon={Percent}
+                    iconColor="text-yellow-600 dark:text-yellow-400"
+                    trend="Free → Paid"
+                />
+                <KPICard
+                    title="Commission Revenue"
+                    value={formatCompactCurrency(summary?.totalCommissionRevenue || 0)}
+                    icon={Briefcase}
+                    iconColor="text-red-600 dark:text-red-400"
+                    trend={`From ${summary?.completedDeals || 0} deals`}
+                />
+            </div>
+
+            {/* Charts Row 1 */}
             <div className="grid gap-6 lg:grid-cols-3">
-                {/* Revenue Chart */}
-                <Card className="lg:col-span-2">
-                    <CardHeader>
-                        <CardTitle>Revenue Trend</CardTitle>
-                        <CardDescription>Monthly revenue over time</CardDescription>
+                {/* Revenue Trend Chart */}
+                <Card className="lg:col-span-2 group relative overflow-hidden transition-all duration-300 hover:-translate-y-1 border-2 bg-gradient-to-br from-purple-500/5 via-violet-400/10 to-fuchsia-500/5 dark:from-purple-900/30 dark:via-violet-800/20 dark:to-fuchsia-900/30 border-purple-200/50 dark:border-purple-800/50 hover:border-purple-400/70 hover:shadow-xl">
+                    {/* Dot Pattern Overlay */}
+                    <div
+                        className="absolute inset-0 opacity-[0.08] dark:opacity-[0.05] text-slate-900 dark:text-slate-100"
+                        style={{
+                            backgroundImage: `radial-gradient(circle, currentColor 1px, transparent 1px)`,
+                            backgroundSize: '16px 16px'
+                        }}
+                    />
+                    <CardHeader className="relative z-10">
+                        <div className="flex items-center gap-3">
+                            <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500 to-violet-500 shadow-lg">
+                                <TrendingUp className="h-5 w-5 text-white" />
+                            </div>
+                            <div>
+                                <CardTitle className="text-lg font-bold">Revenue Trend</CardTitle>
+                                <CardDescription>Monthly revenue over the last 12 months</CardDescription>
+                            </div>
+                        </div>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="relative z-10">
                         <div className="h-80">
                             <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={revenueData.length > 0 ? revenueData : mockRevenueData}>
+                                <AreaChart data={monthlyRevenue}>
                                     <defs>
                                         <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3} />
-                                            <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
+                                            <stop offset="5%" stopColor={COLORS.primary} stopOpacity={0.3} />
+                                            <stop offset="95%" stopColor={COLORS.primary} stopOpacity={0} />
                                         </linearGradient>
                                     </defs>
                                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                                     <XAxis dataKey="month" className="text-xs" />
-                                    <YAxis className="text-xs" tickFormatter={(value) => `$${value / 1000}k`} />
+                                    <YAxis className="text-xs" tickFormatter={(v) => `$${v / 1000}k`} />
                                     <Tooltip
                                         formatter={(value: number) => [formatCurrency(value), 'Revenue']}
                                         contentStyle={{
@@ -193,7 +328,7 @@ export function Financials() {
                                     <Area
                                         type="monotone"
                                         dataKey="revenue"
-                                        stroke="#8b5cf6"
+                                        stroke={COLORS.primary}
                                         strokeWidth={2}
                                         fillOpacity={1}
                                         fill="url(#colorRevenue)"
@@ -205,25 +340,40 @@ export function Financials() {
                 </Card>
 
                 {/* Subscription Distribution */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Subscription Plans</CardTitle>
-                        <CardDescription>Distribution by plan type</CardDescription>
+                <Card className="group relative overflow-hidden transition-all duration-300 hover:-translate-y-1 border-2 bg-gradient-to-br from-indigo-500/5 via-purple-400/10 to-blue-500/5 dark:from-indigo-900/30 dark:via-purple-800/20 dark:to-blue-900/30 border-indigo-200/50 dark:border-indigo-800/50 hover:border-indigo-400/70 hover:shadow-xl">
+                    {/* Dot Pattern Overlay */}
+                    <div
+                        className="absolute inset-0 opacity-[0.08] dark:opacity-[0.05] text-slate-900 dark:text-slate-100"
+                        style={{
+                            backgroundImage: `radial-gradient(circle, currentColor 1px, transparent 1px)`,
+                            backgroundSize: '16px 16px'
+                        }}
+                    />
+                    <CardHeader className="relative z-10">
+                        <div className="flex items-center gap-3">
+                            <div className="p-3 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 shadow-lg">
+                                <PieChartIcon className="h-5 w-5 text-white" />
+                            </div>
+                            <div>
+                                <CardTitle className="text-lg font-bold">Subscription Plans</CardTitle>
+                                <CardDescription>Distribution by plan type</CardDescription>
+                            </div>
+                        </div>
                     </CardHeader>
-                    <CardContent>
-                        <div className="h-64">
+                    <CardContent className="relative z-10">
+                        <div className="h-52">
                             <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
                                     <Pie
-                                        data={subscriptionPieData.length > 0 ? subscriptionPieData : mockSubscriptionData}
+                                        data={subscriptionPieData}
                                         cx="50%"
                                         cy="50%"
-                                        innerRadius={60}
-                                        outerRadius={80}
+                                        innerRadius={45}
+                                        outerRadius={65}
                                         paddingAngle={5}
                                         dataKey="value"
                                     >
-                                        {(subscriptionPieData.length > 0 ? subscriptionPieData : mockSubscriptionData).map((entry, index) => (
+                                        {subscriptionPieData.map((entry, index) => (
                                             <Cell key={`cell-${index}`} fill={entry.color} />
                                         ))}
                                     </Pie>
@@ -240,60 +390,230 @@ export function Financials() {
                             </ResponsiveContainer>
                         </div>
                         {/* Plan Stats */}
-                        <div className="mt-4 space-y-2">
+                        <div className="mt-4 space-y-2 pt-3 border-t border-current/10">
                             <div className="flex items-center justify-between text-sm">
                                 <div className="flex items-center gap-2">
                                     <User className="h-4 w-4 text-slate-400" />
                                     <span>Free</span>
                                 </div>
-                                <span className="font-medium">{summary?.subscriptions?.byPlan?.FREE || 0}</span>
+                                <span className="font-bold">{summary?.freeUsers || 0}</span>
                             </div>
                             <div className="flex items-center justify-between text-sm">
                                 <div className="flex items-center gap-2">
                                     <Sparkles className="h-4 w-4 text-purple-500" />
                                     <span>Pro</span>
                                 </div>
-                                <span className="font-medium">{summary?.subscriptions?.byPlan?.PRO || 0}</span>
+                                <span className="font-bold">{summary?.proSubscribers || 0}</span>
                             </div>
                             <div className="flex items-center justify-between text-sm">
                                 <div className="flex items-center gap-2">
                                     <Crown className="h-4 w-4 text-amber-500" />
                                     <span>Elite</span>
                                 </div>
-                                <span className="font-medium">{summary?.subscriptions?.byPlan?.ELITE || 0}</span>
+                                <span className="font-bold">{summary?.eliteSubscribers || 0}</span>
                             </div>
                         </div>
                     </CardContent>
                 </Card>
             </div>
 
-            {/* Recent Payments */}
-            <Card>
-                <CardHeader>
-                    <CardTitle>Recent Payments</CardTitle>
-                    <CardDescription>Latest payment transactions</CardDescription>
+            {/* Charts Row 2 */}
+            <div className="grid gap-6 lg:grid-cols-2">
+                {/* Daily Revenue Bar Chart */}
+                <Card className="group relative overflow-hidden transition-all duration-300 hover:-translate-y-1 border-2 bg-gradient-to-br from-emerald-500/5 via-green-400/10 to-teal-500/5 dark:from-emerald-900/30 dark:via-green-800/20 dark:to-teal-900/30 border-emerald-200/50 dark:border-emerald-800/50 hover:border-emerald-400/70 hover:shadow-xl">
+                    {/* Dot Pattern Overlay */}
+                    <div
+                        className="absolute inset-0 opacity-[0.08] dark:opacity-[0.05] text-slate-900 dark:text-slate-100"
+                        style={{
+                            backgroundImage: `radial-gradient(circle, currentColor 1px, transparent 1px)`,
+                            backgroundSize: '16px 16px'
+                        }}
+                    />
+                    <CardHeader className="relative z-10">
+                        <div className="flex items-center gap-3">
+                            <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 shadow-lg">
+                                <DollarSign className="h-5 w-5 text-white" />
+                            </div>
+                            <div>
+                                <CardTitle className="text-lg font-bold">Daily Revenue</CardTitle>
+                                <CardDescription>Last 30 days</CardDescription>
+                            </div>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="relative z-10">
+                        <div className="h-64">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={dailyRevenue}>
+                                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                                    <XAxis dataKey="day" className="text-xs" />
+                                    <YAxis className="text-xs" tickFormatter={(v) => `$${v}`} />
+                                    <Tooltip
+                                        formatter={(value: number) => [formatCurrency(value), 'Revenue']}
+                                        labelFormatter={(label, payload) => {
+                                            if (payload && payload[0]) {
+                                                return payload[0].payload.date
+                                            }
+                                            return `Day ${label}`
+                                        }}
+                                        contentStyle={{
+                                            backgroundColor: 'hsl(var(--card))',
+                                            border: '1px solid hsl(var(--border))',
+                                            borderRadius: '8px'
+                                        }}
+                                    />
+                                    <Bar dataKey="revenue" fill={COLORS.success} radius={[4, 4, 0, 0]} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Payment Status Breakdown */}
+                <Card className="group relative overflow-hidden transition-all duration-300 hover:-translate-y-1 border-2 bg-gradient-to-br from-blue-500/5 via-blue-400/10 to-cyan-500/5 dark:from-blue-900/30 dark:via-blue-800/20 dark:to-cyan-900/30 border-blue-200/50 dark:border-blue-800/50 hover:border-blue-400/70 hover:shadow-xl">
+                    {/* Dot Pattern Overlay */}
+                    <div
+                        className="absolute inset-0 opacity-[0.08] dark:opacity-[0.05] text-slate-900 dark:text-slate-100"
+                        style={{
+                            backgroundImage: `radial-gradient(circle, currentColor 1px, transparent 1px)`,
+                            backgroundSize: '16px 16px'
+                        }}
+                    />
+                    <CardHeader className="relative z-10">
+                        <div className="flex items-center gap-3">
+                            <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 shadow-lg">
+                                <Receipt className="h-5 w-5 text-white" />
+                            </div>
+                            <div>
+                                <CardTitle className="text-lg font-bold">Payment Status</CardTitle>
+                                <CardDescription>Breakdown by status</CardDescription>
+                            </div>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="relative z-10">
+                        <div className="h-52">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie
+                                        data={paymentStatusData}
+                                        cx="50%"
+                                        cy="50%"
+                                        outerRadius={70}
+                                        dataKey="value"
+                                        label={({ name, value }) => `${name}: ${value}`}
+                                    >
+                                        {paymentStatusData.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={entry.color} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip
+                                        contentStyle={{
+                                            backgroundColor: 'hsl(var(--card))',
+                                            border: '1px solid hsl(var(--border))',
+                                            borderRadius: '8px'
+                                        }}
+                                    />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </div>
+                        {/* Payment Stats Grid */}
+                        <div className="mt-4 grid grid-cols-2 gap-3 pt-3 border-t border-current/10">
+                            <PaymentStatBadge label="Completed" value={summary?.completedPayments || 0} icon={CheckCircle} color="text-emerald-500" />
+                            <PaymentStatBadge label="Pending" value={summary?.pendingPayments || 0} icon={Clock} color="text-amber-500" />
+                            <PaymentStatBadge label="Failed" value={summary?.failedPayments || 0} icon={XCircle} color="text-red-500" />
+                            <PaymentStatBadge label="Refunded" value={summary?.refundedPayments || 0} icon={RotateCcw} color="text-cyan-500" />
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+
+            {/* Recent Payments Table */}
+            <Card className="group relative overflow-hidden transition-all duration-300 border-2 bg-gradient-to-br from-gray-500/5 via-slate-400/10 to-zinc-500/5 dark:from-gray-800/30 dark:via-slate-700/20 dark:to-zinc-800/30 border-gray-200/50 dark:border-gray-700/50 hover:border-gray-400/70">
+                {/* Dot Pattern Overlay */}
+                <div
+                    className="absolute inset-0 opacity-[0.08] dark:opacity-[0.05] text-slate-900 dark:text-slate-100"
+                    style={{
+                        backgroundImage: `radial-gradient(circle, currentColor 1px, transparent 1px)`,
+                        backgroundSize: '16px 16px'
+                    }}
+                />
+                <CardHeader className="relative z-10">
+                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                            <div className="p-3 rounded-xl bg-gradient-to-br from-gray-500 to-slate-500 shadow-lg">
+                                <CreditCard className="h-5 w-5 text-white" />
+                            </div>
+                            <div>
+                                <CardTitle className="text-lg font-bold">Recent Payments</CardTitle>
+                                <CardDescription>
+                                    {payments ? `${payments.totalElements} total payments` : 'Loading...'}
+                                </CardDescription>
+                            </div>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                            {/* Search */}
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                    placeholder="Search payments..."
+                                    value={paymentsSearch}
+                                    onChange={(e) => setPaymentsSearch(e.target.value)}
+                                    className="pl-9 w-48 bg-white/50 dark:bg-slate-800/50"
+                                />
+                            </div>
+                            {/* Status Filter */}
+                            <Select value={paymentsFilter} onValueChange={setPaymentsFilter}>
+                                <SelectTrigger className="w-36 bg-white/50 dark:bg-slate-800/50">
+                                    <Filter className="h-4 w-4 mr-2" />
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Status</SelectItem>
+                                    <SelectItem value="COMPLETED">Completed</SelectItem>
+                                    <SelectItem value="PENDING">Pending</SelectItem>
+                                    <SelectItem value="FAILED">Failed</SelectItem>
+                                    <SelectItem value="REFUNDED">Refunded</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            {/* Export */}
+                            <Button onClick={exportPayments} variant="outline" size="sm" className="gap-2 bg-white/50 dark:bg-slate-800/50">
+                                <Download className="h-4 w-4" />
+                                Export
+                            </Button>
+                            {/* Refresh */}
+                            <Button onClick={loadData} variant="outline" size="sm" className="gap-2 bg-white/50 dark:bg-slate-800/50">
+                                <RefreshCcw className="h-4 w-4" />
+                                Refresh
+                            </Button>
+                        </div>
+                    </div>
                 </CardHeader>
-                <CardContent>
-                    <div className="relative overflow-x-auto">
+                <CardContent className="relative z-10">
+                    <div className="relative overflow-x-auto rounded-xl border border-slate-200/50 dark:border-slate-700/50 bg-white/50 dark:bg-slate-900/50">
                         <table className="w-full text-sm">
-                            <thead>
-                                <tr className="border-b">
-                                    <th className="text-left py-3 px-4 font-medium">Transaction ID</th>
-                                    <th className="text-left py-3 px-4 font-medium">User</th>
-                                    <th className="text-left py-3 px-4 font-medium">Amount</th>
-                                    <th className="text-left py-3 px-4 font-medium">Status</th>
-                                    <th className="text-left py-3 px-4 font-medium">Date</th>
+                            <thead className="bg-slate-100/80 dark:bg-slate-800/80">
+                                <tr className="border-b border-slate-200 dark:border-slate-700">
+                                    <th className="text-left py-3 px-4 font-semibold text-slate-600 dark:text-slate-400">Transaction ID</th>
+                                    <th className="text-left py-3 px-4 font-semibold text-slate-600 dark:text-slate-400">User</th>
+                                    <th className="text-left py-3 px-4 font-semibold text-slate-600 dark:text-slate-400">Amount</th>
+                                    <th className="text-left py-3 px-4 font-semibold text-slate-600 dark:text-slate-400">Currency</th>
+                                    <th className="text-left py-3 px-4 font-semibold text-slate-600 dark:text-slate-400">Status</th>
+                                    <th className="text-left py-3 px-4 font-semibold text-slate-600 dark:text-slate-400">Date</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {(payments.length > 0 ? payments : mockPayments).map((payment) => (
-                                    <tr key={payment.transactionId} className="border-b hover:bg-muted/50">
-                                        <td className="py-3 px-4 font-mono text-xs">
-                                            {payment.transactionId}
+                                {filteredPayments.map((payment) => (
+                                    <tr key={payment.transactionId} className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                        <td className="py-3 px-4 font-mono text-xs text-muted-foreground">
+                                            {payment.transactionId.slice(0, 18)}...
                                         </td>
                                         <td className="py-3 px-4">{payment.userEmail}</td>
-                                        <td className="py-3 px-4 font-medium">
-                                            {formatCurrency(payment.amount)} {payment.currency}
+                                        <td className="py-3 px-4 font-bold text-emerald-600 dark:text-emerald-400">
+                                            {formatCurrency(payment.amount)}
+                                        </td>
+                                        <td className="py-3 px-4">
+                                            <span className="px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-700 text-xs font-medium">
+                                                {payment.currency || 'USD'}
+                                            </span>
                                         </td>
                                         <td className="py-3 px-4">
                                             <PaymentStatusBadge status={payment.status} />
@@ -303,9 +623,9 @@ export function Financials() {
                                         </td>
                                     </tr>
                                 ))}
-                                {payments.length === 0 && mockPayments.length === 0 && (
+                                {filteredPayments.length === 0 && (
                                     <tr>
-                                        <td colSpan={5} className="py-8 text-center text-muted-foreground">
+                                        <td colSpan={6} className="py-12 text-center text-muted-foreground">
                                             No payments found
                                         </td>
                                     </tr>
@@ -313,79 +633,90 @@ export function Financials() {
                             </tbody>
                         </table>
                     </div>
+                    {/* Pagination Controls */}
+                    {payments && payments.totalPages > 1 && (
+                        <div className="flex items-center justify-between mt-4 px-2">
+                            <span className="text-sm text-muted-foreground">
+                                Page {paymentsPage + 1} of {payments.totalPages}
+                            </span>
+                            <div className="flex items-center gap-2">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => loadPayments(paymentsPage - 1)}
+                                    disabled={paymentsPage === 0}
+                                    className="gap-1"
+                                >
+                                    <ChevronLeft className="h-4 w-4" />
+                                    Previous
+                                </Button>
+                                <div className="flex items-center gap-1">
+                                    {Array.from({ length: Math.min(5, payments.totalPages) }, (_, i) => {
+                                        const startPage = Math.max(0, Math.min(paymentsPage - 2, payments.totalPages - 5))
+                                        const pageNum = startPage + i
+                                        if (pageNum >= payments.totalPages) return null
+                                        return (
+                                            <Button
+                                                key={pageNum}
+                                                variant={pageNum === paymentsPage ? "default" : "outline"}
+                                                size="sm"
+                                                onClick={() => loadPayments(pageNum)}
+                                                className="w-9 h-9 p-0"
+                                            >
+                                                {pageNum + 1}
+                                            </Button>
+                                        )
+                                    })}
+                                </div>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => loadPayments(paymentsPage + 1)}
+                                    disabled={paymentsPage >= payments.totalPages - 1}
+                                    className="gap-1"
+                                >
+                                    Next
+                                    <ChevronRight className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
         </div>
     )
 }
 
-// Payment status badge component
+// Payment Status Badge
 function PaymentStatusBadge({ status }: { status: string }) {
-    const statusStyles: Record<string, string> = {
+    const styles: Record<string, string> = {
         COMPLETED: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-        PENDING: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
+        PENDING: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
         FAILED: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-        REFUNDED: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+        REFUNDED: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400',
     }
 
     return (
-        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusStyles[status] || statusStyles.PENDING}`}>
+        <span className={cn("inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium", styles[status] || styles.PENDING)}>
             {status}
         </span>
     )
 }
 
-// Mock data for fallback
-const mockRevenueData: RevenueDataPoint[] = [
-    { month: 'Jan', revenue: 185000 },
-    { month: 'Feb', revenue: 195000 },
-    { month: 'Mar', revenue: 210000 },
-    { month: 'Apr', revenue: 225000 },
-    { month: 'May', revenue: 238000 },
-    { month: 'Jun', revenue: 245000 },
-    { month: 'Jul', revenue: 252000 },
-    { month: 'Aug', revenue: 260000 },
-    { month: 'Sep', revenue: 268000 },
-    { month: 'Oct', revenue: 275000 },
-    { month: 'Nov', revenue: 281000 },
-    { month: 'Dec', revenue: 284500 },
-]
-
-const mockSubscriptionData = [
-    { name: 'Free', value: 350, color: PLAN_COLORS.FREE },
-    { name: 'Pro', value: 120, color: PLAN_COLORS.PRO },
-    { name: 'Elite', value: 28, color: PLAN_COLORS.ELITE },
-]
-
-const mockPayments: Payment[] = [
-    {
-        transactionId: 'TXN-1734123456-ABC123',
-        userEmail: 'john@example.com',
-        amount: 299,
-        currency: 'EGP',
-        status: 'COMPLETED',
-        description: 'Pro Plan Subscription',
-        paymentMethod: 'Card',
-        timestamp: '2024-12-13T10:30:00Z'
-    },
-    {
-        transactionId: 'TXN-1734123457-DEF456',
-        userEmail: 'sarah@startup.com',
-        amount: 799,
-        currency: 'EGP',
-        status: 'COMPLETED',
-        description: 'Elite Plan Subscription',
-        paymentMethod: 'Card',
-        timestamp: '2024-12-12T15:45:00Z'
-    },
-    {
-        transactionId: 'TXN-1734123458-GHI789',
-        userEmail: 'mike@investor.com',
-        amount: 299,
-        currency: 'EGP',
-        status: 'PENDING',
-        description: 'Pro Plan Subscription',
-        paymentMethod: 'Card',
-        timestamp: '2024-12-11T09:20:00Z'
-    },
-]
+// Payment Stat Badge
+function PaymentStatBadge({ label, value, icon: Icon, color }: {
+    label: string
+    value: number
+    icon: React.ElementType
+    color: string
+}) {
+    return (
+        <div className="flex items-center gap-2 p-2.5 rounded-xl bg-white/60 dark:bg-slate-800/60 border border-current/10">
+            <Icon className={cn("h-4 w-4", color)} />
+            <div>
+                <p className="text-xs text-muted-foreground">{label}</p>
+                <p className="font-bold">{value}</p>
+            </div>
+        </div>
+    )
+}

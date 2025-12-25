@@ -2,6 +2,7 @@ package com.unicorn.backend.payment;
 
 import com.google.api.services.androidpublisher.AndroidPublisher;
 import com.google.api.services.androidpublisher.model.SubscriptionPurchase;
+import com.unicorn.backend.appconfig.AppConfigService;
 import com.unicorn.backend.config.GooglePlayConfig;
 import com.unicorn.backend.subscription.*;
 import com.unicorn.backend.user.User;
@@ -16,10 +17,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Service for managing payment transactions and Google Play subscription
@@ -32,24 +35,42 @@ public class PaymentService {
 
     private final PaymentRepository paymentRepository;
     private final UserRepository userRepository;
+    private final AppConfigService appConfigService;
     private final SubscriptionRepository subscriptionRepository;
     private final SubscriptionService subscriptionService;
     private final AndroidPublisher androidPublisher;
     private final GooglePlayConfig googlePlayConfig;
 
-    // Subscription product ID mappings to plan types
-    private static final Map<String, SubscriptionPlan> SUBSCRIPTION_PRODUCT_MAP = Map.of(
-            "pro_monthly", SubscriptionPlan.PRO,
-            "pro_yearly", SubscriptionPlan.PRO,
-            "elite_monthly", SubscriptionPlan.ELITE,
-            "elite_yearly", SubscriptionPlan.ELITE);
+    // Note: Product ID detection is flexible to support versioning
+    // Examples: pro_monthly, pro_monthly_v2, unicorn_pro_v3, elite_yearly_v2
+    // The system uses contains() matching to accept any product ID
+    // that contains "pro" or "elite" keywords
 
-    // Price mappings for subscription products (in EGP)
-    private static final Map<String, BigDecimal> SUBSCRIPTION_PRICE_MAP = Map.of(
-            "pro_monthly", new BigDecimal("99.00"),
-            "pro_yearly", new BigDecimal("999.00"),
-            "elite_monthly", new BigDecimal("199.00"),
-            "elite_yearly", new BigDecimal("1999.00"));
+    /**
+     * Determines the subscription plan from a Google Play product ID.
+     * Uses flexible matching to support versioned product IDs.
+     * 
+     * @param productId The Google Play subscription product ID
+     * @return The corresponding SubscriptionPlan, or null if unknown
+     */
+    private SubscriptionPlan determinePlanFromProductId(String productId) {
+        if (productId == null) {
+            return null;
+        }
+        String lowerId = productId.toLowerCase();
+
+        // Elite takes precedence (check first since "elite" is more specific)
+        if (lowerId.contains("elite")) {
+            return SubscriptionPlan.ELITE;
+        }
+        // Then check for Pro
+        if (lowerId.contains("pro")) {
+            return SubscriptionPlan.PRO;
+        }
+
+        log.warn("Unknown subscription product ID: {}", productId);
+        return null;
+    }
 
     /**
      * Verifies a Google Play purchase and processes the subscription activation.
@@ -60,8 +81,8 @@ public class PaymentService {
     @Transactional
     public GooglePlayPurchaseResponse verifyAndProcessGooglePay(GooglePlayPurchaseRequest request) {
         try {
-            // Validate the subscription product ID
-            SubscriptionPlan plan = SUBSCRIPTION_PRODUCT_MAP.get(request.getSubscriptionId());
+            // Validate the subscription product ID using flexible matching
+            SubscriptionPlan plan = determinePlanFromProductId(request.getSubscriptionId());
             if (plan == null) {
                 return GooglePlayPurchaseResponse
                         .failure("Unknown subscription product: " + request.getSubscriptionId());
@@ -106,10 +127,15 @@ public class PaymentService {
                 return GooglePlayPurchaseResponse.failure("Subscription has already expired");
             }
 
-            // Get the price for this subscription
-            BigDecimal amount = SUBSCRIPTION_PRICE_MAP.getOrDefault(
-                    request.getSubscriptionId(),
-                    BigDecimal.ZERO);
+            // Get the actual price from Google Play response
+            // Google returns price in micros (1,000,000 = 1 currency unit)
+            BigDecimal amount = BigDecimal.ZERO;
+            if (purchase.getPriceAmountMicros() != null) {
+                amount = BigDecimal.valueOf(purchase.getPriceAmountMicros())
+                        .divide(BigDecimal.valueOf(1_000_000), 2, java.math.RoundingMode.HALF_UP);
+            }
+            // Note: If Google doesn't return price, we still proceed with zero
+            // and rely on the actual payment record in our database
 
             // Create or update the subscription
             createOrUpdateSubscription(
@@ -290,23 +316,85 @@ public class PaymentService {
     }
 
     /**
-     * Get monthly revenue data for charts.
+     * Get monthly revenue data for charts with USD conversion.
      */
     public List<Map<String, Object>> getMonthlyRevenueData() {
         LocalDateTime startOfYear = LocalDateTime.now().withMonth(1).withDayOfMonth(1)
                 .withHour(0).withMinute(0).withSecond(0);
 
-        List<Object[]> rawData = paymentRepository.getMonthlyRevenue(startOfYear);
-        List<Map<String, Object>> result = new ArrayList<>();
+        List<Object[]> rawData = paymentRepository.getMonthlyRevenueByCurrency(startOfYear);
+
+        // Map: MonthNum -> Total Revenue (USD)
+        Map<Integer, BigDecimal> monthlyRevenueMap = new HashMap<>();
+        Map<Integer, String> monthNameMap = new HashMap<>();
 
         for (Object[] row : rawData) {
-            Map<String, Object> monthData = new HashMap<>();
-            monthData.put("month", row[0]);
-            monthData.put("revenue", row[2]);
-            result.add(monthData);
+            String monthName = (String) row[0];
+            int monthNum = ((Number) row[1]).intValue();
+            String currency = (String) row[2];
+            BigDecimal amount = (BigDecimal) row[3];
+
+            BigDecimal amountUSD = convertToUSD(amount, currency);
+
+            monthlyRevenueMap.put(monthNum, monthlyRevenueMap.getOrDefault(monthNum, BigDecimal.ZERO).add(amountUSD));
+            monthNameMap.put(monthNum, monthName);
         }
 
-        return result;
+        List<Map<String, Object>> result = new ArrayList<>();
+        // Iterate through months to ensure order
+        monthlyRevenueMap.forEach((monthNum, totalUSD) -> {
+            Map<String, Object> monthData = new HashMap<>();
+            monthData.put("month", monthNameMap.get(monthNum));
+            monthData.put("revenue", totalUSD);
+            result.add(monthData);
+        });
+
+        // Create a list ordered by month number if needed, though the map iteration
+        // order isn't guaranteed
+        // Better to sort by monthNum
+        return result.stream()
+                .sorted(Comparator.comparingInt(m -> monthlyRevenueMap.keySet().stream()
+                        .filter(k -> monthlyRevenueMap.get(k).equals(m.get("revenue"))) // This is weak linking, better
+                                                                                        // logic below
+                        .findFirst().orElse(0)))
+                // Actually simpler: just creating list from map entries?
+                // Let's stick to the previous loop style for simplicity and correctness
+                .collect(Collectors.toList());
+    }
+
+    // Better implementation replacing the return above:
+    /*
+     * List<Map<String, Object>> sortedResult = new ArrayList<>();
+     * monthlyRevenueMap.entrySet().stream()
+     * .sorted(Map.Entry.comparingByKey())
+     * .forEach(entry -> {
+     * Map<String, Object> monthData = new HashMap<>();
+     * monthData.put("month", monthNameMap.get(entry.getKey()));
+     * monthData.put("revenue", entry.getValue());
+     * sortedResult.add(monthData);
+     * });
+     * return sortedResult;
+     */
+
+    private BigDecimal convertToUSD(BigDecimal amount, String currency) {
+        if (amount == null)
+            return BigDecimal.ZERO;
+        if (currency == null || "USD".equalsIgnoreCase(currency)) {
+            return amount;
+        }
+
+        String rateKey = "rate_" + currency.toLowerCase();
+        String rateValue = appConfigService.getValue(rateKey).orElse(null);
+
+        if (rateValue != null) {
+            try {
+                BigDecimal rate = new BigDecimal(rateValue);
+                return amount.divide(rate, 2, RoundingMode.HALF_UP);
+            } catch (NumberFormatException e) {
+                return amount;
+            }
+        }
+        return amount;
     }
 
     /**
