@@ -1,5 +1,7 @@
 package com.unicorn.backend.feed;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -31,4 +33,9 @@ public interface PostLikeRepository extends JpaRepository<PostLike, UUID> {
      * Delete like by post and user.
      */
     void deleteByPostIdAndUserId(UUID postId, UUID userId);
+
+    /**
+     * Get paginated likes for a post (ordered by most recent first).
+     */
+    Page<PostLike> findByPostIdOrderByCreatedAtDesc(UUID postId, Pageable pageable);
 }

@@ -763,4 +763,89 @@ public class FeedService {
             return defaultValue;
         }
     }
+
+    // ==================== Post Engagement Details (Admin) ====================
+
+    /**
+     * Get paginated list of users who liked a post.
+     */
+    public Page<EngagementUserResponse> getPostLikes(UUID postId, Pageable pageable) {
+        Page<PostLike> likes = likeRepository.findByPostIdOrderByCreatedAtDesc(postId, pageable);
+
+        return likes.map(like -> {
+            User user = userRepository.findById(like.getUserId()).orElse(null);
+            Subscription subscription = user != null ? subscriptionService.getActiveSubscription(user.getId()) : null;
+
+            return EngagementUserResponse.builder()
+                    .userId(like.getUserId())
+                    .userName(user != null ? (user.getDisplayName() != null ? user.getDisplayName()
+                            : user.getFirstName() + " " + user.getLastName()) : "Unknown User")
+                    .userUsername(user != null ? user.getUsername() : null)
+                    .userAvatarUrl(user != null ? user.getAvatarUrl() : null)
+                    .userPlan(subscription != null ? subscription.getPlanType().name() : "FREE")
+                    .engagedAt(like.getCreatedAt())
+                    .build();
+        });
+    }
+
+    /**
+     * Get paginated list of users who shared a post.
+     */
+    public Page<EngagementUserResponse> getPostShares(UUID postId, Pageable pageable) {
+        Page<PostShare> shares = shareRepository.findByPostIdOrderByCreatedAtDesc(postId, pageable);
+
+        return shares.map(share -> {
+            User user = userRepository.findById(share.getUserId()).orElse(null);
+            Subscription subscription = user != null ? subscriptionService.getActiveSubscription(user.getId()) : null;
+
+            return EngagementUserResponse.builder()
+                    .userId(share.getUserId())
+                    .userName(user != null ? (user.getDisplayName() != null ? user.getDisplayName()
+                            : user.getFirstName() + " " + user.getLastName()) : "Unknown User")
+                    .userUsername(user != null ? user.getUsername() : null)
+                    .userAvatarUrl(user != null ? user.getAvatarUrl() : null)
+                    .userPlan(subscription != null ? subscription.getPlanType().name() : "FREE")
+                    .engagedAt(share.getCreatedAt())
+                    .build();
+        });
+    }
+
+    /**
+     * Get paginated hierarchical comments for a post.
+     * Returns top-level comments with nested replies.
+     */
+    public Page<CommentWithRepliesResponse> getPostCommentsHierarchical(UUID postId, Pageable pageable) {
+        Page<Comment> topLevelComments = commentRepository.findTopLevelCommentsByPostId(postId, pageable);
+
+        return topLevelComments.map(this::toCommentWithRepliesResponse);
+    }
+
+    /**
+     * Convert Comment to CommentWithRepliesResponse with nested replies.
+     */
+    private CommentWithRepliesResponse toCommentWithRepliesResponse(Comment comment) {
+        User author = userRepository.findById(comment.getAuthorId()).orElse(null);
+        Subscription subscription = author != null ? subscriptionService.getActiveSubscription(author.getId()) : null;
+
+        // Get replies for this comment
+        List<Comment> replies = commentRepository.findRepliesByParentId(comment.getId());
+        List<CommentWithRepliesResponse> repliesResponse = replies.stream()
+                .map(this::toCommentWithRepliesResponse)
+                .collect(Collectors.toList());
+
+        return CommentWithRepliesResponse.builder()
+                .id(comment.getId())
+                .content(comment.getContent())
+                .createdAt(comment.getCreatedAt())
+                .isDeleted(comment.getIsDeleted())
+                .authorId(comment.getAuthorId())
+                .authorName(author != null ? (author.getDisplayName() != null ? author.getDisplayName()
+                        : author.getFirstName() + " " + author.getLastName()) : "Unknown User")
+                .authorUsername(author != null ? author.getUsername() : null)
+                .authorAvatarUrl(author != null ? author.getAvatarUrl() : null)
+                .authorPlan(subscription != null ? subscription.getPlanType().name() : "FREE")
+                .replies(repliesResponse)
+                .replyCount(repliesResponse.size())
+                .build();
+    }
 }

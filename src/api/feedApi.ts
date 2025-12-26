@@ -148,3 +148,72 @@ export async function unfeaturePost(postId: string): Promise<void> {
 export async function recalculateScores(): Promise<void> {
     await api.post('/admin/feed/recalculate-scores');
 }
+
+// ==================== Engagement Types ====================
+
+export interface EngagementUser {
+    userId: string;
+    userName: string;
+    userUsername?: string;
+    userAvatarUrl?: string;
+    userPlan: string;
+    engagedAt: string;
+}
+
+export interface CommentWithReplies {
+    id: string;
+    content: string;
+    createdAt: string;
+    isDeleted: boolean;
+    authorId: string;
+    authorName: string;
+    authorUsername?: string;
+    authorAvatarUrl?: string;
+    authorPlan: string;
+    replies: CommentWithReplies[];
+    replyCount: number;
+}
+
+// ==================== Engagement API ====================
+
+/**
+ * Get paginated list of users who liked a post.
+ */
+export async function getPostLikes(
+    postId: string,
+    page: number = 0,
+    size: number = 20
+): Promise<PagedResponse<EngagementUser>> {
+    const response = await api.get(`/admin/feed/${postId}/likes`, {
+        params: { page, size }
+    });
+    return response.data;
+}
+
+/**
+ * Get paginated hierarchical comments for a post.
+ */
+export async function getPostComments(
+    postId: string,
+    page: number = 0,
+    size: number = 20
+): Promise<PagedResponse<CommentWithReplies>> {
+    const response = await api.get(`/admin/feed/${postId}/comments`, {
+        params: { page, size }
+    });
+    return response.data;
+}
+
+/**
+ * Get paginated list of users who shared a post.
+ */
+export async function getPostShares(
+    postId: string,
+    page: number = 0,
+    size: number = 20
+): Promise<PagedResponse<EngagementUser>> {
+    const response = await api.get(`/admin/feed/${postId}/shares`, {
+        params: { page, size }
+    });
+    return response.data;
+}

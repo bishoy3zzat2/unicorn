@@ -190,4 +190,69 @@ public class AdminFeedController {
         feedService.recalculateAllScores();
         return ResponseEntity.ok(Map.of("message", "Score recalculation triggered"));
     }
+
+    // ==================== Post Engagement Details ====================
+
+    /**
+     * Get paginated list of users who liked a post.
+     */
+    @GetMapping("/{postId}/likes")
+    public ResponseEntity<Map<String, Object>> getPostLikes(
+            @PathVariable UUID postId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+
+        Pageable pageable = PageRequest.of(page, size);
+        var likes = feedService.getPostLikes(postId, pageable);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("content", likes.getContent());
+        response.put("totalElements", likes.getTotalElements());
+        response.put("totalPages", likes.getTotalPages());
+        response.put("currentPage", likes.getNumber());
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Get paginated hierarchical comments for a post.
+     */
+    @GetMapping("/{postId}/comments")
+    public ResponseEntity<Map<String, Object>> getPostComments(
+            @PathVariable UUID postId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+
+        Pageable pageable = PageRequest.of(page, size);
+        var comments = feedService.getPostCommentsHierarchical(postId, pageable);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("content", comments.getContent());
+        response.put("totalElements", comments.getTotalElements());
+        response.put("totalPages", comments.getTotalPages());
+        response.put("currentPage", comments.getNumber());
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Get paginated list of users who shared a post.
+     */
+    @GetMapping("/{postId}/shares")
+    public ResponseEntity<Map<String, Object>> getPostShares(
+            @PathVariable UUID postId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+
+        Pageable pageable = PageRequest.of(page, size);
+        var shares = feedService.getPostShares(postId, pageable);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("content", shares.getContent());
+        response.put("totalElements", shares.getTotalElements());
+        response.put("totalPages", shares.getTotalPages());
+        response.put("currentPage", shares.getNumber());
+
+        return ResponseEntity.ok(response);
+    }
 }
