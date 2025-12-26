@@ -1,51 +1,137 @@
 package com.unicorn.backend.appconfig;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Service for managing application configuration.
+ * Uses in-memory caching with TTL to reduce database reads.
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AppConfigService {
 
     private final AppConfigRepository configRepository;
 
+    // ==================== Config Cache ====================
+
     /**
-     * Get a config value by key.
+     * In-memory cache for config values.
+     * Key: config key, Value: cached value
      */
-    public Optional<String> getValue(String key) {
-        return configRepository.findById(key).map(AppConfig::getValue);
+    private final Map<String, String> configCache = new ConcurrentHashMap<>();
+
+    /**
+     * Cache timestamp for TTL validation.
+     */
+    private volatile LocalDateTime cacheLoadedAt = null;
+
+    /**
+     * Cache TTL in minutes.
+     */
+    private static final int CACHE_TTL_MINUTES = 5;
+
+    /**
+     * Load all configs into cache.
+     */
+    private void loadCache() {
+        Map<String, String> newCache = new HashMap<>();
+        configRepository.findAll().forEach(config -> newCache.put(config.getKey(), config.getValue()));
+        configCache.clear();
+        configCache.putAll(newCache);
+        cacheLoadedAt = LocalDateTime.now();
+        log.debug("Config cache loaded with {} entries", configCache.size());
     }
 
     /**
-     * Get a config value with default fallback.
+     * Check if cache needs refresh.
+     */
+    private boolean isCacheStale() {
+        if (cacheLoadedAt == null || configCache.isEmpty()) {
+            return true;
+        }
+        return LocalDateTime.now().isAfter(cacheLoadedAt.plusMinutes(CACHE_TTL_MINUTES));
+    }
+
+    /**
+     * Ensure cache is fresh.
+     */
+    private void ensureCacheFresh() {
+        if (isCacheStale()) {
+            synchronized (this) {
+                if (isCacheStale()) {
+                    loadCache();
+                }
+            }
+        }
+    }
+
+    /**
+     * Invalidate the cache (called after updates).
+     */
+    private void invalidateCache() {
+        cacheLoadedAt = null;
+    }
+
+    // ==================== Public Methods ====================
+
+    /**
+     * Get a config value by key (CACHED).
+     */
+    public Optional<String> getValue(String key) {
+        ensureCacheFresh();
+        return Optional.ofNullable(configCache.get(key));
+    }
+
+    /**
+     * Get a config value with default fallback (CACHED).
      */
     public String getValue(String key, String defaultValue) {
         return getValue(key).orElse(defaultValue);
     }
 
     /**
-     * Get a numeric config value.
+     * Get a numeric config value (CACHED).
      */
     public int getIntValue(String key, int defaultValue) {
-        return getValue(key).map(Integer::parseInt).orElse(defaultValue);
+        return getValue(key).map(v -> {
+            try {
+                return Integer.parseInt(v);
+            } catch (NumberFormatException e) {
+                return defaultValue;
+            }
+        }).orElse(defaultValue);
     }
 
     /**
-     * Get all configs as a map.
+     * Get a double config value (CACHED).
+     */
+    public double getDoubleValue(String key, double defaultValue) {
+        return getValue(key).map(v -> {
+            try {
+                return Double.parseDouble(v);
+            } catch (NumberFormatException e) {
+                return defaultValue;
+            }
+        }).orElse(defaultValue);
+    }
+
+    /**
+     * Get all configs as a map (CACHED).
      */
     public Map<String, String> getAllAsMap() {
-        Map<String, String> configMap = new HashMap<>();
-        configRepository.findAll().forEach(config -> configMap.put(config.getKey(), config.getValue()));
-        return configMap;
+        ensureCacheFresh();
+        return new HashMap<>(configCache);
     }
 
     /**
@@ -108,7 +194,9 @@ public class AppConfigService {
             incrementVersion();
         }
 
-        return configRepository.save(config);
+        AppConfig saved = configRepository.save(config);
+        invalidateCache();
+        return saved;
     }
 
     /**
@@ -129,7 +217,9 @@ public class AppConfigService {
 
         updateCachedMaintenanceMode(key, value);
 
-        return configRepository.save(config);
+        AppConfig saved = configRepository.save(config);
+        invalidateCache();
+        return saved;
     }
 
     /**
@@ -200,6 +290,19 @@ public class AppConfigService {
 
         // Note: Android subscription product IDs are NOT stored here.
         // Mobile app gets product details directly from Google Play BillingClient.
+
+        // Feed Algorithm Configuration
+        upsertIfNotExists("feed.decay.gravity", "1.5", "Time decay exponent (higher = faster decay)", "feed", "NUMBER");
+        upsertIfNotExists("feed.like.points", "1", "Points per like", "feed", "NUMBER");
+        upsertIfNotExists("feed.comment.points", "3", "Points per comment", "feed", "NUMBER");
+        upsertIfNotExists("feed.share.points", "5", "Points per share", "feed", "NUMBER");
+        upsertIfNotExists("feed.edit.penalty", "0.1", "Score reduction per edit", "feed", "NUMBER");
+        upsertIfNotExists("feed.boost.free", "1.0", "FREE plan multiplier", "feed", "NUMBER");
+        upsertIfNotExists("feed.boost.pro", "1.5", "PRO plan multiplier", "feed", "NUMBER");
+        upsertIfNotExists("feed.boost.elite", "2.0", "ELITE plan multiplier", "feed", "NUMBER");
+        upsertIfNotExists("feed.media.edit.hours", "2", "Hours allowed for media edit after post creation", "feed",
+                "NUMBER");
+        upsertIfNotExists("feed.base.freshness", "10", "Base freshness score for new posts", "feed", "NUMBER");
 
         // Ensure cache is synced after defaults
         init();

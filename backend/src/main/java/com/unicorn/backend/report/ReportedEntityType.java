@@ -7,11 +7,7 @@ package com.unicorn.backend.report;
  */
 public enum ReportedEntityType {
     USER, // Report against a user
-    STARTUP; // Report against a startup
-
-    // Future types can be added here without database migration:
-    // POST,
-    // COMMENT,
-    // MESSAGE,
-    // etc.
+    STARTUP, // Report against a startup
+    POST, // Report against a feed post
+    COMMENT // Report against a comment
 }

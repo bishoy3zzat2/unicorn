@@ -81,6 +81,56 @@ public class ReportController {
     }
 
     /**
+     * Report a post.
+     * POST /api/v1/reports/post/{postId}
+     */
+    @PostMapping("/reports/post/{postId}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Map<String, Object>> reportPost(
+            @PathVariable UUID postId,
+            @Valid @RequestBody CreateReportRequest request,
+            @AuthenticationPrincipal User reporter) {
+
+        Report report = reportService.createReport(
+                reporter.getId(),
+                ReportedEntityType.POST,
+                postId,
+                request);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "Post reported successfully. Our team will review it shortly.");
+        response.put("reportId", report.getId());
+        response.put("status", report.getStatus());
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Report a comment.
+     * POST /api/v1/reports/comment/{commentId}
+     */
+    @PostMapping("/reports/comment/{commentId}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Map<String, Object>> reportComment(
+            @PathVariable UUID commentId,
+            @Valid @RequestBody CreateReportRequest request,
+            @AuthenticationPrincipal User reporter) {
+
+        Report report = reportService.createReport(
+                reporter.getId(),
+                ReportedEntityType.COMMENT,
+                commentId,
+                request);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "Comment reported successfully. Our team will review it shortly.");
+        response.put("reportId", report.getId());
+        response.put("status", report.getStatus());
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
      * Get current user's reports.
      * GET /api/v1/reports/my-reports
      */

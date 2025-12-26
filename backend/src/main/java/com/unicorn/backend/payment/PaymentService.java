@@ -253,7 +253,6 @@ public class PaymentService {
 
             // Get the verification fee from AppConfig
             // Note: ProductPurchase API doesn't return price - it's managed in Google Play
-            // Console
             // We store the configured fee for record-keeping
             String feeStr = appConfigService.getValue("investor_verification_fee", "99.00");
             BigDecimal amount = new BigDecimal(feeStr);
@@ -290,7 +289,7 @@ public class PaymentService {
 
     /**
      * Verifies a one-time product purchase with Google Play API.
-     * 
+     *
      * @param productId     The product ID
      * @param purchaseToken The purchase token from Google Play
      * @return The product purchase details from Google, or null if verification

@@ -1,5 +1,7 @@
 package com.unicorn.backend.report;
 
+import com.unicorn.backend.feed.CommentRepository;
+import com.unicorn.backend.feed.PostRepository;
 import com.unicorn.backend.startup.StartupRepository;
 import com.unicorn.backend.user.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +25,8 @@ public class ReportService {
     private final ReporterStatisticsRepository reporterStatisticsRepository;
     private final UserRepository userRepository;
     private final StartupRepository startupRepository;
+    private final PostRepository postRepository;
+    private final CommentRepository commentRepository;
 
     // Auto-warn thresholds
     private static final float AUTO_WARN_THRESHOLD = 0.5f; // 50%
@@ -115,7 +119,16 @@ public class ReportService {
                     throw new IllegalArgumentException("Startup not found");
                 }
                 break;
-            // Future entity types can be added here
+            case POST:
+                if (!postRepository.existsById(entityId)) {
+                    throw new IllegalArgumentException("Post not found");
+                }
+                break;
+            case COMMENT:
+                if (!commentRepository.existsById(entityId)) {
+                    throw new IllegalArgumentException("Comment not found");
+                }
+                break;
         }
     }
 
@@ -215,6 +228,23 @@ public class ReportService {
                 builder.reportedEntityName(startup.getName());
                 builder.reportedEntityImage(startup.getLogoUrl());
                 builder.reportedEntityStatus(startup.getStatus().name());
+            });
+        } else if (report.getReportedEntityType() == ReportedEntityType.POST) {
+            postRepository.findById(report.getReportedEntityId()).ifPresent(post -> {
+                String preview = post.getContent();
+                if (preview != null && preview.length() > 50) {
+                    preview = preview.substring(0, 50) + "...";
+                }
+                builder.reportedEntityName("Post: " + preview);
+                builder.reportedEntityStatus(post.getStatus().name());
+            });
+        } else if (report.getReportedEntityType() == ReportedEntityType.COMMENT) {
+            commentRepository.findById(report.getReportedEntityId()).ifPresent(comment -> {
+                String preview = comment.getContent();
+                if (preview != null && preview.length() > 50) {
+                    preview = preview.substring(0, 50) + "...";
+                }
+                builder.reportedEntityName("Comment: " + preview);
             });
         }
 

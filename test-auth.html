@@ -357,7 +357,7 @@
         <div class="card" id="reportsCard" style="display: none; border-top: 5px solid #e74c3c;">
             <h2>🚩 نظام الإبلاغات (Reports System)</h2>
             <div class="info">
-                <strong>اختبار نظام الإبلاغات:</strong> يمكنك الإبلاغ عن مستخدم أو startup
+                <strong>اختبار نظام الإبلاغات:</strong> يمكنك الإبلاغ عن مستخدم أو startup أو بوست أو تعليق
             </div>
 
             <form id="reportsForm">
@@ -366,13 +366,16 @@
                     <select id="reportType" required>
                         <option value="USER">إبلاغ عن مستخدم (Report User)</option>
                         <option value="STARTUP">إبلاغ عن Startup (Report Startup)</option>
+                        <option value="POST">إبلاغ عن بوست (Report Post)</option>
+                        <option value="COMMENT">إبلاغ عن تعليق (Report Comment)</option>
                     </select>
                 </div>
 
                 <div class="form-group">
-                    <label for="reportEntityId">User/Startup ID (UUID) *</label>
-                    <input type="text" id="reportEntityId" placeholder="Enter UUID of user or startup" required>
-                    <small style="color: #666; font-size: 12px;">💡 يمكنك نسخ ID من response الـ login أو startup
+                    <label for="reportEntityId">Entity ID (UUID) *</label>
+                    <input type="text" id="reportEntityId" placeholder="Enter UUID of user, startup, post, or comment"
+                        required>
+                    <small style="color: #666; font-size: 12px;">💡 انسخ الـ ID من response الـ login أو startup أو post
                         creation</small>
                 </div>
 
@@ -472,6 +475,139 @@
                     <li><strong>PRO:</strong> 12 nudges/شهر - مرة كل 5 أيام لكل مستثمر</li>
                     <li><strong>ELITE:</strong> غير محدود - مرة كل 3 أيام لكل مستثمر</li>
                 </ul>
+            </div>
+        </div>
+
+        <!-- Feed Card -->
+        <div class="card" id="feedCard" style="display: none; border-top: 5px solid #2ecc71; grid-column: span 2;">
+            <h2>📱 نظام الفيد (Feed System)</h2>
+            <div class="info">
+                <strong>اختبار نظام الفيد:</strong> يمكنك إنشاء بوستات، إضافة لايكات وتعليقات، ومشاهدة الفيد
+            </div>
+
+            <!-- Create Post Section -->
+            <div style="background: #e8f5e9; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <h3 style="color: #27ae60; margin-bottom: 15px; font-size: 16px;">📝 إنشاء بوست جديد</h3>
+                <form id="createPostForm">
+                    <div class="form-group">
+                        <label for="postContent">المحتوى (Content) *</label>
+                        <textarea id="postContent" rows="3" required minlength="1" maxlength="5000"
+                            placeholder="اكتب محتوى البوست..."
+                            style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px;"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="postMedia">رابط الوسائط (Media URL) - اختياري</label>
+                        <input type="url" id="postMedia" placeholder="https://example.com/image.jpg">
+                    </div>
+                    <div class="form-group">
+                        <label for="postStartupId">Startup ID (اختياري) - لإظهار دورك في الـ Startup</label>
+                        <input type="text" id="postStartupId" placeholder="أدخل UUID الـ Startup (اللي انت عضو فيها)">
+                        <small style="color: #666; font-size: 12px;">💡 الباك اند هيتحقق ويولد العنوان تلقائياً مثل
+                            "Founder at StartupName"</small>
+                    </div>
+                    <button type="submit" style="background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);">
+                        ➕ نشر البوست
+                    </button>
+                </form>
+                <div id="createPostResponse" class="response"></div>
+            </div>
+
+            <hr style="margin: 20px 0; border: none; border-top: 2px dashed #e0e0e0;">
+
+            <!-- Get Feed Section -->
+            <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <h3 style="color: #1976d2; margin-bottom: 15px; font-size: 16px;">📰 عرض الفيد</h3>
+                <button id="getFeedBtn" type="button"
+                    style="background: linear-gradient(135deg, #1976d2 0%, #2196f3 100%);">
+                    🔄 تحميل الفيد
+                </button>
+                <div id="getFeedResponse" class="response"></div>
+            </div>
+
+            <hr style="margin: 20px 0; border: none; border-top: 2px dashed #e0e0e0;">
+
+            <!-- Like/Unlike Section -->
+            <div style="background: #fce4ec; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <h3 style="color: #e91e63; margin-bottom: 15px; font-size: 16px;">❤️ لايك / إلغاء لايك</h3>
+                <form id="likePostForm">
+                    <div class="form-group">
+                        <label for="likePostId">Post ID (UUID) *</label>
+                        <input type="text" id="likePostId" placeholder="أدخل UUID البوست" required>
+                        <small style="color: #666; font-size: 12px;">💡 انسخ الـ ID من response إنشاء البوست أو
+                            الفيد</small>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button type="submit"
+                            style="background: linear-gradient(135deg, #e91e63 0%, #f06292 100%); flex: 1;">
+                            ❤️ لايك
+                        </button>
+                        <button type="button" id="unlikeBtn"
+                            style="background: linear-gradient(135deg, #607d8b 0%, #90a4ae 100%); flex: 1;">
+                            💔 إلغاء لايك
+                        </button>
+                    </div>
+                </form>
+                <div id="likePostResponse" class="response"></div>
+            </div>
+
+            <hr style="margin: 20px 0; border: none; border-top: 2px dashed #e0e0e0;">
+
+            <!-- Comment Section -->
+            <div style="background: #fff3e0; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <h3 style="color: #ff9800; margin-bottom: 15px; font-size: 16px;">💬 إضافة تعليق</h3>
+                <form id="addCommentForm">
+                    <div class="form-group">
+                        <label for="commentPostId">Post ID (UUID) *</label>
+                        <input type="text" id="commentPostId" placeholder="أدخل UUID البوست" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="commentContent">التعليق *</label>
+                        <textarea id="commentContent" rows="2" required placeholder="اكتب تعليقك..."
+                            style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px;"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="commentParentId">Parent Comment ID (للرد على تعليق) - اختياري</label>
+                        <input type="text" id="commentParentId" placeholder="أدخل UUID التعليق الأصلي (اختياري)">
+                    </div>
+                    <button type="submit" style="background: linear-gradient(135deg, #ff9800 0%, #ffb74d 100%);">
+                        💬 إضافة تعليق
+                    </button>
+                </form>
+                <div id="addCommentResponse" class="response"></div>
+            </div>
+
+            <hr style="margin: 20px 0; border: none; border-top: 2px dashed #e0e0e0;">
+
+            <!-- Get Comments Section -->
+            <div style="background: #f3e5f5; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <h3 style="color: #9c27b0; margin-bottom: 15px; font-size: 16px;">📋 عرض التعليقات</h3>
+                <form id="getCommentsForm">
+                    <div class="form-group">
+                        <label for="getCommentsPostId">Post ID (UUID) *</label>
+                        <input type="text" id="getCommentsPostId" placeholder="أدخل UUID البوست" required>
+                    </div>
+                    <button type="submit" style="background: linear-gradient(135deg, #9c27b0 0%, #ba68c8 100%);">
+                        📋 عرض التعليقات
+                    </button>
+                </form>
+                <div id="getCommentsResponse" class="response"></div>
+            </div>
+
+            <hr style="margin: 20px 0; border: none; border-top: 2px dashed #e0e0e0;">
+
+            <!-- Share Section -->
+            <div style="background: #e0f7fa; padding: 15px; border-radius: 8px;">
+                <h3 style="color: #00bcd4; margin-bottom: 15px; font-size: 16px;">🔗 مشاركة بوست</h3>
+                <form id="sharePostForm">
+                    <div class="form-group">
+                        <label for="sharePostId">Post ID (UUID) *</label>
+                        <input type="text" id="sharePostId" placeholder="أدخل UUID البوست" required>
+                    </div>
+                    <button type="submit" style="background: linear-gradient(135deg, #00bcd4 0%, #4dd0e1 100%);">
+                        🔗 مشاركة
+                    </button>
+                </form>
+                <div id="sharePostResponse" class="response"></div>
             </div>
         </div>
     </div>
@@ -649,6 +785,10 @@
                     // Show Reports Card for all users
                     reportsCard.style.display = 'block';
 
+                    // Show Feed Card for all users
+                    const feedCard = document.getElementById('feedCard');
+                    feedCard.style.display = 'block';
+
                     // Debug: Log role to console
                     console.log('User Role:', data.role);
 
@@ -662,7 +802,7 @@
                     } else {
                         startupCard.style.display = 'none';
                         nudgesCard.style.display = 'none';
-                        reportsCard.scrollIntoView({ behavior: 'smooth' });
+                        feedCard.scrollIntoView({ behavior: 'smooth' });
                     }
 
                 } else {
@@ -761,10 +901,22 @@
 
             const responseDiv = document.getElementById('reportsResponse');
 
-            // Determine endpoint
-            const endpoint = reportType === 'USER'
-                ? `http://localhost:9090/api/v1/reports/user/${entityId}`
-                : `http://localhost:9090/api/v1/reports/startup/${entityId}`;
+            // Determine endpoint based on report type
+            let endpoint;
+            switch (reportType) {
+                case 'USER':
+                    endpoint = `http://localhost:9090/api/v1/reports/user/${entityId}`;
+                    break;
+                case 'STARTUP':
+                    endpoint = `http://localhost:9090/api/v1/reports/startup/${entityId}`;
+                    break;
+                case 'POST':
+                    endpoint = `http://localhost:9090/api/v1/reports/post/${entityId}`;
+                    break;
+                case 'COMMENT':
+                    endpoint = `http://localhost:9090/api/v1/reports/comment/${entityId}`;
+                    break;
+            }
 
             try {
                 const response = await fetch(endpoint, {
@@ -942,6 +1094,342 @@
                 responseDiv.style.display = 'block';
                 responseDiv.innerHTML = `
                     <strong>❌ فشل إرسال Nudge</strong>
+                    <p>${error.message}</p>
+                `;
+            }
+        });
+
+        // ==================== Feed API Handlers ====================
+
+        const FEED_API_URL = 'http://localhost:9090/api/v1/feed';
+
+        // Create Post Handler
+        document.getElementById('createPostForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            if (!currentAccessToken) {
+                alert('يجب تسجيل الدخول أولاً!');
+                return;
+            }
+
+            const content = document.getElementById('postContent').value;
+            const mediaUrl = document.getElementById('postMedia').value;
+            const contextualStartupId = document.getElementById('postStartupId').value;
+
+            const responseDiv = document.getElementById('createPostResponse');
+
+            try {
+                const response = await fetch(FEED_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentAccessToken}`
+                    },
+                    body: JSON.stringify({
+                        content,
+                        mediaUrl: mediaUrl || null,
+                        contextualStartupId: contextualStartupId || null
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    responseDiv.className = 'response success';
+                    responseDiv.style.display = 'block';
+                    responseDiv.innerHTML = `
+                        <strong>✅ تم نشر البوست بنجاح!</strong>
+                        <p><strong>Post ID:</strong> ${data.id}</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                    document.getElementById('createPostForm').reset();
+                } else {
+                    throw new Error(data.message || data.error || 'Post creation failed');
+                }
+            } catch (error) {
+                responseDiv.className = 'response error';
+                responseDiv.style.display = 'block';
+                responseDiv.innerHTML = `
+                    <strong>❌ فشل نشر البوست</strong>
+                    <p>${error.message}</p>
+                `;
+            }
+        });
+
+        // Get Feed Handler
+        document.getElementById('getFeedBtn')?.addEventListener('click', async () => {
+            if (!currentAccessToken) {
+                alert('يجب تسجيل الدخول أولاً!');
+                return;
+            }
+
+            const responseDiv = document.getElementById('getFeedResponse');
+
+            try {
+                const response = await fetch(`${FEED_API_URL}?page=0&size=10`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${currentAccessToken}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    responseDiv.className = 'response success';
+                    responseDiv.style.display = 'block';
+
+                    if (data.content && data.content.length > 0) {
+                        responseDiv.innerHTML = `
+                            <strong>✅ الفيد (${data.totalElements} بوست)</strong>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        `;
+                    } else {
+                        responseDiv.innerHTML = `
+                            <strong>📭 لا توجد بوستات</strong>
+                            <p>الفيد فارغ حالياً.</p>
+                        `;
+                    }
+                } else {
+                    throw new Error(data.error || 'Failed to fetch feed');
+                }
+            } catch (error) {
+                responseDiv.className = 'response error';
+                responseDiv.style.display = 'block';
+                responseDiv.innerHTML = `
+                    <strong>❌ فشل تحميل الفيد</strong>
+                    <p>${error.message}</p>
+                `;
+            }
+        });
+
+        // Like Post Handler
+        document.getElementById('likePostForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            if (!currentAccessToken) {
+                alert('يجب تسجيل الدخول أولاً!');
+                return;
+            }
+
+            const postId = document.getElementById('likePostId').value;
+            const responseDiv = document.getElementById('likePostResponse');
+
+            try {
+                const response = await fetch(`${FEED_API_URL}/${postId}/like`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${currentAccessToken}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    responseDiv.className = 'response success';
+                    responseDiv.style.display = 'block';
+                    responseDiv.innerHTML = `
+                        <strong>❤️ تم عمل لايك بنجاح!</strong>
+                        <p>${data.message}</p>
+                    `;
+                } else {
+                    throw new Error(data.message || data.error || 'Like failed');
+                }
+            } catch (error) {
+                responseDiv.className = 'response error';
+                responseDiv.style.display = 'block';
+                responseDiv.innerHTML = `
+                    <strong>❌ فشل اللايك</strong>
+                    <p>${error.message}</p>
+                `;
+            }
+        });
+
+        // Unlike Post Handler
+        document.getElementById('unlikeBtn')?.addEventListener('click', async () => {
+            if (!currentAccessToken) {
+                alert('يجب تسجيل الدخول أولاً!');
+                return;
+            }
+
+            const postId = document.getElementById('likePostId').value;
+            if (!postId) {
+                alert('أدخل Post ID أولاً!');
+                return;
+            }
+
+            const responseDiv = document.getElementById('likePostResponse');
+
+            try {
+                const response = await fetch(`${FEED_API_URL}/${postId}/like`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${currentAccessToken}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    responseDiv.className = 'response success';
+                    responseDiv.style.display = 'block';
+                    responseDiv.innerHTML = `
+                        <strong>💔 تم إلغاء اللايك بنجاح!</strong>
+                        <p>${data.message}</p>
+                    `;
+                } else {
+                    throw new Error(data.message || data.error || 'Unlike failed');
+                }
+            } catch (error) {
+                responseDiv.className = 'response error';
+                responseDiv.style.display = 'block';
+                responseDiv.innerHTML = `
+                    <strong>❌ فشل إلغاء اللايك</strong>
+                    <p>${error.message}</p>
+                `;
+            }
+        });
+
+        // Add Comment Handler
+        document.getElementById('addCommentForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            if (!currentAccessToken) {
+                alert('يجب تسجيل الدخول أولاً!');
+                return;
+            }
+
+            const postId = document.getElementById('commentPostId').value;
+            const content = document.getElementById('commentContent').value;
+            const parentId = document.getElementById('commentParentId').value;
+
+            const responseDiv = document.getElementById('addCommentResponse');
+
+            try {
+                const response = await fetch(`${FEED_API_URL}/${postId}/comments`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentAccessToken}`
+                    },
+                    body: JSON.stringify({
+                        content,
+                        parentId: parentId || null
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    responseDiv.className = 'response success';
+                    responseDiv.style.display = 'block';
+                    responseDiv.innerHTML = `
+                        <strong>💬 تم إضافة التعليق بنجاح!</strong>
+                        <p><strong>Comment ID:</strong> ${data.id}</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                    document.getElementById('addCommentForm').reset();
+                } else {
+                    throw new Error(data.message || data.error || 'Comment failed');
+                }
+            } catch (error) {
+                responseDiv.className = 'response error';
+                responseDiv.style.display = 'block';
+                responseDiv.innerHTML = `
+                    <strong>❌ فشل إضافة التعليق</strong>
+                    <p>${error.message}</p>
+                `;
+            }
+        });
+
+        // Get Comments Handler
+        document.getElementById('getCommentsForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            if (!currentAccessToken) {
+                alert('يجب تسجيل الدخول أولاً!');
+                return;
+            }
+
+            const postId = document.getElementById('getCommentsPostId').value;
+            const responseDiv = document.getElementById('getCommentsResponse');
+
+            try {
+                const response = await fetch(`${FEED_API_URL}/${postId}/comments?page=0&size=20`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${currentAccessToken}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    responseDiv.className = 'response success';
+                    responseDiv.style.display = 'block';
+
+                    if (data.content && data.content.length > 0) {
+                        responseDiv.innerHTML = `
+                            <strong>💬 التعليقات (${data.totalElements})</strong>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        `;
+                    } else {
+                        responseDiv.innerHTML = `
+                            <strong>📭 لا توجد تعليقات</strong>
+                            <p>البوست لا يحتوي على تعليقات بعد.</p>
+                        `;
+                    }
+                } else {
+                    throw new Error(data.error || 'Failed to fetch comments');
+                }
+            } catch (error) {
+                responseDiv.className = 'response error';
+                responseDiv.style.display = 'block';
+                responseDiv.innerHTML = `
+                    <strong>❌ فشل تحميل التعليقات</strong>
+                    <p>${error.message}</p>
+                `;
+            }
+        });
+
+        // Share Post Handler
+        document.getElementById('sharePostForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            if (!currentAccessToken) {
+                alert('يجب تسجيل الدخول أولاً!');
+                return;
+            }
+
+            const postId = document.getElementById('sharePostId').value;
+            const responseDiv = document.getElementById('sharePostResponse');
+
+            try {
+                const response = await fetch(`${FEED_API_URL}/${postId}/share`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${currentAccessToken}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    responseDiv.className = 'response success';
+                    responseDiv.style.display = 'block';
+                    responseDiv.innerHTML = `
+                        <strong>🔗 تم الحصول على رابط المشاركة!</strong>
+                        <p><strong>Deep Link:</strong> ${data.deepLink}</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    throw new Error(data.message || data.error || 'Share failed');
+                }
+            } catch (error) {
+                responseDiv.className = 'response error';
+                responseDiv.style.display = 'block';
+                responseDiv.innerHTML = `
+                    <strong>❌ فشل المشاركة</strong>
                     <p>${error.message}</p>
                 `;
             }

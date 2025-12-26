@@ -10,6 +10,7 @@ import { Settings } from './pages/Settings'
 import { Security } from './pages/Security'
 import { InvestorVerificationPage } from './pages/InvestorVerification'
 import { Reports } from './pages/Reports'
+import { Feed } from './pages/Feed'
 import { Deals } from './pages/Deals'
 import Login from './pages/Login'
 import { ProtectedRoute } from './components/ProtectedRoute'
@@ -41,6 +42,7 @@ function App() {
                                 <Route path="/financials" element={<Financials />} />
                                 <Route path="/security" element={<Security />} />
                                 <Route path="/reports" element={<Reports />} />
+                                <Route path="/feed" element={<Feed />} />
                                 <Route path="/deals" element={<Deals />} />
                                 <Route path="/settings" element={<Settings />} />
                             </Route>
