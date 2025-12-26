@@ -180,6 +180,11 @@ public class AppConfigService {
         // System
         upsertIfNotExists("maintenance_mode", "false", "Enable maintenance mode", "system", "BOOLEAN");
         upsertIfNotExists("config_version", "1", "Configuration version for mobile app sync", "system", "NUMBER");
+        upsertIfNotExists("default_currency", "EGP", "Default currency for payments", "system", "TEXT");
+
+        // Verification
+        upsertIfNotExists("investor_verification_fee", "99.00", "Investor verification fee (for record-keeping)",
+                "verification", "NUMBER");
 
         // Exchange Rates (Base USD)
         upsertIfNotExists("rate_sar", "3.75", "Saudi Riyal Exchange Rate", "exchange_rates", "NUMBER");

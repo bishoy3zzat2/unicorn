@@ -1,9 +1,12 @@
 package com.unicorn.backend.payment;
 
 import com.google.api.services.androidpublisher.AndroidPublisher;
+import com.google.api.services.androidpublisher.model.ProductPurchase;
 import com.google.api.services.androidpublisher.model.SubscriptionPurchase;
 import com.unicorn.backend.appconfig.AppConfigService;
 import com.unicorn.backend.config.GooglePlayConfig;
+import com.unicorn.backend.investor.InvestorProfile;
+import com.unicorn.backend.investor.InvestorProfileRepository;
 import com.unicorn.backend.subscription.*;
 import com.unicorn.backend.user.User;
 import com.unicorn.backend.user.UserRepository;
@@ -38,6 +41,7 @@ public class PaymentService {
     private final AppConfigService appConfigService;
     private final SubscriptionRepository subscriptionRepository;
     private final SubscriptionService subscriptionService;
+    private final InvestorProfileRepository investorProfileRepository;
     private final AndroidPublisher androidPublisher;
     private final GooglePlayConfig googlePlayConfig;
 
@@ -197,6 +201,147 @@ public class PaymentService {
             log.error("Failed to verify subscription with Google Play: {}", e.getMessage());
             throw e;
         }
+    }
+
+    /**
+     * Verifies a Google Play one-time purchase (investor verification fee)
+     * and marks the investor as verified.
+     * 
+     * @param request The purchase verification request
+     * @return Response indicating success/failure with verification details
+     */
+    @Transactional
+    public VerificationPurchaseResponse verifyAndProcessVerificationPayment(VerificationPurchaseRequest request) {
+        try {
+            // Validate product ID contains "verification" keyword
+            String productId = request.getProductId();
+            if (productId == null || !productId.toLowerCase().contains("verification")) {
+                log.warn("Invalid verification product ID: {}", productId);
+                return VerificationPurchaseResponse.failure("Invalid verification product: " + productId);
+            }
+
+            // Fetch the user
+            User user = userRepository.findById(request.getUserId())
+                    .orElseThrow(() -> new RuntimeException("User not found: " + request.getUserId()));
+
+            // Verify the investor has a profile and is ready for payment
+            InvestorProfile investorProfile = investorProfileRepository.findByUser(user)
+                    .orElseThrow(
+                            () -> new RuntimeException("Investor profile not found for user: " + request.getUserId()));
+
+            if (!Boolean.TRUE.equals(investorProfile.getReadyForPayment())) {
+                return VerificationPurchaseResponse.failure("Investor is not approved for verification payment yet");
+            }
+
+            if (Boolean.TRUE.equals(investorProfile.getIsVerified())) {
+                return VerificationPurchaseResponse.failure("Investor is already verified");
+            }
+
+            // Call Google Play API to verify the one-time purchase
+            ProductPurchase purchase = verifyProductWithGooglePlay(productId, request.getPurchaseToken());
+
+            if (purchase == null) {
+                return VerificationPurchaseResponse.failure("Failed to verify purchase with Google Play");
+            }
+
+            // Validate purchase state (0 = Purchased, 1 = Canceled, 2 = Pending)
+            Integer purchaseState = purchase.getPurchaseState();
+            if (purchaseState == null || purchaseState != 0) {
+                log.warn("Invalid purchase state for verification: {}", purchaseState);
+                return VerificationPurchaseResponse.failure("Purchase not completed. State: " + purchaseState);
+            }
+
+            // Get the verification fee from AppConfig
+            // Note: ProductPurchase API doesn't return price - it's managed in Google Play
+            // Console
+            // We store the configured fee for record-keeping
+            String feeStr = appConfigService.getValue("investor_verification_fee", "99.00");
+            BigDecimal amount = new BigDecimal(feeStr);
+            String currency = appConfigService.getValue("default_currency", "EGP");
+
+            // Create a payment record
+            String orderId = purchase.getOrderId();
+            Payment payment = createVerificationPaymentRecord(user, amount, currency, orderId);
+
+            // Mark investor as verified
+            LocalDateTime verifiedAt = LocalDateTime.now();
+            investorProfile.setIsVerified(true);
+            investorProfile.setVerifiedAt(verifiedAt);
+            investorProfile.setVerificationNotes("Verification completed via Google Play payment on " + verifiedAt);
+            investorProfileRepository.save(investorProfile);
+
+            log.info("Successfully processed verification payment for user: {}, amount: {} {}, txn: {}",
+                    user.getId(), amount, currency, payment.getTransactionId());
+
+            return VerificationPurchaseResponse.success(
+                    payment.getTransactionId(),
+                    verifiedAt,
+                    amount,
+                    currency);
+
+        } catch (IOException e) {
+            log.error("IO error verifying Google Play verification purchase", e);
+            return VerificationPurchaseResponse.failure("Error communicating with Google Play: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("Error processing verification purchase", e);
+            return VerificationPurchaseResponse.failure("Error processing purchase: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Verifies a one-time product purchase with Google Play API.
+     * 
+     * @param productId     The product ID
+     * @param purchaseToken The purchase token from Google Play
+     * @return The product purchase details from Google, or null if verification
+     *         failed
+     */
+    public ProductPurchase verifyProductWithGooglePlay(String productId, String purchaseToken) throws IOException {
+        try {
+            String packageName = googlePlayConfig.getPackageName();
+
+            log.debug("Verifying product with Google Play - package: {}, product: {}",
+                    packageName, productId);
+
+            ProductPurchase purchase = androidPublisher
+                    .purchases()
+                    .products()
+                    .get(packageName, productId, purchaseToken)
+                    .execute();
+
+            log.debug("Google Play product verification successful. Order ID: {}", purchase.getOrderId());
+
+            return purchase;
+
+        } catch (IOException e) {
+            log.error("Failed to verify product with Google Play: {}", e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * Creates a payment record for a verification fee transaction.
+     */
+    private Payment createVerificationPaymentRecord(
+            User user,
+            BigDecimal amount,
+            String currency,
+            String orderId) {
+
+        String transactionId = orderId != null ? orderId : generateTransactionId();
+
+        Payment payment = Payment.builder()
+                .transactionId(transactionId)
+                .user(user)
+                .amount(amount)
+                .currency(currency)
+                .status(PaymentStatus.COMPLETED)
+                .description("Investor Verification Fee")
+                .paymentMethod("GOOGLE_PLAY")
+                .timestamp(LocalDateTime.now())
+                .build();
+
+        return paymentRepository.save(payment);
     }
 
     /**

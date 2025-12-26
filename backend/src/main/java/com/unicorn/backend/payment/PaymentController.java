@@ -56,6 +56,44 @@ public class PaymentController {
     }
 
     /**
+     * Verifies a Google Play one-time purchase for investor verification fee
+     * and marks the investor as verified.
+     * 
+     * This endpoint should be called by the mobile app after a successful
+     * Google Play purchase to verify the transaction and grant the verified badge.
+     * 
+     * @param request The verification purchase request containing token and product
+     *                ID
+     * @return Response indicating success/failure with verification details
+     */
+    @PostMapping("/google-play/verify-verification")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<VerificationPurchaseResponse> verifyInvestorVerificationPurchase(
+            @Valid @RequestBody VerificationPurchaseRequest request) {
+
+        log.info("Received investor verification purchase request for user: {}, product: {}",
+                request.getUserId(), request.getProductId());
+
+        try {
+            VerificationPurchaseResponse response = paymentService.verifyAndProcessVerificationPayment(request);
+
+            if (response.isSuccess()) {
+                log.info("Successfully verified investor for user: {}", request.getUserId());
+                return ResponseEntity.ok(response);
+            } else {
+                log.warn("Investor verification failed for user: {} - {}",
+                        request.getUserId(), response.getMessage());
+                return ResponseEntity.badRequest().body(response);
+            }
+        } catch (Exception e) {
+            log.error("Error processing investor verification for user: {}", request.getUserId(), e);
+            return ResponseEntity.internalServerError()
+                    .body(VerificationPurchaseResponse
+                            .failure("Internal error processing verification: " + e.getMessage()));
+        }
+    }
+
+    /**
      * Gets the payment history for the current user.
      * Can be filtered by status and paginated.
      * 
