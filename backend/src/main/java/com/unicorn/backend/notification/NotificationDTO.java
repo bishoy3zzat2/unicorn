@@ -19,11 +19,30 @@ public record NotificationDTO(
         // Actor information (who triggered the notification)
         UUID actorId,
         String actorName,
-        String actorAvatarUrl) {
+        String actorAvatarUrl,
+        // Broadcast info
+        boolean isBroadcast,
+        String targetAudience,
+        // Recipient info (for non-broadcast)
+        UUID recipientId,
+        String recipientEmail,
+        String recipientName) {
     /**
      * Create a NotificationDTO from a Notification entity.
      */
     public static NotificationDTO from(Notification notification, Map<String, Object> parsedData) {
+        String recipientEmail = null;
+        String recipientName = null;
+        UUID recipientId = null;
+
+        if (notification.getRecipient() != null) {
+            recipientId = notification.getRecipient().getId();
+            recipientEmail = notification.getRecipient().getEmail();
+            recipientName = notification.getRecipient().getDisplayName() != null
+                    ? notification.getRecipient().getDisplayName()
+                    : notification.getRecipient().getUsername();
+        }
+
         return new NotificationDTO(
                 notification.getId(),
                 notification.getType().name(),
@@ -34,6 +53,11 @@ public record NotificationDTO(
                 notification.getCreatedAt(),
                 notification.getActor() != null ? notification.getActor().getId() : null,
                 notification.getActorName(),
-                notification.getActorAvatarUrl());
+                notification.getActorAvatarUrl(),
+                notification.isBroadcast(),
+                notification.getTargetAudience(),
+                recipientId,
+                recipientEmail,
+                recipientName);
     }
 }

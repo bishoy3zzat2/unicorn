@@ -38,7 +38,6 @@ import {
     Pencil,
     Percent
 } from 'lucide-react'
-import { KPICard } from '../components/dashboard/KPICard'
 import {
     fetchAllDeals,
     fetchDealStats,
@@ -242,43 +241,88 @@ export function Deals() {
     return (
         <div className="space-y-6 transition-colors duration-300">
 
-            {/* Stats Overview - 3 cards per row */}
+            {/* Stats Overview - 6 Cards Grid */}
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                <KPICard
-                    title="Total Deals"
-                    value={stats.totalDeals.toString()}
-                    icon={Briefcase}
-                />
-                <KPICard
-                    title="Pending Deals"
-                    value={stats.pendingDeals.toString()}
-                    icon={Clock}
-                    iconColor="text-yellow-600 dark:text-yellow-400"
-                />
-                <KPICard
-                    title="Completed Deals"
-                    value={stats.completedDeals.toString()}
-                    icon={CheckCircle2}
-                    iconColor="text-green-600 dark:text-green-400"
-                />
-                <KPICard
-                    title="Cancelled Deals"
-                    value={stats.cancelledDeals.toString()}
-                    icon={XCircle}
-                    iconColor="text-red-600 dark:text-red-400"
-                />
-                <KPICard
-                    title="Total Invested (USD)"
-                    value={formatCompactAmount(stats.totalCompletedAmount || 0, 'USD')}
-                    icon={TrendingUp}
-                    iconColor="text-emerald-600 dark:text-emerald-400"
-                />
-                <KPICard
-                    title="Commission Revenue"
-                    value={formatCompactAmount(stats.totalCommissionRevenue || 0, 'USD')}
-                    icon={Percent}
-                    iconColor="text-purple-600 dark:text-purple-400"
-                />
+
+                {/* Total Deals */}
+                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 p-5 text-white shadow-lg">
+                    <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10" />
+                    <Briefcase className="h-8 w-8 mb-3 opacity-80" />
+                    <div className="text-3xl font-bold">{stats.totalDeals.toLocaleString()}</div>
+                    <div className="text-blue-100 text-sm">Total Deals</div>
+                    <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
+                        <Briefcase className="h-4 w-4 opacity-70" />
+                        <span className="text-sm">All recorded deals</span>
+                    </div>
+                </div>
+
+                {/* Pending Deals */}
+                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 p-5 text-white shadow-lg">
+                    <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10" />
+                    <Clock className="h-8 w-8 mb-3 opacity-80" />
+                    <div className="text-3xl font-bold">{stats.pendingDeals.toLocaleString()}</div>
+                    <div className="text-amber-100 text-sm">Pending Deals</div>
+                    <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
+                        <span className="text-sm">
+                            {stats.totalDeals > 0
+                                ? <><strong>{Math.round((stats.pendingDeals / stats.totalDeals) * 100)}%</strong> of total</>
+                                : 'No deals yet'}
+                        </span>
+                    </div>
+                </div>
+
+                {/* Completed Deals */}
+                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 p-5 text-white shadow-lg">
+                    <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10" />
+                    <CheckCircle2 className="h-8 w-8 mb-3 opacity-80" />
+                    <div className="text-3xl font-bold">{stats.completedDeals.toLocaleString()}</div>
+                    <div className="text-emerald-100 text-sm">Completed Deals</div>
+                    <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
+                        <span className="text-sm">
+                            {stats.totalDeals > 0
+                                ? <><strong>{Math.round((stats.completedDeals / stats.totalDeals) * 100)}%</strong> success rate</>
+                                : 'No completed deals'}
+                        </span>
+                    </div>
+                </div>
+
+                {/* Cancelled Deals */}
+                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-rose-500 to-red-600 p-5 text-white shadow-lg">
+                    <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10" />
+                    <XCircle className="h-8 w-8 mb-3 opacity-80" />
+                    <div className="text-3xl font-bold">{stats.cancelledDeals.toLocaleString()}</div>
+                    <div className="text-rose-100 text-sm">Cancelled Deals</div>
+                    <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
+                        <span className="text-sm">
+                            {stats.totalDeals > 0
+                                ? <><strong>{Math.round((stats.cancelledDeals / stats.totalDeals) * 100)}%</strong> of total</>
+                                : 'No cancellations'}
+                        </span>
+                    </div>
+                </div>
+
+                {/* Total Invested */}
+                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 p-5 text-white shadow-lg">
+                    <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10" />
+                    <TrendingUp className="h-8 w-8 mb-3 opacity-80" />
+                    <div className="text-3xl font-bold">{formatCompactAmount(stats.totalCompletedAmount || 0, 'USD')}</div>
+                    <div className="text-indigo-100 text-sm">Total Invested (USD)</div>
+                    <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
+                        <span className="text-sm">Total value of completed deals</span>
+                    </div>
+                </div>
+
+                {/* Commission Revenue */}
+                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-teal-500 to-cyan-600 p-5 text-white shadow-lg">
+                    <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10" />
+                    <Percent className="h-8 w-8 mb-3 opacity-80" />
+                    <div className="text-3xl font-bold">{formatCompactAmount(stats.totalCommissionRevenue || 0, 'USD')}</div>
+                    <div className="text-teal-100 text-sm">Commission Revenue</div>
+                    <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
+                        <span className="text-sm">Revenue from success fees</span>
+                    </div>
+                </div>
+
             </div>
 
             {/* Main Content Area */}

@@ -336,37 +336,67 @@ export function Startups() {
         <div className="space-y-6">
 
 
-            {/* Stats Cards */}
+            {/* Stats Overview - 4 Cards with Combined Info */}
             {stats && (
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-                    <KPICard
-                        title="Total Startups"
-                        value={formatNumber(stats.total)}
-                        icon={Rocket}
-                        trend={0}
-                        iconColor="text-blue-500"
-                    />
-                    <KPICard
-                        title="Active"
-                        value={formatNumber(stats.active)}
-                        icon={CheckCircle2}
-                        trend={0}
-                        iconColor="text-emerald-500"
-                    />
-                    <KPICard
-                        title="Total Members"
-                        value={formatNumber(stats.totalMembers)}
-                        icon={Users}
-                        trend={0}
-                        iconColor="text-indigo-500"
-                    />
-                    <KPICard
-                        title="Banned"
-                        value={formatNumber(stats.banned)}
-                        icon={Ban}
-                        trend={0}
-                        iconColor="text-red-500"
-                    />
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+
+                    {/* Total Startups */}
+                    <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 p-5 text-white shadow-lg">
+                        <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10" />
+                        <Rocket className="h-8 w-8 mb-3 opacity-80" />
+                        <div className="text-3xl font-bold">{stats.total.toLocaleString()}</div>
+                        <div className="text-blue-100 text-sm">Total Startups</div>
+                        <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
+                            <CheckCircle2 className="h-4 w-4 opacity-70" />
+                            <span className="text-sm"><strong>{stats.active}</strong> active</span>
+                        </div>
+                    </div>
+
+                    {/* Active & Members */}
+                    <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 p-5 text-white shadow-lg">
+                        <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10" />
+                        <CheckCircle2 className="h-8 w-8 mb-3 opacity-80" />
+                        <div className="text-3xl font-bold">{stats.active.toLocaleString()}</div>
+                        <div className="text-emerald-100 text-sm">Active</div>
+                        <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
+                            <span className="text-sm">
+                                {stats.total > 0
+                                    ? <><strong>{Math.round((stats.active / stats.total) * 100)}%</strong> of total</>
+                                    : 'No startups yet'}
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Total Members */}
+                    <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 p-5 text-white shadow-lg">
+                        <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10" />
+                        <Users className="h-8 w-8 mb-3 opacity-80" />
+                        <div className="text-3xl font-bold">{stats.totalMembers.toLocaleString()}</div>
+                        <div className="text-indigo-100 text-sm">Total Members</div>
+                        <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
+                            <span className="text-sm">
+                                {stats.total > 0
+                                    ? <><strong>{(stats.totalMembers / stats.total).toFixed(1)}</strong> avg per startup</>
+                                    : 'No members yet'}
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Banned */}
+                    <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-rose-500 to-red-600 p-5 text-white shadow-lg">
+                        <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10" />
+                        <Ban className="h-8 w-8 mb-3 opacity-80" />
+                        <div className="text-3xl font-bold">{stats.banned.toLocaleString()}</div>
+                        <div className="text-rose-100 text-sm">Banned</div>
+                        <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
+                            <span className="text-sm">
+                                {stats.total > 0
+                                    ? <><strong>{Math.round((stats.banned / stats.total) * 100)}%</strong> of total</>
+                                    : 'No bans'}
+                            </span>
+                        </div>
+                    </div>
+
                 </div>
             )}
 

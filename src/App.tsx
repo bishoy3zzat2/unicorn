@@ -12,6 +12,7 @@ import { InvestorVerificationPage } from './pages/InvestorVerification'
 import { Reports } from './pages/Reports'
 import { Feed } from './pages/Feed'
 import { Deals } from './pages/Deals'
+import { Notifications } from './pages/Notifications'
 import Login from './pages/Login'
 import { ProtectedRoute } from './components/ProtectedRoute'
 
@@ -44,6 +45,7 @@ function App() {
                                 <Route path="/reports" element={<Reports />} />
                                 <Route path="/feed" element={<Feed />} />
                                 <Route path="/deals" element={<Deals />} />
+                                <Route path="/notifications" element={<Notifications />} />
                                 <Route path="/settings" element={<Settings />} />
                             </Route>
                         </Route>

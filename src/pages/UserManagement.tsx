@@ -1,5 +1,4 @@
 import { UsersTable } from '../components/dashboard/UsersTable'
-import { KPICard } from '../components/dashboard/KPICard'
 import { Users, Briefcase, Building2, UserCheck } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import api from '../lib/axios'
@@ -41,50 +40,64 @@ export function UserManagement() {
 
             {/* Statistics Cards */}
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-                <KPICard
-                    title="Total Users"
-                    value={isLoading ? "..." : formatNumber(stats.total.value)}
-                    icon={Users}
-                    iconColor="text-blue-500"
-                    details={
-                        <div className="text-sm text-muted-foreground">
-                            <span className="font-semibold text-foreground">+{stats.total.newThisMonth}</span> new this month
-                        </div>
-                    }
-                />
-                <KPICard
-                    title="Investors"
-                    value={isLoading ? "..." : formatNumber(stats.investors.value)}
-                    icon={Briefcase}
-                    iconColor="text-emerald-500"
-                    details={
-                        <div className="text-sm text-muted-foreground">
-                            <span className="font-semibold text-foreground">{stats.investors.verifiedCount}</span> verified
-                        </div>
-                    }
-                />
-                <KPICard
-                    title="Startups"
-                    value={isLoading ? "..." : formatNumber(stats.startups.value)}
-                    icon={Building2}
-                    iconColor="text-purple-500"
-                    details={
-                        <div className="text-sm text-muted-foreground">
-                            <span className="font-semibold text-foreground">${formatNumber(stats.startups.totalRaised)}</span> raised total
-                        </div>
-                    }
-                />
-                <KPICard
-                    title="Active Users"
-                    value={isLoading ? "..." : formatNumber(stats.active.value)}
-                    icon={UserCheck}
-                    iconColor="text-orange-500"
-                    details={
-                        <div className="text-sm text-muted-foreground">
-                            <span className="font-semibold text-green-500">● {stats.active.onlineNow}</span> active sessions
-                        </div>
-                    }
-                />
+
+                {/* Total Users */}
+                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 p-5 text-white shadow-lg">
+                    <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10" />
+                    <Users className="h-8 w-8 mb-3 opacity-80" />
+                    <div className="text-3xl font-bold">{isLoading ? "..." : formatNumber(stats.total.value)}</div>
+                    <div className="text-blue-100 text-sm">Total Users</div>
+                    <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
+                        <span className="text-sm">
+                            <strong className="text-white">+{stats.total.newThisMonth}</strong> new users this month
+                        </span>
+                    </div>
+                </div>
+
+                {/* Investors */}
+                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 p-5 text-white shadow-lg">
+                    <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10" />
+                    <Briefcase className="h-8 w-8 mb-3 opacity-80" />
+                    <div className="text-3xl font-bold">{isLoading ? "..." : formatNumber(stats.investors.value)}</div>
+                    <div className="text-emerald-100 text-sm">Investors</div>
+                    <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
+                        <UserCheck className="h-4 w-4 opacity-70" />
+                        <span className="text-sm">
+                            <strong>{stats.investors.verifiedCount}</strong> verified
+                            {stats.investors.value > 0 &&
+                                <span className="opacity-80 ml-1">({Math.round((stats.investors.verifiedCount / stats.investors.value) * 100)}%)</span>
+                            }
+                        </span>
+                    </div>
+                </div>
+
+                {/* Startups */}
+                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-purple-500 to-violet-600 p-5 text-white shadow-lg">
+                    <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10" />
+                    <Building2 className="h-8 w-8 mb-3 opacity-80" />
+                    <div className="text-3xl font-bold">{isLoading ? "..." : formatNumber(stats.startups.value)}</div>
+                    <div className="text-purple-100 text-sm">Startups</div>
+                    <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
+                        <span className="text-sm">
+                            Total Raised: <strong>${formatNumber(stats.startups.totalRaised)}</strong>
+                        </span>
+                    </div>
+                </div>
+
+                {/* Active Users */}
+                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-orange-500 to-amber-600 p-5 text-white shadow-lg">
+                    <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10" />
+                    <UserCheck className="h-8 w-8 mb-3 opacity-80" />
+                    <div className="text-3xl font-bold">{isLoading ? "..." : formatNumber(stats.active.value)}</div>
+                    <div className="text-orange-100 text-sm">Active Users</div>
+                    <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
+                        <div className="h-2 w-2 rounded-full bg-green-400 animate-pulse" />
+                        <span className="text-sm">
+                            <strong>{stats.active.onlineNow}</strong> online now
+                        </span>
+                    </div>
+                </div>
+
             </div>
 
             {/* Users Table */}

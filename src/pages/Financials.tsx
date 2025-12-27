@@ -217,68 +217,105 @@ export function Financials() {
                 </Alert>
             )}
 
-            {/* KPI Cards - Row 1 */}
+            {/* Stats Overview - Row 1: Revenue Metrics */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <KPICard
-                    title="Monthly Revenue"
-                    value={formatCompactCurrency(summary?.currentMonthRevenue || 0)}
-                    icon={DollarSign}
-                    iconColor="text-emerald-600 dark:text-emerald-400"
-                    trend={summary?.revenueGrowthPercent || 0}
-                />
-                <KPICard
-                    title="MRR"
-                    value={formatCompactCurrency(summary?.mrr || 0)}
-                    icon={TrendingUp}
-                    iconColor="text-blue-600 dark:text-blue-400"
-                    trend="Monthly Recurring Revenue"
-                />
-                <KPICard
-                    title="ARR"
-                    value={formatCompactCurrency(summary?.arr || 0)}
-                    icon={Target}
-                    iconColor="text-purple-600 dark:text-purple-400"
-                    trend="Annual Recurring Revenue"
-                />
-                <KPICard
-                    title="Lifetime Revenue"
-                    value={formatCompactCurrency(summary?.totalLifetimeRevenue || 0)}
-                    icon={CreditCard}
-                    iconColor="text-orange-600 dark:text-orange-400"
-                    trend="All time"
-                />
+
+                {/* Monthly Revenue */}
+                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 p-5 text-white shadow-lg">
+                    <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10" />
+                    <DollarSign className="h-8 w-8 mb-3 opacity-80" />
+                    <div className="text-3xl font-bold">{formatCompactCurrency(summary?.currentMonthRevenue || 0)}</div>
+                    <div className="text-emerald-100 text-sm">Monthly Revenue</div>
+                    <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
+                        <TrendingUp className="h-4 w-4 opacity-70" />
+                        <span className="text-sm">
+                            {(summary?.revenueGrowthPercent || 0) > 0 ? '+' : ''}{(summary?.revenueGrowthPercent || 0).toFixed(1)}% growth
+                        </span>
+                    </div>
+                </div>
+
+                {/* MRR */}
+                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 p-5 text-white shadow-lg">
+                    <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10" />
+                    <TrendingUp className="h-8 w-8 mb-3 opacity-80" />
+                    <div className="text-3xl font-bold">{formatCompactCurrency(summary?.mrr || 0)}</div>
+                    <div className="text-blue-100 text-sm">MRR</div>
+                    <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
+                        <span className="text-sm">Monthly Recurring Revenue</span>
+                    </div>
+                </div>
+
+                {/* ARR */}
+                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-purple-500 to-violet-600 p-5 text-white shadow-lg">
+                    <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10" />
+                    <Target className="h-8 w-8 mb-3 opacity-80" />
+                    <div className="text-3xl font-bold">{formatCompactCurrency(summary?.arr || 0)}</div>
+                    <div className="text-purple-100 text-sm">ARR</div>
+                    <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
+                        <span className="text-sm">Annual Recurring Revenue</span>
+                    </div>
+                </div>
+
+                {/* Lifetime Revenue */}
+                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 p-5 text-white shadow-lg">
+                    <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10" />
+                    <CreditCard className="h-8 w-8 mb-3 opacity-80" />
+                    <div className="text-3xl font-bold">{formatCompactCurrency(summary?.totalLifetimeRevenue || 0)}</div>
+                    <div className="text-amber-100 text-sm">Lifetime Revenue</div>
+                    <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
+                        <span className="text-sm">All time total</span>
+                    </div>
+                </div>
+
             </div>
 
-            {/* KPI Cards - Row 2 */}
+            {/* Stats Overview - Row 2: User & Conversion Metrics */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <KPICard
-                    title="Active Subscribers"
-                    value={summary?.activeSubscriptions?.toString() || '0'}
-                    icon={Users}
-                    iconColor="text-indigo-600 dark:text-indigo-400"
-                    trend="Paid users"
-                />
-                <KPICard
-                    title="ARPU"
-                    value={formatCompactCurrency(summary?.arpu || 0)}
-                    icon={User}
-                    iconColor="text-green-600 dark:text-green-400"
-                    trend="Avg Revenue Per User"
-                />
-                <KPICard
-                    title="Conversion Rate"
-                    value={`${(summary?.conversionRate || 0).toFixed(1)}%`}
-                    icon={Percent}
-                    iconColor="text-yellow-600 dark:text-yellow-400"
-                    trend="Free → Paid"
-                />
-                <KPICard
-                    title="Commission Revenue"
-                    value={formatCompactCurrency(summary?.totalCommissionRevenue || 0)}
-                    icon={Briefcase}
-                    iconColor="text-red-600 dark:text-red-400"
-                    trend={`From ${summary?.completedDeals || 0} deals`}
-                />
+
+                {/* Active Subscribers */}
+                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 p-5 text-white shadow-lg">
+                    <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10" />
+                    <Users className="h-8 w-8 mb-3 opacity-80" />
+                    <div className="text-3xl font-bold">{(summary?.activeSubscriptions || 0).toLocaleString()}</div>
+                    <div className="text-indigo-100 text-sm">Active Subscribers</div>
+                    <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
+                        <span className="text-sm">Paid users</span>
+                    </div>
+                </div>
+
+                {/* ARPU */}
+                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-teal-500 to-cyan-600 p-5 text-white shadow-lg">
+                    <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10" />
+                    <User className="h-8 w-8 mb-3 opacity-80" />
+                    <div className="text-3xl font-bold">{formatCompactCurrency(summary?.arpu || 0)}</div>
+                    <div className="text-teal-100 text-sm">ARPU</div>
+                    <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
+                        <span className="text-sm">Avg Revenue Per User</span>
+                    </div>
+                </div>
+
+                {/* Conversion Rate */}
+                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-yellow-500 to-amber-600 p-5 text-white shadow-lg">
+                    <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10" />
+                    <Percent className="h-8 w-8 mb-3 opacity-80" />
+                    <div className="text-3xl font-bold">{(summary?.conversionRate || 0).toFixed(1)}%</div>
+                    <div className="text-yellow-100 text-sm">Conversion Rate</div>
+                    <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
+                        <span className="text-sm">Free → Paid</span>
+                    </div>
+                </div>
+
+                {/* Commission Revenue */}
+                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-rose-500 to-red-600 p-5 text-white shadow-lg">
+                    <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10" />
+                    <Briefcase className="h-8 w-8 mb-3 opacity-80" />
+                    <div className="text-3xl font-bold">{formatCompactCurrency(summary?.totalCommissionRevenue || 0)}</div>
+                    <div className="text-rose-100 text-sm">Commission Revenue</div>
+                    <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
+                        <span className="text-sm">From <strong>{summary?.completedDeals || 0}</strong> deals</span>
+                    </div>
+                </div>
+
             </div>
 
             {/* Charts Row 1 */}

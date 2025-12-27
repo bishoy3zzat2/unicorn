@@ -39,6 +39,8 @@ import {
     XCircle,
     Flag,
     AlertCircle,
+    AlertTriangle,
+    TrendingUp,
     ChevronsLeft,
     ChevronsRight,
     ChevronLeft,
@@ -241,38 +243,70 @@ export function Reports() {
         <div className="space-y-6 transition-colors duration-300">
 
 
-            {/* Stats Overview */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-                <KPICard
-                    title="Total Reports"
-                    value={stats.total.toString()}
-                    icon={Flag}
-                />
-                <KPICard
-                    title="Pending"
-                    value={stats.pending.toString()}
-                    icon={Clock}
-                    iconColor="text-yellow-600 dark:text-yellow-400"
-                    trend={stats.pending > 0 ? 'Requires Action' : undefined}
-                />
-                <KPICard
-                    title="Under Review"
-                    value={stats.underReview.toString()}
-                    icon={Eye}
-                    iconColor="text-blue-600 dark:text-blue-400"
-                />
-                <KPICard
-                    title="Resolved"
-                    value={stats.resolved.toString()}
-                    icon={CheckCircle2}
-                    iconColor="text-green-600 dark:text-green-400"
-                />
-                <KPICard
-                    title="Rejected"
-                    value={stats.rejected.toString()}
-                    icon={XCircle}
-                    iconColor="text-red-600 dark:text-red-400"
-                />
+            {/* Stats Overview - 4 Cards with Combined Info */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+
+                {/* Total & Pending */}
+                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 p-5 text-white shadow-lg">
+                    <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10" />
+                    <Flag className="h-8 w-8 mb-3 opacity-80" />
+                    <div className="text-3xl font-bold">{stats.total.toLocaleString()}</div>
+                    <div className="text-blue-100 text-sm">Total Reports</div>
+                    <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
+                        <Clock className="h-4 w-4 opacity-70" />
+                        <span className="text-sm"><strong>{stats.pending}</strong> pending</span>
+                    </div>
+                </div>
+
+                {/* Under Review & Action Required */}
+                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 p-5 text-white shadow-lg">
+                    <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10" />
+                    <Eye className="h-8 w-8 mb-3 opacity-80" />
+                    <div className="text-3xl font-bold">{stats.underReview.toLocaleString()}</div>
+                    <div className="text-amber-100 text-sm">Under Review</div>
+                    <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
+                        {stats.pending > 0 ? (
+                            <>
+                                <AlertTriangle className="h-4 w-4 opacity-70" />
+                                <span className="text-sm">Requires action</span>
+                            </>
+                        ) : (
+                            <span className="text-sm">All caught up!</span>
+                        )}
+                    </div>
+                </div>
+
+                {/* Resolved */}
+                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 p-5 text-white shadow-lg">
+                    <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10" />
+                    <CheckCircle2 className="h-8 w-8 mb-3 opacity-80" />
+                    <div className="text-3xl font-bold">{stats.resolved.toLocaleString()}</div>
+                    <div className="text-emerald-100 text-sm">Resolved</div>
+                    <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
+                        <TrendingUp className="h-4 w-4 opacity-70" />
+                        <span className="text-sm">
+                            {stats.total > 0
+                                ? <><strong>{Math.round((stats.resolved / stats.total) * 100)}%</strong> resolution rate</>
+                                : 'No reports yet'}
+                        </span>
+                    </div>
+                </div>
+
+                {/* Rejected */}
+                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-rose-500 to-red-600 p-5 text-white shadow-lg">
+                    <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10" />
+                    <XCircle className="h-8 w-8 mb-3 opacity-80" />
+                    <div className="text-3xl font-bold">{stats.rejected.toLocaleString()}</div>
+                    <div className="text-rose-100 text-sm">Rejected</div>
+                    <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
+                        <span className="text-sm">
+                            {stats.total > 0
+                                ? <><strong>{Math.round((stats.rejected / stats.total) * 100)}%</strong> of total</>
+                                : 'No rejections'}
+                        </span>
+                    </div>
+                </div>
+
             </div>
 
             {/* Main Content Area */}

@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
- * Entity representing a notification sent to a user.
+ * Entity representing a notification sent to a user or broadcast to all.
  * Stores notification content, metadata, and read status.
  */
 @Data
@@ -23,7 +23,8 @@ import java.util.UUID;
 @Table(name = "notifications", indexes = {
         @Index(name = "idx_notification_recipient", columnList = "recipient_id"),
         @Index(name = "idx_notification_recipient_read", columnList = "recipient_id, is_read"),
-        @Index(name = "idx_notification_created_at", columnList = "created_at DESC")
+        @Index(name = "idx_notification_created_at", columnList = "created_at DESC"),
+        @Index(name = "idx_notification_broadcast", columnList = "is_broadcast, target_audience")
 })
 public class Notification {
 
@@ -31,8 +32,11 @@ public class Notification {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    /**
+     * Recipient for individual notifications. NULL for broadcasts.
+     */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "recipient_id", nullable = false)
+    @JoinColumn(name = "recipient_id")
     private User recipient;
 
     @Enumerated(EnumType.STRING)
@@ -47,7 +51,6 @@ public class Notification {
 
     /**
      * JSON string containing flexible metadata.
-     * Examples: startupId, postId, senderId, etc.
      */
     @Column(columnDefinition = "TEXT")
     private String data;
@@ -63,23 +66,30 @@ public class Notification {
     @Column(name = "read_at")
     private LocalDateTime readAt;
 
-    /**
-     * Reference to the actor who triggered the notification (optional).
-     * For example, the user who liked a post or sent a nudge.
-     */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "actor_id")
     private User actor;
 
-    /**
-     * URL for the actor's avatar (denormalized for performance).
-     */
     @Column(name = "actor_avatar_url", length = 500)
     private String actorAvatarUrl;
 
-    /**
-     * Name of the actor (denormalized for performance).
-     */
     @Column(name = "actor_name", length = 100)
     private String actorName;
+
+    // ============== Broadcast Support ==============
+
+    /**
+     * If true, this is a broadcast notification visible to all matching users.
+     * recipient field will be NULL for broadcasts.
+     */
+    @Column(name = "is_broadcast", nullable = false)
+    @Builder.Default
+    private boolean broadcast = false;
+
+    /**
+     * Target audience for broadcast notifications.
+     * ALL_USERS, INVESTORS_ONLY, STARTUP_OWNERS_ONLY
+     */
+    @Column(name = "target_audience", length = 30)
+    private String targetAudience;
 }

@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom'
 import {
     LayoutDashboard, Users, DollarSign, Settings,
-    Menu, X, Shield, Rocket, UserCheck, Flag, Banknote, Newspaper
+    Menu, X, Shield, Rocket, UserCheck, Flag, Banknote, Newspaper, Bell
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useState } from 'react'
@@ -11,6 +11,7 @@ const mainMenuItems = [
     { name: 'Startups', path: '/startups', icon: Rocket },
     { name: 'Feed', path: '/feed', icon: Newspaper },
     { name: 'Reports', path: '/reports', icon: Flag },
+    { name: 'Notifications', path: '/notifications', icon: Bell },
 ]
 
 const financeMenuItems = [

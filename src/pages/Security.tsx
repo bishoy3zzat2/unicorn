@@ -1,4 +1,3 @@
-import { KPICard } from '../components/dashboard/KPICard'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card'
 import { Shield, Key, AlertTriangle, CheckCircle, Lock, Monitor, Clock, RefreshCw, Laptop, History, Users } from 'lucide-react'
 import { formatNumber } from '../lib/utils'
@@ -130,38 +129,52 @@ export function Security() {
                 </div>
 
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-                    <KPICard
-                        title="Total Issued Tokens"
-                        value={stats ? formatNumber(stats.totalTokens) : '0'}
-                        icon={Key}
-                        iconColor="text-blue-500"
-                        trend="Lifetime total"
-                        tooltip="Total number of refresh tokens issued since system start. Indicates overall authentication volume."
-                    />
-                    <KPICard
-                        title="Active Sessions"
-                        value={stats ? formatNumber(stats.activeSessions) : '0'}
-                        icon={CheckCircle}
-                        iconColor="text-green-500"
-                        trend="Online now"
-                        tooltip="Total number of currently valid and active sessions across all users."
-                    />
-                    <KPICard
-                        title="Expired Tokens"
-                        value={stats ? formatNumber(stats.expiredTokens) : '0'}
-                        icon={Clock}
-                        iconColor="text-gray-500"
-                        trend="Past sessions"
-                        tooltip="Number of sessions that have expired naturally or were logged out."
-                    />
-                    <KPICard
-                        title="Unique Online Users"
-                        value={stats ? formatNumber(stats.onlineUsers) : '0'}
-                        icon={Users}
-                        iconColor="text-purple-500"
-                        trend="Active users"
-                        tooltip="Number of distinct users currently logged in with at least one active session."
-                    />
+
+                    {/* Total Issued Tokens */}
+                    <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 p-5 text-white shadow-lg">
+                        <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10" />
+                        <Key className="h-8 w-8 mb-3 opacity-80" />
+                        <div className="text-3xl font-bold">{stats ? formatNumber(stats.totalTokens) : '0'}</div>
+                        <div className="text-blue-100 text-sm">Total Issued Tokens</div>
+                        <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
+                            <span className="text-sm">Lifetime authentication volume</span>
+                        </div>
+                    </div>
+
+                    {/* Active Sessions */}
+                    <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 p-5 text-white shadow-lg">
+                        <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10" />
+                        <CheckCircle className="h-8 w-8 mb-3 opacity-80" />
+                        <div className="text-3xl font-bold">{stats ? formatNumber(stats.activeSessions) : '0'}</div>
+                        <div className="text-emerald-100 text-sm">Active Sessions</div>
+                        <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
+                            <div className="h-2 w-2 rounded-full bg-white animate-pulse" />
+                            <span className="text-sm">Valid and active now</span>
+                        </div>
+                    </div>
+
+                    {/* Expired Tokens */}
+                    <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-rose-500 to-red-600 p-5 text-white shadow-lg">
+                        <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10" />
+                        <Clock className="h-8 w-8 mb-3 opacity-80" />
+                        <div className="text-3xl font-bold">{stats ? formatNumber(stats.expiredTokens) : '0'}</div>
+                        <div className="text-rose-100 text-sm">Expired Tokens</div>
+                        <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
+                            <span className="text-sm">Past sessions & history</span>
+                        </div>
+                    </div>
+
+                    {/* Unique Online Users */}
+                    <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-purple-500 to-violet-600 p-5 text-white shadow-lg">
+                        <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10" />
+                        <Users className="h-8 w-8 mb-3 opacity-80" />
+                        <div className="text-3xl font-bold">{stats ? formatNumber(stats.onlineUsers) : '0'}</div>
+                        <div className="text-purple-100 text-sm">Unique Online Users</div>
+                        <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
+                            <span className="text-sm">Distinct users logged in</span>
+                        </div>
+                    </div>
+
                 </div>
 
                 {/* Charts Row */}

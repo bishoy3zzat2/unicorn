@@ -37,6 +37,7 @@ import {
     UserCheck,
     Briefcase,
     Mail,
+    AlertTriangle,
 } from 'lucide-react'
 import { Alert, AlertDescription } from '../components/ui/alert'
 import {
@@ -58,7 +59,6 @@ import {
     DialogTitle,
 } from '../components/ui/dialog'
 import { Textarea } from '../components/ui/textarea'
-import { KPICard } from '../components/dashboard/KPICard'
 import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/avatar'
 
 export function InvestorVerificationPage() {
@@ -212,31 +212,68 @@ export function InvestorVerificationPage() {
 
             {/* Stats Overview */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <KPICard
-                    title="Total Investors"
-                    value={(stats?.totalInvestors || 0).toString()}
-                    icon={Users}
-                    iconColor="text-blue-600 dark:text-blue-400"
-                />
-                <KPICard
-                    title="Verified"
-                    value={(stats?.verifiedInvestors || 0).toString()}
-                    icon={BadgeCheck}
-                    iconColor="text-emerald-600 dark:text-emerald-400"
-                />
-                <KPICard
-                    title="Pending Review"
-                    value={(stats?.pendingVerifications || 0).toString()}
-                    icon={Clock}
-                    iconColor="text-yellow-600 dark:text-yellow-400"
-                    trend={stats?.pendingVerifications && stats.pendingVerifications > 0 ? 'Requires Action' : undefined}
-                />
-                <KPICard
-                    title="Total Capital"
-                    value={formatCompactCurrency(stats?.totalInvestmentBudget || 0)}
-                    icon={DollarSign}
-                    iconColor="text-indigo-600 dark:text-indigo-400"
-                />
+
+                {/* Total Investors */}
+                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 p-5 text-white shadow-lg">
+                    <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10" />
+                    <Users className="h-8 w-8 mb-3 opacity-80" />
+                    <div className="text-3xl font-bold">{(stats?.totalInvestors || 0).toLocaleString()}</div>
+                    <div className="text-blue-100 text-sm">Total Investors</div>
+                    <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
+                        <Users className="h-4 w-4 opacity-70" />
+                        <span className="text-sm">
+                            <strong>{((stats?.totalInvestors || 0) - (stats?.verifiedInvestors || 0)).toLocaleString()}</strong> unverified accounts
+                        </span>
+                    </div>
+                </div>
+
+                {/* Verified */}
+                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 p-5 text-white shadow-lg">
+                    <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10" />
+                    <BadgeCheck className="h-8 w-8 mb-3 opacity-80" />
+                    <div className="text-3xl font-bold">{(stats?.verifiedInvestors || 0).toLocaleString()}</div>
+                    <div className="text-emerald-100 text-sm">Verified</div>
+                    <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
+                        <span className="text-sm">
+                            {(stats?.totalInvestors || 0) > 0
+                                ? <><strong>{Math.round(((stats?.verifiedInvestors || 0) / (stats?.totalInvestors || 1)) * 100)}%</strong> of total</>
+                                : 'No investors yet'}
+                        </span>
+                    </div>
+                </div>
+
+                {/* Pending Review */}
+                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 p-5 text-white shadow-lg">
+                    <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10" />
+                    <Clock className="h-8 w-8 mb-3 opacity-80" />
+                    <div className="text-3xl font-bold">{(stats?.pendingVerifications || 0).toLocaleString()}</div>
+                    <div className="text-amber-100 text-sm">Pending Review</div>
+                    <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
+                        {stats?.pendingVerifications && stats.pendingVerifications > 0 ? (
+                            <>
+                                <AlertTriangle className="h-4 w-4 opacity-70" />
+                                <span className="text-sm font-semibold">Requires action</span>
+                            </>
+                        ) : (
+                            <>
+                                <CheckCircle className="h-4 w-4 opacity-70" />
+                                <span className="text-sm">All caught up!</span>
+                            </>
+                        )}
+                    </div>
+                </div>
+
+                {/* Total Capital */}
+                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 p-5 text-white shadow-lg">
+                    <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10" />
+                    <DollarSign className="h-8 w-8 mb-3 opacity-80" />
+                    <div className="text-3xl font-bold">{formatCompactCurrency(stats?.totalInvestmentBudget || 0)}</div>
+                    <div className="text-indigo-100 text-sm">Total Capital</div>
+                    <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
+                        <span className="text-sm">Combined investment budget</span>
+                    </div>
+                </div>
+
             </div>
 
             {/* Main Content Area */}

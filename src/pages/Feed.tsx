@@ -277,37 +277,66 @@ export function Feed() {
 
     return (
         <div className="space-y-6 transition-colors duration-300">
-            {/* Stats Overview */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-                <KPICard
-                    title="Total Posts"
-                    value={stats.totalPosts.toString()}
-                    icon={Newspaper}
-                />
-                <KPICard
-                    title="Active"
-                    value={stats.activePosts.toString()}
-                    icon={Eye}
-                    iconColor="text-green-600 dark:text-green-400"
-                />
-                <KPICard
-                    title="Hidden"
-                    value={stats.hiddenPosts.toString()}
-                    icon={EyeOff}
-                    iconColor="text-orange-600 dark:text-orange-400"
-                />
-                <KPICard
-                    title="Featured"
-                    value={stats.featuredPosts.toString()}
-                    icon={Star}
-                    iconColor="text-amber-600 dark:text-amber-400"
-                />
-                <KPICard
-                    title="Today"
-                    value={stats.todayPosts.toString()}
-                    icon={TrendingUp}
-                    iconColor="text-blue-600 dark:text-blue-400"
-                />
+            {/* Stats Overview - 4 Cards with Combined Info */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+
+                {/* Total & Today */}
+                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 p-5 text-white shadow-lg">
+                    <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10" />
+                    <Newspaper className="h-8 w-8 mb-3 opacity-80" />
+                    <div className="text-3xl font-bold">{stats.totalPosts.toLocaleString()}</div>
+                    <div className="text-blue-100 text-sm">Total Posts</div>
+                    <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
+                        <TrendingUp className="h-4 w-4 opacity-70" />
+                        <span className="text-sm"><strong>{stats.todayPosts}</strong> today</span>
+                    </div>
+                </div>
+
+                {/* Active & Hidden */}
+                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 p-5 text-white shadow-lg">
+                    <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10" />
+                    <Eye className="h-8 w-8 mb-3 opacity-80" />
+                    <div className="text-3xl font-bold">{stats.activePosts.toLocaleString()}</div>
+                    <div className="text-emerald-100 text-sm">Active Posts</div>
+                    <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
+                        <EyeOff className="h-4 w-4 opacity-70" />
+                        <span className="text-sm"><strong>{stats.hiddenPosts}</strong> hidden</span>
+                    </div>
+                </div>
+
+                {/* Featured */}
+                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 p-5 text-white shadow-lg">
+                    <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10" />
+                    <Star className="h-8 w-8 mb-3 opacity-80" />
+                    <div className="text-3xl font-bold">{stats.featuredPosts.toLocaleString()}</div>
+                    <div className="text-amber-100 text-sm">Featured</div>
+                    <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
+                        <span className="text-sm">
+                            {stats.totalPosts > 0
+                                ? <><strong>{Math.round((stats.featuredPosts / stats.totalPosts) * 100)}%</strong> of posts</>
+                                : 'No posts yet'}
+                        </span>
+                    </div>
+                </div>
+
+                {/* Engagement */}
+                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-rose-500 to-pink-600 p-5 text-white shadow-lg">
+                    <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10" />
+                    <Heart className="h-8 w-8 mb-3 opacity-80" />
+                    <div className="text-3xl font-bold">{stats.totalLikes.toLocaleString()}</div>
+                    <div className="text-rose-100 text-sm">Total Likes</div>
+                    <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-4">
+                        <div className="flex items-center gap-1">
+                            <MessageCircle className="h-3.5 w-3.5 opacity-70" />
+                            <span className="text-xs">{stats.totalComments}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                            <Share2 className="h-3.5 w-3.5 opacity-70" />
+                            <span className="text-xs">{stats.totalShares}</span>
+                        </div>
+                    </div>
+                </div>
+
             </div>
 
             {/* Main Content Area */}

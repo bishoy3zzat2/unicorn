@@ -4,6 +4,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -28,4 +29,14 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
     long countByRoleAndInvestorProfile_IsVerifiedTrue(String role);
 
     long countByCreatedAtAfter(java.time.LocalDateTime date);
+
+    /**
+     * Find users by role (for announcements).
+     */
+    List<User> findByRole(String role);
+
+    /**
+     * Find users by status (for announcements).
+     */
+    List<User> findByStatus(String status);
 }
