@@ -3,22 +3,45 @@ import { RevenueChart } from '../components/dashboard/RevenueChart'
 import { UserGrowthChart } from '../components/dashboard/UserGrowthChart'
 import { StartupDistributionChart } from '../components/dashboard/StartupDistributionChart'
 import { Users, Rocket, DollarSign, Briefcase, Clock, TrendingUp, AlertCircle, Loader2 } from 'lucide-react'
-import { fetchDashboardStats, DashboardStats } from '../lib/api'
+import { fetchDashboardStats, DashboardStats, fetchFinancialSummary, fetchDealStats, getReportStats, fetchSecurityStats } from '../lib/api'
 import { formatNumber, formatCurrency } from '../lib/utils'
 import { Alert, AlertDescription } from '../components/ui/alert'
 
 export function Overview() {
     const [stats, setStats] = useState<DashboardStats | null>(null)
+    const [financials, setFinancials] = useState<any | null>(null)
+    const [dealStats, setDealStats] = useState<any | null>(null)
+    const [reportStats, setReportStats] = useState<any | null>(null)
+    const [securityStats, setSecurityStats] = useState<any | null>(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
 
     useEffect(() => {
-        async function loadStats() {
+        async function loadAllStats() {
             try {
                 setLoading(true)
                 setError(null)
-                const data = await fetchDashboardStats()
-                setStats(data)
+
+                // Fetch all stats concurrently
+                const [
+                    dashboardData,
+                    financialData,
+                    dealData,
+                    reportData,
+                    securityData
+                ] = await Promise.all([
+                    fetchDashboardStats(),
+                    fetchFinancialSummary(),
+                    fetchDealStats(),
+                    getReportStats(),
+                    fetchSecurityStats()
+                ])
+
+                setStats(dashboardData)
+                setFinancials(financialData)
+                setDealStats(dealData)
+                setReportStats(reportData)
+                setSecurityStats(securityData)
             } catch (err) {
                 console.error('Failed to fetch dashboard stats:', err)
                 setError(err instanceof Error ? err.message : 'Failed to load dashboard data')
@@ -27,7 +50,7 @@ export function Overview() {
             }
         }
 
-        loadStats()
+        loadAllStats()
     }, [])
 
     if (loading) {
@@ -44,18 +67,13 @@ export function Overview() {
             <div className="space-y-6">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Dashboard Overview</h1>
-                    <p className="text-muted-foreground mt-2">
-                        Welcome back! Here's what's happening with your platform today.
-                    </p>
+                    <Alert variant="destructive" className="mt-4">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>
+                            {error}
+                        </AlertDescription>
+                    </Alert>
                 </div>
-                <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>
-                        {error}. Using fallback data.
-                    </AlertDescription>
-                </Alert>
-                {/* Fallback to mock data display */}
-                <FallbackDashboard />
             </div>
         )
     }
@@ -63,87 +81,172 @@ export function Overview() {
     return (
         <div className="space-y-6">
 
+            {/* KPI Grid - 5 columns for 15 cards */}
+            {stats && financials && dealStats && reportStats && securityStats && (
+                <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
 
-            {/* KPI Cards */}
-            {stats && (
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-
-                    {/* Total Users */}
-                    <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 p-5 text-white shadow-lg">
-                        <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10" />
-                        <Users className="h-8 w-8 mb-3 opacity-80" />
-                        <div className="text-3xl font-bold">{formatNumber(stats.totalUsers)}</div>
-                        <div className="text-blue-100 text-sm">Total Users</div>
-                        <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
-                            <TrendingUp className="h-4 w-4 opacity-70" />
-                            <span className="text-sm">
-                                <strong>+{stats.userGrowth}%</strong> growth this month
-                            </span>
+                    {/* 1. Total Users */}
+                    <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 p-4 text-white shadow-lg">
+                        <Users className="h-6 w-6 mb-2 opacity-80" />
+                        <div className="text-2xl font-bold">{formatNumber(stats.totalUsers)}</div>
+                        <div className="text-blue-100 text-xs font-medium">Total Users</div>
+                        <div className="mt-2 pt-2 border-t border-white/20 flex items-center justify-between text-[10px]">
+                            <span>With accounts</span>
+                            <span className="bg-white/20 px-1.5 py-0.5 rounded">+{stats.userGrowth}%</span>
                         </div>
                     </div>
 
-                    {/* Active Startups */}
-                    <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-purple-500 to-violet-600 p-5 text-white shadow-lg">
-                        <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10" />
-                        <Rocket className="h-8 w-8 mb-3 opacity-80" />
-                        <div className="text-3xl font-bold">{formatNumber(stats.activeStartups)}</div>
-                        <div className="text-purple-100 text-sm">Active Startups</div>
-                        <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
-                            <TrendingUp className="h-4 w-4 opacity-70" />
-                            <span className="text-sm">
-                                <strong>+{stats.startupGrowth}%</strong> new this month
-                            </span>
+                    {/* 2. Active Startups */}
+                    <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 p-4 text-white shadow-lg">
+                        <Rocket className="h-6 w-6 mb-2 opacity-80" />
+                        <div className="text-2xl font-bold">{formatNumber(stats.activeStartups)}</div>
+                        <div className="text-violet-100 text-xs font-medium">Active Startups</div>
+                        <div className="mt-2 pt-2 border-t border-white/20 flex items-center justify-between text-[10px]">
+                            <span>Verified entities</span>
+                            <span className="bg-white/20 px-1.5 py-0.5 rounded">+{stats.startupGrowth}%</span>
                         </div>
                     </div>
 
-                    {/* MRR */}
-                    <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 p-5 text-white shadow-lg">
-                        <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10" />
-                        <DollarSign className="h-8 w-8 mb-3 opacity-80" />
-                        <div className="text-3xl font-bold">{formatCurrency(stats.mrr)}</div>
-                        <div className="text-emerald-100 text-sm">Monthly Recurring Revenue</div>
-                        <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
-                            <TrendingUp className="h-4 w-4 opacity-70" />
-                            <span className="text-sm">
-                                <strong>+{stats.mrrGrowth}%</strong> vs last month
-                            </span>
+                    {/* 3. Active Investors */}
+                    <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 p-4 text-white shadow-lg">
+                        <Briefcase className="h-6 w-6 mb-2 opacity-80" />
+                        <div className="text-2xl font-bold">{formatNumber(stats.activeInvestors)}</div>
+                        <div className="text-amber-100 text-xs font-medium">Active Investors</div>
+                        <div className="mt-2 pt-2 border-t border-white/20 flex items-center justify-between text-[10px]">
+                            <span>Looking for deals</span>
+                            <span className="bg-white/20 px-1.5 py-0.5 rounded">+{stats.investorGrowth}%</span>
                         </div>
                     </div>
 
-                    {/* Active Investors */}
-                    <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-orange-500 to-amber-600 p-5 text-white shadow-lg">
-                        <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10" />
-                        <Briefcase className="h-8 w-8 mb-3 opacity-80" />
-                        <div className="text-3xl font-bold">{formatNumber(stats.activeInvestors)}</div>
-                        <div className="text-orange-100 text-sm">Active Investors</div>
-                        <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
-                            <TrendingUp className="h-4 w-4 opacity-70" />
-                            <span className="text-sm">
-                                <strong>+{stats.investorGrowth}%</strong> new investors
-                            </span>
+                    {/* 4. MRR */}
+                    <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 p-4 text-white shadow-lg">
+                        <DollarSign className="h-6 w-6 mb-2 opacity-80" />
+                        <div className="text-2xl font-bold">{formatCurrency(stats.mrr)}</div>
+                        <div className="text-emerald-100 text-xs font-medium">Monthly Revenue</div>
+                        <div className="mt-2 pt-2 border-t border-white/20 flex items-center justify-between text-[10px]">
+                            <span>Recurring</span>
+                            <span className="bg-white/20 px-1.5 py-0.5 rounded">+{stats.mrrGrowth}%</span>
                         </div>
                     </div>
 
-                    {/* Pending Verifications */}
-                    <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-yellow-500 to-amber-500 p-5 text-white shadow-lg">
-                        <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10" />
-                        <Clock className="h-8 w-8 mb-3 opacity-80" />
-                        <div className="text-3xl font-bold">{formatNumber(stats.pendingVerifications)}</div>
-                        <div className="text-yellow-100 text-sm">Pending Verifications</div>
-                        <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
-                            <AlertCircle className="h-4 w-4 opacity-70" />
-                            <span className="text-sm">Requires attention</span>
+                    {/* 5. Total Funding */}
+                    <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 p-4 text-white shadow-lg">
+                        <TrendingUp className="h-6 w-6 mb-2 opacity-80" />
+                        <div className="text-2xl font-bold">{formatCurrency(stats.totalFunding)}</div>
+                        <div className="text-indigo-100 text-xs font-medium">Total Funding</div>
+                        <div className="mt-2 pt-2 border-t border-white/20 flex items-center justify-between text-[10px]">
+                            <span>Capital raised</span>
+                            <span className="bg-white/20 px-1.5 py-0.5 rounded">Lifetime</span>
                         </div>
                     </div>
 
-                    {/* Total Funding */}
-                    <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 p-5 text-white shadow-lg">
-                        <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10" />
-                        <TrendingUp className="h-8 w-8 mb-3 opacity-80" />
-                        <div className="text-3xl font-bold">{formatCurrency(stats.totalFunding)}</div>
-                        <div className="text-indigo-100 text-sm">Total Funding Raised</div>
-                        <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
-                            <span className="text-sm">Across all startups</span>
+                    {/* 6. Pending Verifications */}
+                    <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-yellow-500 to-amber-500 p-4 text-white shadow-lg">
+                        <Clock className="h-6 w-6 mb-2 opacity-80" />
+                        <div className="text-2xl font-bold">{formatNumber(stats.pendingVerifications)}</div>
+                        <div className="text-yellow-100 text-xs font-medium">Pending Verifications</div>
+                        <div className="mt-2 pt-2 border-t border-white/20 flex items-center justify-between text-[10px]">
+                            <span>Investor requests</span>
+                            <span className="bg-white/20 px-1.5 py-0.5 rounded">Action needed</span>
+                        </div>
+                    </div>
+
+                    {/* 7. Online Users - Security */}
+                    <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-cyan-500 to-blue-500 p-4 text-white shadow-lg">
+                        <div className="absolute top-2 right-2 h-2 w-2 rounded-full bg-white animate-pulse" />
+                        <div className="h-6 w-6 mb-2 opacity-80 text-white font-mono text-xs border border-white/50 rounded flex items-center justify-center">LIVE</div>
+                        <div className="text-2xl font-bold">{formatNumber(securityStats.onlineUsers)}</div>
+                        <div className="text-cyan-100 text-xs font-medium">Online Users</div>
+                        <div className="mt-2 pt-2 border-t border-white/20 flex items-center justify-between text-[10px]">
+                            <span>{securityStats.activeSessions} active sessions</span>
+                        </div>
+                    </div>
+
+                    {/* 8. Pending Deals */}
+                    <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-pink-500 to-rose-500 p-4 text-white shadow-lg">
+                        <Briefcase className="h-6 w-6 mb-2 opacity-80" />
+                        <div className="text-2xl font-bold">{formatNumber(dealStats.pendingDeals)}</div>
+                        <div className="text-pink-100 text-xs font-medium">Pending Deals</div>
+                        <div className="mt-2 pt-2 border-t border-white/20 flex items-center justify-between text-[10px]">
+                            <span>In negotiation</span>
+                            <span className="bg-white/20 px-1.5 py-0.5 rounded">Active</span>
+                        </div>
+                    </div>
+
+                    {/* 9. Completed Deals Count */}
+                    <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-teal-500 to-emerald-600 p-4 text-white shadow-lg">
+                        <TrendingUp className="h-6 w-6 mb-2 opacity-80" />
+                        <div className="text-2xl font-bold">{formatNumber(dealStats.completedDeals)}</div>
+                        <div className="text-teal-100 text-xs font-medium">Deals Closed</div>
+                        <div className="mt-2 pt-2 border-t border-white/20 flex items-center justify-between text-[10px]">
+                            <span>Total value</span>
+                            <span className="truncate ml-1">{formatCurrency(dealStats.totalCompletedAmount)}</span>
+                        </div>
+                    </div>
+
+                    {/* 10. Commission Revenue */}
+                    <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-lime-500 to-green-600 p-4 text-white shadow-lg">
+                        <DollarSign className="h-6 w-6 mb-2 opacity-80" />
+                        <div className="text-2xl font-bold">{formatCurrency(dealStats.totalCommissionRevenue)}</div>
+                        <div className="text-lime-100 text-xs font-medium">Commission Rev</div>
+                        <div className="mt-2 pt-2 border-t border-white/20 flex items-center justify-between text-[10px]">
+                            <span>From deals</span>
+                            <span className="bg-white/20 px-1.5 py-0.5 rounded">Success fees</span>
+                        </div>
+                    </div>
+
+                    {/* 11. ARPU */}
+                    <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-sky-500 to-indigo-600 p-4 text-white shadow-lg">
+                        <Users className="h-6 w-6 mb-2 opacity-80" />
+                        <div className="text-2xl font-bold">{formatCurrency(financials.arpu)}</div>
+                        <div className="text-sky-100 text-xs font-medium">ARPU</div>
+                        <div className="mt-2 pt-2 border-t border-white/20 flex items-center justify-between text-[10px]">
+                            <span>Avg Rev Per User</span>
+                            <span className="bg-white/20 px-1.5 py-0.5 rounded">Monthly</span>
+                        </div>
+                    </div>
+
+                    {/* 12. Churn Rate */}
+                    <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-red-500 to-rose-600 p-4 text-white shadow-lg">
+                        <TrendingUp className="h-6 w-6 mb-2 opacity-80 rotate-180" />
+                        <div className="text-2xl font-bold">{financials.churnRate}%</div>
+                        <div className="text-red-100 text-xs font-medium">Churn Rate</div>
+                        <div className="mt-2 pt-2 border-t border-white/20 flex items-center justify-between text-[10px]">
+                            <span>Attrition</span>
+                            <span className="bg-white/20 px-1.5 py-0.5 rounded">Monthly</span>
+                        </div>
+                    </div>
+
+                    {/* 13. Conversion Rate */}
+                    <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-fuchsia-500 to-pink-600 p-4 text-white shadow-lg">
+                        <TrendingUp className="h-6 w-6 mb-2 opacity-80" />
+                        <div className="text-2xl font-bold">{financials.conversionRate}%</div>
+                        <div className="text-fuchsia-100 text-xs font-medium">Conversion Rate</div>
+                        <div className="mt-2 pt-2 border-t border-white/20 flex items-center justify-between text-[10px]">
+                            <span>Free to Paid</span>
+                            <span className="bg-white/20 px-1.5 py-0.5 rounded">Performance</span>
+                        </div>
+                    </div>
+
+                    {/* 14. Active Subscriptions */}
+                    <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 p-4 text-white shadow-lg">
+                        <Briefcase className="h-6 w-6 mb-2 opacity-80" />
+                        <div className="text-2xl font-bold">{formatNumber(financials.activeSubscriptions)}</div>
+                        <div className="text-indigo-100 text-xs font-medium">Active Subs</div>
+                        <div className="mt-2 pt-2 border-t border-white/20 flex items-center justify-between text-[10px]">
+                            <span>Pro & Elite</span>
+                            <span className="bg-white/20 px-1.5 py-0.5 rounded">All tiers</span>
+                        </div>
+                    </div>
+
+                    {/* 15. Pending Reports */}
+                    <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-orange-400 to-red-500 p-4 text-white shadow-lg">
+                        <AlertCircle className="h-6 w-6 mb-2 opacity-80" />
+                        <div className="text-2xl font-bold">{formatNumber(reportStats.pending)}</div>
+                        <div className="text-orange-100 text-xs font-medium">Pending Reports</div>
+                        <div className="mt-2 pt-2 border-t border-white/20 flex items-center justify-between text-[10px]">
+                            <span>User flagged</span>
+                            <span className="bg-white/20 px-1.5 py-0.5 rounded">Review ASAP</span>
                         </div>
                     </div>
 
@@ -162,119 +265,5 @@ export function Overview() {
                 <StartupDistributionChart />
             </div>
         </div>
-    )
-}
-
-// Fallback dashboard with mock data
-function FallbackDashboard() {
-    const mockStats = {
-        totalUsers: 12847,
-        activeStartups: 342,
-        mrr: 284500,
-        activeInvestors: 156,
-        pendingVerifications: 48,
-        totalFunding: 12500000,
-        userGrowth: 12.5,
-        startupGrowth: 8.3,
-        mrrGrowth: 15.7,
-        investorGrowth: 5.2,
-    }
-
-    return (
-        <>
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-
-                {/* Total Users - Mock */}
-                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 p-5 text-white shadow-lg">
-                    <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10" />
-                    <Users className="h-8 w-8 mb-3 opacity-80" />
-                    <div className="text-3xl font-bold">{formatNumber(mockStats.totalUsers)}</div>
-                    <div className="text-blue-100 text-sm">Total Users</div>
-                    <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
-                        <TrendingUp className="h-4 w-4 opacity-70" />
-                        <span className="text-sm">
-                            <strong>+{mockStats.userGrowth}%</strong> growth this month
-                        </span>
-                    </div>
-                </div>
-
-                {/* Active Startups - Mock */}
-                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-purple-500 to-violet-600 p-5 text-white shadow-lg">
-                    <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10" />
-                    <Rocket className="h-8 w-8 mb-3 opacity-80" />
-                    <div className="text-3xl font-bold">{formatNumber(mockStats.activeStartups)}</div>
-                    <div className="text-purple-100 text-sm">Active Startups</div>
-                    <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
-                        <TrendingUp className="h-4 w-4 opacity-70" />
-                        <span className="text-sm">
-                            <strong>+{mockStats.startupGrowth}%</strong> new this month
-                        </span>
-                    </div>
-                </div>
-
-                {/* MRR - Mock */}
-                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 p-5 text-white shadow-lg">
-                    <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10" />
-                    <DollarSign className="h-8 w-8 mb-3 opacity-80" />
-                    <div className="text-3xl font-bold">{formatCurrency(mockStats.mrr)}</div>
-                    <div className="text-emerald-100 text-sm">Monthly Recurring Revenue</div>
-                    <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
-                        <TrendingUp className="h-4 w-4 opacity-70" />
-                        <span className="text-sm">
-                            <strong>+{mockStats.mrrGrowth}%</strong> vs last month
-                        </span>
-                    </div>
-                </div>
-
-                {/* Active Investors - Mock */}
-                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-orange-500 to-amber-600 p-5 text-white shadow-lg">
-                    <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10" />
-                    <Briefcase className="h-8 w-8 mb-3 opacity-80" />
-                    <div className="text-3xl font-bold">{formatNumber(mockStats.activeInvestors)}</div>
-                    <div className="text-orange-100 text-sm">Active Investors</div>
-                    <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
-                        <TrendingUp className="h-4 w-4 opacity-70" />
-                        <span className="text-sm">
-                            <strong>+{mockStats.investorGrowth}%</strong> new investors
-                        </span>
-                    </div>
-                </div>
-
-                {/* Pending Verifications - Mock */}
-                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-yellow-500 to-amber-500 p-5 text-white shadow-lg">
-                    <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10" />
-                    <Clock className="h-8 w-8 mb-3 opacity-80" />
-                    <div className="text-3xl font-bold">{formatNumber(mockStats.pendingVerifications)}</div>
-                    <div className="text-yellow-100 text-sm">Pending Verifications</div>
-                    <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
-                        <AlertCircle className="h-4 w-4 opacity-70" />
-                        <span className="text-sm">Requires attention</span>
-                    </div>
-                </div>
-
-                {/* Total Funding - Mock */}
-                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 p-5 text-white shadow-lg">
-                    <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10" />
-                    <TrendingUp className="h-8 w-8 mb-3 opacity-80" />
-                    <div className="text-3xl font-bold">{formatCurrency(mockStats.totalFunding)}</div>
-                    <div className="text-indigo-100 text-sm">Total Funding Raised</div>
-                    <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
-                        <span className="text-sm">Across all startups</span>
-                    </div>
-                </div>
-
-            </div>
-
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                <div className="col-span-1 lg:col-span-2">
-                    <RevenueChart />
-                </div>
-            </div>
-
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                <UserGrowthChart />
-                <StartupDistributionChart />
-            </div>
-        </>
     )
 }
