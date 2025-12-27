@@ -66,6 +66,12 @@ public class FeedService {
             throw new RuntimeException("User not found: " + authorId);
         }
 
+        // Validate content length
+        int maxPostLength = appConfigService.getIntValue("max_post_length", 2000);
+        if (request.getContent() != null && request.getContent().length() > maxPostLength) {
+            throw new IllegalArgumentException("Post content must not exceed " + maxPostLength + " characters");
+        }
+
         // Get subscription multiplier at creation time
         double subscriptionMultiplier = getSubscriptionMultiplier(authorId);
 
@@ -156,6 +162,14 @@ public class FeedService {
         // Verify ownership
         if (!post.getAuthorId().equals(userId)) {
             throw new RuntimeException("Not authorized to edit this post");
+        }
+
+        // Validate content length if changing
+        if (request.getContent() != null) {
+            int maxPostLength = appConfigService.getIntValue("max_post_length", 2000);
+            if (request.getContent().length() > maxPostLength) {
+                throw new IllegalArgumentException("Post content must not exceed " + maxPostLength + " characters");
+            }
         }
 
         // Check if post is active
@@ -437,6 +451,12 @@ public class FeedService {
     public Comment addComment(UUID postId, UUID authorId, CreateCommentRequest request) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new RuntimeException("Post not found: " + postId));
+
+        // Validate content length
+        int maxCommentLength = appConfigService.getIntValue("max_comment_length", 1000);
+        if (request.getContent() != null && request.getContent().length() > maxCommentLength) {
+            throw new IllegalArgumentException("Comment content must not exceed " + maxCommentLength + " characters");
+        }
 
         // If it's a reply, verify parent exists
         if (request.getParentId() != null) {

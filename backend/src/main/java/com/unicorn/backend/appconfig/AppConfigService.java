@@ -259,6 +259,15 @@ public class AppConfigService {
         upsert("max_comment_length", "1000", "Maximum comment length", "limits_general", "NUMBER");
         upsert("max_bio_length", "250", "Maximum user bio length", "limits_general", "NUMBER");
 
+        // Limits - User Info
+        upsert("max_user_first_name_length", "50", "Maximum user first name length", "limits_general", "NUMBER");
+        upsert("max_user_last_name_length", "50", "Maximum user last name length", "limits_general", "NUMBER");
+
+        // Limits - Startup
+        upsert("max_startup_name_length", "100", "Maximum startup name length", "limits_general", "NUMBER");
+        upsert("max_tagline_length", "150", "Maximum startup tagline length", "limits_general", "NUMBER");
+        upsert("max_about_length", "2000", "Maximum startup about/description length", "limits_general", "NUMBER");
+
         // Limits - Plans (Nudge)
         upsertIfNotExists("nudge.limit.free.monthly", "4", "Monthly nudge limit for FREE plan", "nudge", "NUMBER");
         upsertIfNotExists("nudge.limit.pro.monthly", "12", "Monthly nudge limit for PRO plan", "nudge", "NUMBER");

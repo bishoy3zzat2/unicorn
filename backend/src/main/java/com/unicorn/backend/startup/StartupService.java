@@ -23,6 +23,7 @@ public class StartupService {
     private final StartupRepository startupRepository;
     private final UserRepository userRepository;
     private final StartupMemberRepository startupMemberRepository;
+    private final com.unicorn.backend.appconfig.AppConfigService appConfigService;
 
     /**
      * Create a new startup for the authenticated user.
@@ -42,6 +43,22 @@ public class StartupService {
 
         if (!"ACTIVE".equalsIgnoreCase(owner.getStatus())) {
             throw new AccessDeniedException("User must be ACTIVE to own a startup.");
+        }
+
+        // Validate lengths
+        int maxName = appConfigService.getIntValue("max_startup_name_length", 100);
+        if (request.name() != null && request.name().length() > maxName) {
+            throw new IllegalArgumentException("Startup name must not exceed " + maxName + " characters");
+        }
+
+        int maxTagline = appConfigService.getIntValue("max_tagline_length", 150);
+        if (request.tagline() != null && request.tagline().length() > maxTagline) {
+            throw new IllegalArgumentException("Tagline must not exceed " + maxTagline + " characters");
+        }
+
+        int maxAbout = appConfigService.getIntValue("max_about_length", 2000);
+        if (request.fullDescription() != null && request.fullDescription().length() > maxAbout) {
+            throw new IllegalArgumentException("Description must not exceed " + maxAbout + " characters");
         }
 
         Startup startup = Startup.builder()
@@ -106,12 +123,27 @@ public class StartupService {
         }
 
         // Update fields if provided in request
-        if (request.name() != null)
+        if (request.name() != null) {
+            int maxName = appConfigService.getIntValue("max_startup_name_length", 100);
+            if (request.name().length() > maxName) {
+                throw new IllegalArgumentException("Startup name must not exceed " + maxName + " characters");
+            }
             startup.setName(request.name());
-        if (request.tagline() != null)
+        }
+        if (request.tagline() != null) {
+            int maxTagline = appConfigService.getIntValue("max_tagline_length", 150);
+            if (request.tagline().length() > maxTagline) {
+                throw new IllegalArgumentException("Tagline must not exceed " + maxTagline + " characters");
+            }
             startup.setTagline(request.tagline());
-        if (request.fullDescription() != null)
+        }
+        if (request.fullDescription() != null) {
+            int maxAbout = appConfigService.getIntValue("max_about_length", 2000);
+            if (request.fullDescription().length() > maxAbout) {
+                throw new IllegalArgumentException("Description must not exceed " + maxAbout + " characters");
+            }
             startup.setFullDescription(request.fullDescription());
+        }
         if (request.industry() != null)
             startup.setIndustry(request.industry());
         if (request.stage() != null)

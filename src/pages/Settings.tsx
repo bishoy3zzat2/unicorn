@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import {
     Loader2, Save, RefreshCw, Settings2, Globe, DollarSign,
-    Palette, Percent, Sparkles, ChevronRight
+    Palette, Percent, Sparkles, ChevronRight, Scale
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/contexts/AuthContext';
@@ -23,6 +23,7 @@ const CATEGORY_CONFIG: Record<string, { icon: React.ElementType; color: string; 
     exchange_rates: { icon: Globe, color: 'text-blue-500', gradient: 'from-blue-500 to-cyan-500', bgColor: 'bg-blue-50 dark:bg-blue-950/30' },
     verification: { icon: Sparkles, color: 'text-emerald-500', gradient: 'from-emerald-500 to-teal-500', bgColor: 'bg-emerald-50 dark:bg-emerald-950/30' },
     system: { icon: Settings2, color: 'text-slate-500', gradient: 'from-slate-500 to-gray-600', bgColor: 'bg-slate-100 dark:bg-slate-950/30' },
+    limits_general: { icon: Scale, color: 'text-rose-500', gradient: 'from-rose-500 to-red-500', bgColor: 'bg-rose-50 dark:bg-rose-950/30' },
 };
 
 export function Settings() {

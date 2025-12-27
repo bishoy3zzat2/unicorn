@@ -89,6 +89,23 @@ public class AuthenticationService {
                 user.setPhoneNumber(request.phoneNumber());
                 user.setCountry(request.country());
 
+                // Name Validation
+                if (request.firstName() != null) {
+                        int maxFirstNameLength = appConfigService.getIntValue("max_user_first_name_length", 50);
+                        if (request.firstName().length() > maxFirstNameLength) {
+                                throw new IllegalArgumentException(
+                                                "First name must not exceed " + maxFirstNameLength + " characters");
+                        }
+                }
+
+                if (request.lastName() != null) {
+                        int maxLastNameLength = appConfigService.getIntValue("max_user_last_name_length", 50);
+                        if (request.lastName().length() > maxLastNameLength) {
+                                throw new IllegalArgumentException(
+                                                "Last name must not exceed " + maxLastNameLength + " characters");
+                        }
+                }
+
                 // Bio Validation
                 if (request.bio() != null) {
                         int maxBioLength = appConfigService.getIntValue("max_bio_length", 250);
