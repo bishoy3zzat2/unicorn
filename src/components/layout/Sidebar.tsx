@@ -85,9 +85,18 @@ export function Sidebar() {
             {/* Mobile menu button */}
             <button
                 onClick={() => setIsMobileOpen(!isMobileOpen)}
-                className="lg:hidden fixed top-7 left-4 z-50 p-2.5 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 backdrop-blur-md shadow-sm"
+                className={cn(
+                    "lg:hidden fixed top-[2rem] left-[1.5rem] z-50 h-10 w-10 rounded-xl flex items-center justify-center transition-all duration-200",
+                    isMobileOpen
+                        ? "bg-gradient-to-br from-red-500 to-rose-600 text-white shadow-md shadow-red-500/20"
+                        : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
+                )}
             >
-                {isMobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                {isMobileOpen ? (
+                    <X className="h-5 w-5" />
+                ) : (
+                    <Menu className="h-5 w-5" />
+                )}
             </button>
 
             {/* Backdrop for mobile */}
