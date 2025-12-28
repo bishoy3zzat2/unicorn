@@ -12,7 +12,6 @@ import { Input } from "../components/ui/input"
 import {
     Dialog,
     DialogContent,
-    DialogDescription,
     DialogFooter,
     DialogHeader,
     DialogTitle,
@@ -115,7 +114,7 @@ export function Notifications() {
     const [showUserDropdown, setShowUserDropdown] = useState(false)
     const [searchingUsers, setSearchingUsers] = useState(false)
     const [inAppChannel, setInAppChannel] = useState(true)
-    const [pushChannel, setPushChannel] = useState(false)
+    const [pushChannel] = useState(false)
     const [sendingAnnouncement, setSendingAnnouncement] = useState(false)
 
     // Cleanup

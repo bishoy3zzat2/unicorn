@@ -36,7 +36,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '../components/ui/select'
-import { KPICard } from '../components/dashboard/KPICard'
+
 import {
     fetchFinancialSummary,
     fetchMonthlyRevenue,

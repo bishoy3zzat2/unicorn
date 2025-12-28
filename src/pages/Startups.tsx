@@ -63,8 +63,7 @@ import {
     getStartupById
 } from '../lib/api'
 import { Startup, StartupStats } from '../types'
-import { cn, formatDate, formatTimeAgo, formatNumber } from '../lib/utils'
-import { KPICard } from '../components/dashboard/KPICard'
+import { cn, formatDate, formatTimeAgo } from '../lib/utils'
 
 import {
     DropdownMenu,

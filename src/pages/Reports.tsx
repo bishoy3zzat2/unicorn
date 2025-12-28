@@ -49,7 +49,7 @@ import {
     MessageSquare,
     Trash2,
 } from 'lucide-react'
-import { KPICard } from '../components/dashboard/KPICard'
+
 import { getAllReports, getReportStats, deleteReport, Report } from '../lib/api'
 import { formatTimeAgo } from '../lib/utils'
 import { ReportDetailsDialog } from '../components/dashboard/ReportDetailsDialog'
