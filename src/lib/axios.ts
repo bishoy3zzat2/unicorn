@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-    baseURL: '/api/v1',
+    baseURL: 'http://192.168.1.100:8080/api/v1',
     headers: {
         'Content-Type': 'application/json',
     },
@@ -68,7 +68,7 @@ api.interceptors.response.use(
                 }
 
                 // Call refresh endpoint
-                const response = await axios.post('/api/v1/auth/refresh-token', {
+                const response = await axios.post('http://192.168.1.100:8080/api/v1/auth/refresh-token', {
                     token: refreshToken
                 });
 
