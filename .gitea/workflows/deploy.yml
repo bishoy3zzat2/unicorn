@@ -1,29 +1,21 @@
-name: Auto Deploy Spring Boot
+name: Super Fast Deploy
 on:
   push:
     branches:
-      - main  # هيشتغل لما تبعت لفرع main
+      - main
 
 jobs:
   build-and-deploy:
-    runs-on: ubuntu-latest
+    runs-on: host  # هنا بنقول له استخدم السيرفر نفسه مش كونتير معزول
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v3
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-          cache: maven
-
       - name: Build with Maven
         run: |
           cd backend
-          chmod +x mvnw
-          ./mvnw clean package -DskipTests
-          
+          mvn clean package -DskipTests
+
       - name: Deploy to Docker
         run: |
           docker rm -f spring-boot-app || true
