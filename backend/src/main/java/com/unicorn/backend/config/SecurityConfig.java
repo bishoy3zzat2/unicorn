@@ -81,7 +81,13 @@ public class SecurityConfig {
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(Arrays.asList("*")); // Allow all for dev
+        configuration.setAllowedOrigins(Arrays.asList(
+                "http://localhost:5173",
+                "http://localhost:3000",
+                "http://192.168.1.100:5173",
+                "https://1b9jp3c3-5173.euw.devtunnels.ms",
+                "https://053a14cf1317c545-41-46-6-196.serveousercontent.com"));
+        configuration.setAllowedOriginPatterns(Arrays.asList("*")); // Fallback for dev
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
