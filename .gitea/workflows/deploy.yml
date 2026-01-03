@@ -11,13 +11,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Build with Maven (Using Wrapper)
+      - name: Build with Maven (Using Wrapper from Root)
         run: |
-          cd backend
-          # إعطاء صلاحية الملف للينكس
-          chmod +x mvnw
-          # تشغيل البناء باستخدام الملف الموجود في مشروعك
-          ./mvnw clean package -DskipTests
+          # إعطاء صلاحية التشغيل لملف الـ Wrapper الموجود في الـ Root
+          chmod +x ./mvnw
+          # تشغيل البناء مع تحديد ملف الـ pom.xml الموجود داخل backend
+          ./mvnw clean package -f backend/pom.xml -DskipTests
 
       - name: Deploy to Docker
         run: |
