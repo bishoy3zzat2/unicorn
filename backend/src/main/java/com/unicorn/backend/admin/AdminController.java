@@ -152,10 +152,6 @@ public class AdminController {
 
         try {
             Page<User> usersPage;
-
-            // DEBUG LOGS
-            System.out.println("DEBUG: getAllUsers called. Query: " + query + ", Role: " + role);
-
             // Check if we have advanced filters (not just the simple query)
             boolean hasAdvancedFilters = email != null || username != null ||
                     firstName != null || lastName != null ||
@@ -166,8 +162,6 @@ public class AdminController {
                     hasInvestorProfile != null || hasStartups != null || isMemberOfStartups != null ||
                     isSuspended != null || minWarningCount != null || hasActiveSession != null ||
                     id != null || updatedAtFrom != null || updatedAtTo != null || isVerifiedInvestor != null;
-
-            System.out.println("DEBUG: hasAdvancedFilters: " + hasAdvancedFilters);
 
             if (hasAdvancedFilters) {
                 UserFilterRequest filter = UserFilterRequest.builder()
@@ -286,6 +280,7 @@ public class AdminController {
         startupStats.put("totalRaised", totalRaised != null ? totalRaised : java.math.BigDecimal.ZERO);
         stats.put("startups", startupStats);
 
+        System.out.println("--- Dashboard Stats Accessed - Build V2 ---");
         return ResponseEntity.ok(stats);
     }
 
