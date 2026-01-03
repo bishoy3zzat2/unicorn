@@ -7,22 +7,20 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    # هنا السر: هنقول للرنر استخدم بيئة فيها جافا وميفن جاهزين
-    container:
-      image: maven:3.8.4-openjdk-17
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Build with Maven
+      - name: Build with Maven (Using Wrapper)
         run: |
           cd backend
-          mvn clean package -DskipTests
+          # إعطاء صلاحية الملف للينكس
+          chmod +x mvnw
+          # تشغيل البناء باستخدام الملف الموجود في مشروعك
+          ./mvnw clean package -DskipTests
 
       - name: Deploy to Docker
         run: |
-          # لاحظ إننا هنا بنبعت الأمر للسيرفر نفسه (الكيسة) مش جوه الكونتير
           docker rm -f spring-boot-app || true
           docker run -d --name spring-boot-app \
             --restart always \
