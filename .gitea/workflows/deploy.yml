@@ -11,11 +11,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      # دي الخطوة اللي هتعرف الـ Runner مكان الجافا عشان يرضى يشغل mvnw
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven # دي هتخلي التحميل سريع جداً في المرات الجاية
+
       - name: Build with Maven (Using Wrapper from Root)
         run: |
-          # إعطاء صلاحية التشغيل لملف الـ Wrapper الموجود في الـ Root
           chmod +x ./mvnw
-          # تشغيل البناء مع تحديد ملف الـ pom.xml الموجود داخل backend
           ./mvnw clean package -f backend/pom.xml -DskipTests
 
       - name: Deploy to Docker
