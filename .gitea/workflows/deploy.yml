@@ -6,7 +6,7 @@ on:
 
 jobs:
   build-and-deploy:
-    runs-on: host  # هنا بنقول له استخدم السيرفر نفسه مش كونتير معزول
+    runs-on: host
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
