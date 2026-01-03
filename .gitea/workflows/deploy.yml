@@ -7,13 +7,13 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    # هنا السر: هنقول للرنر استخدم بيئة فيها جافا وميفن جاهزين
+    container:
+      image: maven:3.8.4-openjdk-17
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-
-      # دي الخطوة اللي كانت ناقصة عشان السيرفر يعرف يعني إيه mvn
-      - name: Install Maven
-        run: sudo apt-get update && sudo apt-get install -y maven
 
       - name: Build with Maven
         run: |
@@ -22,6 +22,7 @@ jobs:
 
       - name: Deploy to Docker
         run: |
+          # لاحظ إننا هنا بنبعت الأمر للسيرفر نفسه (الكيسة) مش جوه الكونتير
           docker rm -f spring-boot-app || true
           docker run -d --name spring-boot-app \
             --restart always \
