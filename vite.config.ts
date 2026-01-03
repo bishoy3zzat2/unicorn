@@ -20,7 +20,7 @@ export default defineConfig({
         allowedHosts: ['053a14cf1317c545-41-46-6-196.serveousercontent.com'], // Allow ngrok domain
         proxy: {
             '/api': {
-                target: 'http://localhost:9090',
+                target: 'http://192.168.1.100:8080',
                 changeOrigin: true,
                 secure: false,
             },
