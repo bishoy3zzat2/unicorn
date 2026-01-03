@@ -11,13 +11,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Build with Maven (Wrapper Mode)
+      - name: Build with Maven
         run: |
+          # الدخول لفولدر الباك إند
           cd backend
-          # إعطاء صلاحية التشغيل للملف
-          chmod +x mvnw
-          # تشغيل البناء باستخدام الـ Wrapper
-          ./mvnw clean package -DskipTests
+          # التأكد من وجود صلاحية وتشغيل البناء
+          sh mvnw clean package -DskipTests
 
       - name: Deploy to Docker
         run: |
