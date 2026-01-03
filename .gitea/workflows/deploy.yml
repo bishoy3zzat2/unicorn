@@ -7,15 +7,13 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    # هنا هنلغي الخطوات اللي بتحمل جافا وميفن ونستخدم اللي في السيرفر
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Build with Maven (Direct)
+      - name: Build with Maven (Host Mode)
         run: |
           cd backend
-          # بدل ما نحمل، هنستخدم الميفن اللي موجود أصلاً
           mvn clean package -DskipTests
 
       - name: Deploy to Docker
