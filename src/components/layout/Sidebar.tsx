@@ -41,7 +41,7 @@ export function Sidebar() {
                 className={cn(
                     "group relative flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 outline-none mb-1",
                     isActive
-                        ? "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm ring-1 ring-slate-200 dark:ring-slate-700"
+                        ? "bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm ring-1 ring-slate-200 dark:ring-slate-700"
                         : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800/50"
                 )}
             >
